@@ -141,8 +141,8 @@ export default function Home() {
                 key={track._id}
                 title={track.title}
                 artist={track.artist}
-                coverImage={track.coverImage}
-                audioUrl={track.audioUrl}
+                image={track.coverImage}      // Đổi từ coverImage sang image
+                audio={track.audioUrl}        // Đổi từ audioUrl sang audio
               />
             ))}
           </div>

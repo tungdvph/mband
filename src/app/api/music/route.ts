@@ -25,7 +25,7 @@ export async function POST(request: Request) {
       title: formData.get('title'),
       description: formData.get('description'),
       artist: formData.get('artist'),
-      isPublished: formData.get('isPublished') === 'true',
+      isPublished: formData.get('isPublished') === 'true' || formData.get('isPublished') === 'on',  // Thêm kiểm tra 'on'
       createdAt: new Date(),
       updatedAt: new Date()
     };

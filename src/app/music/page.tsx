@@ -2,18 +2,7 @@
 import { useEffect, useState } from 'react';
 import Layout from '@/components/layout/Layout';
 import MusicPlayer from '@/components/ui/MusicPlayer';
-
-interface Music {
-  _id: string;
-  title: string;
-  artist: string;
-  image: string;          // Thay đổi từ coverImage
-  audio: string;          // Thay đổi từ audioUrl
-  description: string;
-  isPublished: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
+import { Music } from '@/types/music';
 
 export default function MusicPage() {
   const [music, setMusic] = useState<Music[]>([]);
@@ -25,7 +14,6 @@ export default function MusicPage() {
         const response = await fetch('/api/music');
         if (response.ok) {
           const data = await response.json();
-          // Chỉ hiển thị nhạc đã publish
           setMusic(data.filter((item: Music) => item.isPublished));
         }
       } catch (error) {
@@ -51,8 +39,9 @@ export default function MusicPage() {
                 key={track._id}
                 title={track.title}
                 artist={track.artist}
-                coverImage={track.image}    // Map từ image sang coverImage
-                audioUrl={track.audio}      // Map từ audio sang audioUrl
+                image={track.image}
+                audio={track.audio}
+                description={track.description}
               />
             ))}
           </div>

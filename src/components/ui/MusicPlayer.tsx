@@ -4,11 +4,12 @@ import { useState, useRef } from 'react';
 interface MusicPlayerProps {
   title: string;
   artist: string;
-  coverImage: string;
-  audioUrl: string;
+  image?: string;
+  audio: string;
+  description?: string;
 }
 
-const MusicPlayer = ({ title, artist, coverImage, audioUrl }: MusicPlayerProps) => {
+export default function MusicPlayer({ title, artist, image, audio, description }: MusicPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -27,7 +28,7 @@ const MusicPlayer = ({ title, artist, coverImage, audioUrl }: MusicPlayerProps) 
   return (
     <div className="bg-gray-900 p-4 rounded-lg">
       <div className="flex items-center space-x-4">
-        <img src={coverImage} alt={title} className="w-16 h-16 rounded" />
+        <img src={image} alt={title} className="w-16 h-16 rounded" />
         <div>
           <h3 className="text-white font-semibold">{title}</h3>
           <p className="text-gray-400">{artist}</p>
@@ -37,7 +38,7 @@ const MusicPlayer = ({ title, artist, coverImage, audioUrl }: MusicPlayerProps) 
       <div className="mt-4">
         <audio
           ref={audioRef}
-          src={audioUrl}
+          src={audio}
           onTimeUpdate={() => setCurrentTime(audioRef.current?.currentTime || 0)}
         />
         <button
@@ -55,6 +56,4 @@ const MusicPlayer = ({ title, artist, coverImage, audioUrl }: MusicPlayerProps) 
       </div>
     </div>
   );
-};
-
-export default MusicPlayer;
+}
