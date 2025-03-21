@@ -7,9 +7,12 @@ interface Music {
   _id: string;
   title: string;
   artist: string;
-  coverImage: string;
-  audioUrl: string;
-  album: string;
+  image: string;          // Thay đổi từ coverImage
+  audio: string;          // Thay đổi từ audioUrl
+  description: string;
+  isPublished: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export default function MusicPage() {
@@ -22,7 +25,8 @@ export default function MusicPage() {
         const response = await fetch('/api/music');
         if (response.ok) {
           const data = await response.json();
-          setMusic(data);
+          // Chỉ hiển thị nhạc đã publish
+          setMusic(data.filter((item: Music) => item.isPublished));
         }
       } catch (error) {
         console.error('Error fetching music:', error);
@@ -47,8 +51,8 @@ export default function MusicPage() {
                 key={track._id}
                 title={track.title}
                 artist={track.artist}
-                coverImage={track.coverImage}
-                audioUrl={track.audioUrl}
+                coverImage={track.image}    // Map từ image sang coverImage
+                audioUrl={track.audio}      // Map từ audio sang audioUrl
               />
             ))}
           </div>

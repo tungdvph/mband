@@ -12,6 +12,7 @@ export default function MusicForm({ music, onSubmit, onCancel }: MusicFormProps)
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState(music?.image || '/default-album.png');
   const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [isPublished, setIsPublished] = useState(music?.isPublished || false); // Thêm state này
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -27,6 +28,7 @@ export default function MusicForm({ music, onSubmit, onCancel }: MusicFormProps)
     if (music?._id) {
       formData.append('_id', music._id);
     }
+    formData.append('isPublished', isPublished.toString()); // Thêm dòng này
 
     onSubmit(formData);
   };
@@ -127,8 +129,8 @@ export default function MusicForm({ music, onSubmit, onCancel }: MusicFormProps)
             <input
               type="checkbox"
               name="isPublished"
-              defaultChecked={music?.isPublished ?? true}
-              className="rounded border-gray-300 text-blue-600"
+              checked={isPublished}
+              onChange={(e) => setIsPublished(e.target.checked)}
             />
             <span className="ml-2">Xuất bản</span>
           </label>
