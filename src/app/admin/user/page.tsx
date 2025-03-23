@@ -3,14 +3,14 @@ import { useState, useEffect } from 'react';
 import UserForm from '@/components/admin/UserForm';
 import { User } from '@/types/user';
 
-export default function UsersManagement() {
+export default function UserManagement() {
   const [users, setUsers] = useState<User[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch('/api/users');
+      const response = await fetch('/api/user');
       if (response.ok) {
         const data = await response.json();
         setUsers(data);
@@ -37,7 +37,7 @@ export default function UsersManagement() {
   const handleDeleteUser = async (userId: string) => {
     if (window.confirm('Bạn có chắc chắn muốn xóa người dùng này?')) {
       try {
-        const response = await fetch(`/api/users/${userId}`, {
+        const response = await fetch(`/api/user/${userId}`, {
           method: 'DELETE',
         });
         if (response.ok) {
@@ -51,7 +51,6 @@ export default function UsersManagement() {
 
   const handleSubmit = async (formData: FormData) => {
     try {
-      // Handle file upload first
       const file = formData.get('file') as File;
       if (file?.size > 0) {
         const uploadData = new FormData();
@@ -71,10 +70,9 @@ export default function UsersManagement() {
         formData.append('avatar', url);
       }
     
-      // Handle user data
       const url = currentUser 
-        ? `/api/users/${currentUser._id}`
-        : '/api/users';
+        ? `/api/user/${currentUser._id}`
+        : '/api/user';
         
       const response = await fetch(url, {
         method: currentUser ? 'PUT' : 'POST',
@@ -87,7 +85,6 @@ export default function UsersManagement() {
         throw new Error(result.error || 'Không thể lưu thông tin người dùng');
       }
     
-      // Update state immediately with the returned user data
       setUsers(prev => 
         currentUser
           ? prev.map(u => u._id === currentUser._id ? result.user : u)
@@ -115,6 +112,24 @@ export default function UsersManagement() {
         </button>
       </div>
 
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg w-full max-w-2xl">
+            <h2 className="text-xl font-bold mb-4">
+              {currentUser ? 'Sửa người dùng' : 'Thêm người dùng mới'}
+            </h2>
+            <UserForm
+              user={currentUser || undefined}
+              onSubmit={handleSubmit}
+              onCancel={() => {
+                setIsModalOpen(false);
+                setCurrentUser(null);
+              }}
+            />
+          </div>
+        </div>
+      )}
+
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
@@ -132,9 +147,6 @@ export default function UsersManagement() {
                 Trạng thái
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Đăng nhập cuối
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Thao tác
               </th>
             </tr>
@@ -146,16 +158,12 @@ export default function UsersManagement() {
                   <div className="flex items-center">
                     <img
                       className="h-10 w-10 rounded-full object-cover"
-                      src={user.avatar ? `${user.avatar}` : '/default-avatar.png'}
+                      src={user.avatar || '/default-avatar.png'}
                       alt={user.username}
                     />
                     <div className="ml-4">
-                      <div className="text-sm font-medium text-gray-900">
-                        {user.fullName}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {user.username}
-                      </div>
+                      <div className="text-sm font-medium text-gray-900">{user.fullName}</div>
+                      <div className="text-sm text-gray-500">{user.username}</div>
                     </div>
                   </div>
                 </td>
@@ -173,22 +181,17 @@ export default function UsersManagement() {
                   <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                     user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                   }`}>
-                    {user.isActive ? 'Hoạt động' : 'Đã khóa'}
+                    {user.isActive ? 'Hoạt động' : 'Không hoạt động'}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">
-                    {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Chưa đăng nhập'}
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <button
                     onClick={() => handleEditUser(user)}
-                    className="text-indigo-600 hover:text-indigo-900 mr-4"
+                    className="text-blue-600 hover:text-blue-900 mr-4"
                   >
                     Sửa
                   </button>
-                  <button 
+                  <button
                     onClick={() => handleDeleteUser(user._id)}
                     className="text-red-600 hover:text-red-900"
                   >
@@ -200,21 +203,6 @@ export default function UsersManagement() {
           </tbody>
         </table>
       </div>
-
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-lg w-full max-w-2xl">
-            <h2 className="text-xl font-bold mb-4">
-              {currentUser ? 'Sửa người dùng' : 'Thêm người dùng mới'}
-            </h2>
-            <UserForm 
-              user={currentUser}
-              onSubmit={handleSubmit}
-              onCancel={() => setIsModalOpen(false)}
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 }

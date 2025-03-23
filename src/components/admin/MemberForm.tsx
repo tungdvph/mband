@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Member } from '@/types/member';
 
 interface MemberFormProps {
-  member?: Member;
+  member?: Member | null;  // Thêm | null vào đây
   onSubmit: (formData: FormData) => void;
   onCancel: () => void;
 }
@@ -16,9 +16,13 @@ export default function MemberForm({ member, onSubmit, onCancel }: MemberFormPro
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     
+    // Xử lý file ảnh
     if (imageFile) {
-      formData.append('file', imageFile);
+      formData.set('image', imageFile); // Đổi từ 'file' thành 'image'
     }
+
+    // Thêm trường isActive
+    formData.set('isActive', (e.currentTarget.querySelector('[name="isActive"]') as HTMLInputElement).checked.toString());
 
     try {
       onSubmit(formData);
@@ -37,8 +41,8 @@ export default function MemberForm({ member, onSubmit, onCancel }: MemberFormPro
   };
 
   return (
-    <form onSubmit={handleSubmit} encType="multipart/form-data">
-      <div className="space-y-4">
+    <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg">
+      <div className="space-y-6">
         <div>
           <label className="block text-sm font-medium text-gray-700">Ảnh</label>
           <div className="mt-1 flex items-center space-x-4">
@@ -67,7 +71,7 @@ export default function MemberForm({ member, onSubmit, onCancel }: MemberFormPro
             type="text"
             name="name"
             defaultValue={member?.name}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-blue-500"
             required
           />
         </div>
@@ -78,7 +82,7 @@ export default function MemberForm({ member, onSubmit, onCancel }: MemberFormPro
             type="text"
             name="role"
             defaultValue={member?.role}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-blue-500"
             required
           />
         </div>
@@ -89,33 +93,33 @@ export default function MemberForm({ member, onSubmit, onCancel }: MemberFormPro
             name="description"
             defaultValue={member?.description}
             rows={4}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-blue-500"
           />
         </div>
 
         <div>
-          <label className="flex items-center">
+          <label className="flex items-center space-x-2">
             <input
               type="checkbox"
               name="isActive"
               defaultChecked={member?.isActive ?? true}
-              className="rounded border-gray-300 text-blue-600"
+              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
             />
-            <span className="ml-2">Đang hoạt động</span>
+            <span className="text-sm text-gray-700">Đang hoạt động</span>
           </label>
         </div>
 
-        <div className="flex justify-end space-x-3">
+        <div className="flex justify-end space-x-3 pt-4">
           <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-2 border rounded text-gray-600 hover:bg-gray-100"
+            className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             Hủy
           </button>
           <button
             type="submit"
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             {member ? 'Cập nhật' : 'Thêm'}
           </button>

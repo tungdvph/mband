@@ -20,8 +20,9 @@ export default function AdminLayout({
           <Link href="/admin" className="block px-4 py-2 hover:bg-[#234156]">
             Dashboard
           </Link>
-          <Link href="/admin/members" className="block px-4 py-2 hover:bg-[#234156]">
-            Quản lý Thành Viên
+
+          <Link href="/admin/member" className="block px-4 py-2 hover:bg-[#234156]">
+            Quản Lý Thành Viên
           </Link>
           <Link href="/admin/schedule" className="block px-4 py-2 hover:bg-[#234156]">
             Quản lý Lịch trình
@@ -35,7 +36,7 @@ export default function AdminLayout({
           <Link href="/admin/contact" className="block px-4 py-2 hover:bg-[#234156]">
             Quản lý Liên Hệ
           </Link>
-          <Link href="/admin/users" className="block px-4 py-2 hover:bg-[#234156]">
+          <Link href="/admin/user" className="block px-4 py-2 hover:bg-[#234156]">  {/* Changed from /admin/users */}
             Quản lý Người Dùng
           </Link>
         </nav>

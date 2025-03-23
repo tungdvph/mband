@@ -8,7 +8,7 @@ const Navigation = () => {
           Band Name
         </Link>
         <div className="space-x-4">
-          <Link href="/members">Members</Link>
+          <Link href="/member">Members</Link>  // Đã sửa từ /members
           <Link href="/schedule">Schedule</Link>
           <Link href="/music">Music</Link>
           <Link href="/booking">Booking</Link>

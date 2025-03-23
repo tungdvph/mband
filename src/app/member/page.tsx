@@ -17,7 +17,7 @@ interface Member {
   };  // Removed optional chaining from socialLinks
 }
 
-export default function MembersPage() {
+export default function MemberPage() {  // Changed from MembersPage
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -25,7 +25,7 @@ export default function MembersPage() {
   useEffect(() => {
     const fetchMembers = async () => {
       try {
-        const response = await fetch('/api/members');
+        const response = await fetch('/api/member');  // Changed from /api/members
         if (!response.ok) {
           throw new Error('Failed to fetch members');
         }

@@ -18,7 +18,7 @@ const Navbar = () => {
           {/* Desktop Menu */}
           <div className="hidden md:block">
             <div className="ml-10 flex items-baseline space-x-4">
-              <Link href="/members" className="hover:text-gray-300">Members</Link>
+              <Link href="/member" className="hover:text-gray-300">Members</Link>
               <Link href="/schedule" className="hover:text-gray-300">Schedule</Link>
               <Link href="/music" className="hover:text-gray-300">Music</Link>
               <Link href="/news" className="hover:text-gray-300">News</Link>
@@ -52,7 +52,7 @@ const Navbar = () => {
       {isOpen && (
         <div className="md:hidden">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-            <Link href="/members" className="block hover:text-gray-300 py-2">Members</Link>
+            <Link href="/member" className="block hover:text-gray-300 py-2">Members</Link>
             <Link href="/schedule" className="block hover:text-gray-300 py-2">Schedule</Link>
             <Link href="/music" className="block hover:text-gray-300 py-2">Music</Link>
             <Link href="/news" className="block hover:text-gray-300 py-2">News</Link>
