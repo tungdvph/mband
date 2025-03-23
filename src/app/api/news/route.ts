@@ -40,10 +40,20 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const { db } = await connectToDatabase();
-    const news = await db.collection('news').find().sort({ createdAt: -1 }).toArray();
+    const { searchParams } = new URL(request.url);
+    const isAdmin = searchParams.get('admin') === 'true';
+
+    // Query khác nhau cho admin và public
+    const query = isAdmin ? {} : { isPublished: true };
+    
+    const news = await db.collection('news')
+      .find(query)
+      .sort({ createdAt: -1 })
+      .toArray();
+
     return NextResponse.json(news);
   } catch (error) {
     return NextResponse.json({ error: 'Error fetching news' }, { status: 500 });

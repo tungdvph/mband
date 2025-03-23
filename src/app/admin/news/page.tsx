@@ -15,7 +15,7 @@ export default function NewsManagement() {
 
   const fetchNews = async () => {
     try {
-      const response = await fetch('/api/news');
+      const response = await fetch('/api/news?admin=true'); // Thêm param admin=true
       if (response.ok) {
         const data = await response.json();
         setNews(data);

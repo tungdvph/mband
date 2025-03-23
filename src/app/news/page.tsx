@@ -19,7 +19,7 @@ export default function NewsPage() {
   useEffect(() => {
     const fetchNews = async () => {
       try {
-        const response = await fetch('/api/news');
+        const response = await fetch('/api/news'); // Mặc định không cần param, chỉ lấy tin đã xuất bản
         if (response.ok) {
           const data = await response.json();
           setNews(data);
