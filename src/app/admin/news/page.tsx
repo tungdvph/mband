@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { News } from '@/types/news';
 import NewsForm from '@/components/admin/NewsForm';
-import NewsContent from '@/components/NewsContent';
+import NewsContent from '@/components/ui/NewsContent';
 
 export default function NewsManagement() {
   const [news, setNews] = useState<News[]>([]);
@@ -32,22 +32,25 @@ export default function NewsManagement() {
 
   const handleSubmit = async (formData: FormData) => {
     try {
-      const url = formData.get('_id') ? `/api/news/${formData.get('_id')}` : '/api/news';
-      const method = formData.get('_id') ? 'PUT' : 'POST';
-
+      const url = currentNews 
+        ? `/api/news/${currentNews._id}`
+        : '/api/news';
+      
       const response = await fetch(url, {
-        method,
-        body: formData,
+        method: currentNews ? 'PUT' : 'POST',
+        body: formData, // Giữ nguyên việc gửi FormData
       });
-
-      if (response.ok) {
-        await fetchNews();
-        setIsModalOpen(false);
-      } else {
-        console.error('Error saving news:', await response.text());
+      
+      if (!response.ok) {
+        throw new Error('Lỗi khi lưu tin tức');
       }
+      
+      await fetchNews();
+      setIsModalOpen(false);
+      alert(currentNews ? 'Cập nhật thành công!' : 'Thêm tin tức thành công!');
     } catch (error) {
-      console.error('Error saving news:', error);
+      console.error('Error:', error);
+      alert(error instanceof Error ? error.message : 'Có lỗi xảy ra');
     }
   };
 

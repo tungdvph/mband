@@ -54,16 +54,33 @@ export default function NewsForm({ news, onSubmit, onCancel }: NewsFormProps) {
     return EditorState.createEmpty();
   });
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const form = e.currentTarget;
-    const formData = new FormData(form);
+    const formData = new FormData(e.currentTarget);
     
+    // Xử lý isPublished
+    const isPublished = e.currentTarget.querySelector<HTMLInputElement>('input[name="isPublished"]')?.checked;
+    formData.set('isPublished', isPublished ? 'true' : 'false');
+
+    // Upload image first if exists
     if (imageFile) {
-      formData.append('image', imageFile);
-    }
-    if (news?._id) {
-      formData.append('_id', news._id);
+      const uploadData = new FormData();
+      uploadData.append('file', imageFile);
+      uploadData.append('type', 'news');
+      
+      try {
+        const uploadRes = await fetch('/api/upload', {
+          method: 'POST',
+          body: uploadData
+        });
+    
+        if (uploadRes.ok) {
+          const { url } = await uploadRes.json();
+          formData.set('image', url);
+        }
+      } catch (error) {
+        console.error('Error uploading image:', error);
+      }
     }
 
     const contentState = editorState.getCurrentContent();
@@ -277,6 +294,7 @@ export default function NewsForm({ news, onSubmit, onCancel }: NewsFormProps) {
               type="checkbox"
               name="isPublished"
               defaultChecked={news?.isPublished}
+              value="true"  // Thêm value="true"
               className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
             />
             <span className="text-sm text-gray-700">Xuất bản</span>

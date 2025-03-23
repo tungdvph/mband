@@ -19,33 +19,24 @@ export async function POST(request: Request) {
   try {
     const { db } = await connectToDatabase();
     const formData = await request.formData();
-    
-    const newsData: NewsData = {
-      title: formData.get('title'),
-      content: formData.get('content'),
-      author: formData.get('author'),
+
+    const newsData = {
+      title: formData.get('title')?.toString() || '',
+      author: formData.get('author')?.toString() || '',
+      content: formData.get('content')?.toString() || '',
       isPublished: formData.get('isPublished') === 'true',
+      image: formData.get('image')?.toString() || '/default-news.png', // Thêm default image
       createdAt: new Date(),
       updatedAt: new Date()
     };
 
-    const imageFile = formData.get('image') as File;
-    
-    if (imageFile && imageFile.size > 0) {
-      const imageBytes = await imageFile.arrayBuffer();
-      const imageBuffer = Buffer.from(imageBytes);
-      const imagePath = `/uploads/news/${Date.now()}_${imageFile.name}`;
-      const fullImagePath = path.join(process.cwd(), 'public', imagePath);
-      await fs.mkdir(path.dirname(fullImagePath), { recursive: true });
-      await fs.writeFile(fullImagePath, imageBuffer);
-      newsData.image = imagePath;
-    }
-
     const result = await db.collection('news').insertOne(newsData);
-    return NextResponse.json(result);
+    const savedNews = await db.collection('news').findOne({ _id: result.insertedId });
+
+    return NextResponse.json({ news: savedNews });
   } catch (error) {
-    console.error('Error:', error);
-    return NextResponse.json({ error: 'Error creating news' }, { status: 500 });
+    console.error('Create news error:', error);
+    return NextResponse.json({ error: 'Lỗi khi tạo tin tức' }, { status: 500 });
   }
 }
 
