@@ -30,11 +30,11 @@ export async function PUT(
             const buffer = Buffer.from(bytes);
             
             const fileName = `${Date.now()}-${file.name}`;
-            const uploadDir = path.join(process.cwd(), 'public', 'uploads');
+            const uploadDir = path.join(process.cwd(), 'public', 'upload', 'member');
             const filePath = path.join(uploadDir, fileName);
             
             await writeFile(filePath, buffer);
-            imagePath = `/uploads/${fileName}`;
+            imagePath = `/upload/member/${fileName}`;
         }
 
         const updateData: UpdateData = {
@@ -49,7 +49,7 @@ export async function PUT(
             updateData.image = imagePath;
         }
 
-        const result = await db.collection('members').findOneAndUpdate(
+        const result = await db.collection('member').findOneAndUpdate(
             { _id: new ObjectId(params.id) },
             { $set: updateData },
             { returnDocument: 'after' }

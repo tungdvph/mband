@@ -1,7 +1,8 @@
-// Tạo file mới này để xử lý PUT request
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
+import { unlink } from 'fs/promises';
+import path from 'path';
 
 interface UpdateData {
     username: string | null;
@@ -14,10 +15,7 @@ interface UpdateData {
     password?: string;
 }
 
-export async function PUT(
-    request: Request,
-    { params }: { params: { id: string } }
-) {
+export async function PUT(request: Request, { params }: { params: { id: string } }) {
     try {
         const { db } = await connectToDatabase();
         const formData = await request.formData();
@@ -43,7 +41,7 @@ export async function PUT(
             updateData.password = password;
         }
 
-        const result = await db.collection('users').findOneAndUpdate(
+        const result = await db.collection('user').findOneAndUpdate(
             { _id: new ObjectId(params.id) },
             { $set: updateData },
             { returnDocument: 'after' }
@@ -63,5 +61,47 @@ export async function PUT(
     } catch (error) {
         console.error('Update user error:', error);
         return NextResponse.json({ error: 'Lỗi cập nhật người dùng' }, { status: 500 });
+    }
+}
+
+
+export async function DELETE(
+    request: Request,
+    { params }: { params: { id: string } }
+) {
+    try {
+        const { db } = await connectToDatabase();
+        const id = params.id;
+
+        // Lấy thông tin user trước khi xóa
+        const user = await db.collection('user').findOne({ _id: new ObjectId(id) });
+
+        if (!user) {
+            return NextResponse.json({ error: 'Không tìm thấy người dùng' }, { status: 404 });
+        }
+
+        // Xóa file avatar nếu có và không phải ảnh mặc định
+        if (user.avatar && !user.avatar.includes('default-user.png')) {
+            try {
+                const avatarPath = path.join(process.cwd(), 'public', user.avatar.replace(/^\//, ''));
+                await unlink(avatarPath);
+                console.log('Đã xóa file avatar:', avatarPath);
+            } catch (error) {
+                console.log('Lỗi khi xóa file avatar:', error);
+            }
+        }
+
+        // Xóa user trong database
+        const result = await db.collection('user').deleteOne({ _id: new ObjectId(id) });
+        
+        if (result.deletedCount === 0) {
+            return NextResponse.json({ error: 'Không thể xóa người dùng' }, { status: 500 });
+        }
+
+        return NextResponse.json({ success: true, message: 'Đã xóa người dùng thành công' });
+
+    } catch (error) {
+        console.error('Delete user error:', error);
+        return NextResponse.json({ error: 'Lỗi khi xóa người dùng' }, { status: 500 });
     }
 }

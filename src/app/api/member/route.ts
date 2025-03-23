@@ -17,14 +17,12 @@ export async function POST(request: Request) {
             const bytes = await file.arrayBuffer();
             const buffer = Buffer.from(bytes);
             
-            // Tạo tên file unique
             const fileName = `${Date.now()}-${file.name}`;
-            const uploadDir = path.join(process.cwd(), 'public', 'uploads');
+            const uploadDir = path.join(process.cwd(), 'public', 'upload', 'member');
             const filePath = path.join(uploadDir, fileName);
             
-            // Lưu file
             await writeFile(filePath, buffer);
-            imagePath = `/uploads/${fileName}`;
+            imagePath = `/upload/member/${fileName}`;
         }
 
         const memberData = {
@@ -37,8 +35,8 @@ export async function POST(request: Request) {
             updatedAt: new Date()
         };
 
-        const result = await db.collection('members').insertOne(memberData);
-        const savedMember = await db.collection('members').findOne({ _id: result.insertedId });
+        const result = await db.collection('member').insertOne(memberData);
+        const savedMember = await db.collection('member').findOne({ _id: result.insertedId });
 
         return NextResponse.json(savedMember);
     } catch (error) {
@@ -50,7 +48,7 @@ export async function POST(request: Request) {
 export async function GET() {
     try {
         const { db } = await connectToDatabase();
-        const members = await db.collection('members').find().toArray();
+        const members = await db.collection('member').find().toArray();
         
         // Transform each member to include default image if none exists
         const transformedMembers = members.map(member => ({
@@ -74,7 +72,7 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ error: 'ID is required' }, { status: 400 });
         }
 
-        const result = await db.collection('members').deleteOne({ _id: new ObjectId(id) });
+        const result = await db.collection('member').deleteOne({ _id: new ObjectId(id) });
         
         if (result.deletedCount === 0) {
             return NextResponse.json({ error: 'Member not found' }, { status: 404 });

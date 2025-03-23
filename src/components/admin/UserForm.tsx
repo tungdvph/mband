@@ -3,14 +3,14 @@ import { useState } from 'react';
 import { User } from '@/types/user';
 
 interface UserFormProps {
-  user?: User | null;  // Change this line to accept null
+  user?: User | null;  // Cho phép giá trị null
   onSubmit: (formData: FormData) => void;
   onCancel: () => void;
 }
 
 export default function UserForm({ user, onSubmit, onCancel }: UserFormProps) {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [avatarPreview, setAvatarPreview] = useState(user?.avatar || '/default-avatar.png');
+  const [avatarPreview, setAvatarPreview] = useState(user?.avatar || '/default-user.png'); // Đổi từ default-avatar.png
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -156,7 +156,8 @@ export default function UserForm({ user, onSubmit, onCancel }: UserFormProps) {
             <input
               type="checkbox"
               name="isActive"
-              defaultChecked={user?.isActive ?? true}
+              defaultChecked={user?.isActive ?? true} // Mặc định là true cho user mới
+              value="true" // Thêm value để FormData có thể nhận giá trị
               className="rounded border-gray-300 text-blue-600"
             />
             <span className="ml-2">Hoạt động</span>

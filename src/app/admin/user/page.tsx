@@ -4,13 +4,13 @@ import UserForm from '@/components/admin/UserForm';
 import { User } from '@/types/user';
 
 export default function UserManagement() {
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<User[]>([]);  // We'll keep this plural for array
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch('/api/user');
+      const response = await fetch('/api/user');  // Changed from /api/users
       if (response.ok) {
         const data = await response.json();
         setUsers(data);
@@ -37,7 +37,7 @@ export default function UserManagement() {
   const handleDeleteUser = async (userId: string) => {
     if (window.confirm('Bạn có chắc chắn muốn xóa người dùng này?')) {
       try {
-        const response = await fetch(`/api/user/${userId}`, {
+        const response = await fetch(`/api/user/${userId}`, {  // Changed from /api/users
           method: 'DELETE',
         });
         if (response.ok) {
@@ -71,8 +71,8 @@ export default function UserManagement() {
       }
     
       const url = currentUser 
-        ? `/api/user/${currentUser._id}`
-        : '/api/user';
+        ? `/api/user/${currentUser._id}`  // Changed from /api/users
+        : '/api/user';  // Changed from /api/users
         
       const response = await fetch(url, {
         method: currentUser ? 'PUT' : 'POST',

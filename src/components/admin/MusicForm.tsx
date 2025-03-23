@@ -10,7 +10,7 @@ interface MusicFormProps {
 
 export default function MusicForm({ music, onSubmit, onCancel }: MusicFormProps) {
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState(music?.image || '/default-album.png');
+  const [imagePreview, setImagePreview] = useState(music?.image || '/default-music.png');  // Changed from default-album.png
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [isPublished, setIsPublished] = useState(music?.isPublished || false); // Thêm state này
 

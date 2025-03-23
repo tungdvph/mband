@@ -10,7 +10,7 @@ interface MemberFormProps {
 
 export default function MemberForm({ member, onSubmit, onCancel }: MemberFormProps) {
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState(member?.image || '/default-avatar.png');
+  const [imagePreview, setImagePreview] = useState(member?.image || '/default-member.png');
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -48,7 +48,7 @@ export default function MemberForm({ member, onSubmit, onCancel }: MemberFormPro
           <div className="mt-1 flex items-center space-x-4">
             <img 
               src={imagePreview} 
-              alt="Member preview" 
+              alt="Preview" 
               className="h-32 w-32 object-cover rounded"
             />
             <input

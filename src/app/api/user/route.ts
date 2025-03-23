@@ -23,20 +23,21 @@ export async function POST(request: Request) {
         const { db } = await connectToDatabase();
         const formData = await request.formData();
 
+        // Trong hàm POST
         const userData = {
             username: formData.get('username') as string | null,
             email: formData.get('email') as string | null,
             password: formData.get('password') as string | null,
             fullName: formData.get('fullName') as string | null,
             role: formData.get('role') as string | null,
-            isActive: formData.get('isActive') === 'true',
+            isActive: formData.get('isActive') === 'true', // Sửa cách check giá trị
             avatar: formData.get('avatar') as string | null,
             createdAt: new Date(),
             updatedAt: new Date()
         };
 
-        const result = await db.collection('users').insertOne(userData);
-        const savedUser = await db.collection('users').findOne({ _id: result.insertedId });
+        const result = await db.collection('user').insertOne(userData);
+        const savedUser = await db.collection('user').findOne({ _id: result.insertedId });
         
         if (!savedUser) {
             throw new Error('Failed to create user');
@@ -58,8 +59,7 @@ export async function POST(request: Request) {
 export async function GET() {
     try {
         const { db } = await connectToDatabase();
-        // Sửa lại collection name thành "users"
-        const users = await db.collection('users').find().toArray();
+        const users = await db.collection('user').find().toArray();
         
         // Transform each user to include default avatar if none exists
         const transformedUsers = users.map(user => ({
@@ -100,7 +100,7 @@ export async function PUT(request: Request) {
             updateData.password = password;
         }
 
-        const result = await db.collection('users').findOneAndUpdate(
+        const result = await db.collection('user').findOneAndUpdate(
             { _id: new ObjectId(id) },
             { $set: updateData },
             { returnDocument: 'after' }

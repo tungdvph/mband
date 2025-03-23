@@ -63,7 +63,7 @@ export async function PUT(
     if (imageFile?.size > 0) {
       const imageBytes = await imageFile.arrayBuffer();
       const imageBuffer = Buffer.from(imageBytes);
-      const imagePath = `/uploads/music/images/${Date.now()}_${imageFile.name}`;
+      const imagePath = `/upload/music/image/${Date.now()}_${imageFile.name}`;
       const fullImagePath = path.join(process.cwd(), 'public', imagePath);
       await fs.mkdir(path.dirname(fullImagePath), { recursive: true });
       await fs.writeFile(fullImagePath, imageBuffer);
@@ -75,7 +75,7 @@ export async function PUT(
     if (audioFile?.size > 0) {
       const audioBytes = await audioFile.arrayBuffer();
       const audioBuffer = Buffer.from(audioBytes);
-      const audioPath = `/uploads/music/audio/${Date.now()}_${audioFile.name}`;
+      const audioPath = `/upload/music/audio/${Date.now()}_${audioFile.name}`;
       const fullAudioPath = path.join(process.cwd(), 'public', audioPath);
       await fs.mkdir(path.dirname(fullAudioPath), { recursive: true });
       await fs.writeFile(fullAudioPath, audioBuffer);

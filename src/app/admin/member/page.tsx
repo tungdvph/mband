@@ -3,14 +3,15 @@ import { useState, useEffect } from 'react';
 import { Member } from '@/types/member';
 import MemberForm from '@/components/admin/MemberForm';
 
-export default function MemberPage() {  // Changed from MembersPage
+export default function MemberPage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
 
   const fetchMembers = async () => {
+    // API path is correct: '/api/member'
     try {
-      const response = await fetch('/api/member');  // Changed from /api/members
+      const response = await fetch('/api/member');
       if (response.ok) {
         const data = await response.json();
         setMembers(data);
@@ -109,7 +110,7 @@ export default function MemberPage() {  // Changed from MembersPage
                   <div className="flex items-center">
                     <img
                       className="h-10 w-10 rounded-full object-cover"
-                      src={member.image || '/default-avatar.png'}
+                      src={member.image || '/default-member.png'} // Changed from default-avatar.png
                       alt={member.name}
                     />
                     <div className="ml-4">

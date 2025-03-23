@@ -2,13 +2,13 @@ import mongoose from 'mongoose';
 
 const musicSchema = new mongoose.Schema({
   title: { type: String, required: true },
+  description: { type: String },
   artist: { type: String, required: true },
-  album: { type: String },
-  releaseDate: { type: Date },
-  duration: { type: Number }, // thời lượng bài hát (giây)
-  audioUrl: { type: String, required: true },
-  coverImage: { type: String },
-  genre: [String]
+  image: { type: String },
+  audio: { type: String, required: true },
+  isPublished: { type: Boolean, default: false },
+}, {
+  timestamps: true // Tự động thêm createdAt và updatedAt
 });
 
 const Music = mongoose.models.Music || mongoose.model('Music', musicSchema);

@@ -6,7 +6,7 @@ export async function POST(request: Request) {
     try {
         const formData = await request.formData();
         const file = formData.get('file') as File;
-        const type = formData.get('type') as string || 'users'; // Default to users if not specified
+        const type = formData.get('type') as string || 'user'; // Mặc định là user
 
         if (!file) {
             return NextResponse.json(
@@ -23,9 +23,8 @@ export async function POST(request: Request) {
         const timestamp = Date.now();
         const filename = `${timestamp}_${file.name}`;
 
-        // Tạo đường dẫn lưu file theo type
-        // Thay đổi từ users sang avatars
-        const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'users');
+        // Tạo đường dẫn theo cấu trúc mới: /upload/[type]/
+        const uploadDir = path.join(process.cwd(), 'public', 'upload', type);
         const filepath = path.join(uploadDir, filename);
 
         // Tạo thư mục nếu chưa tồn tại
@@ -35,8 +34,8 @@ export async function POST(request: Request) {
         await writeFile(filepath, buffer);
         console.log('File saved to:', filepath);
 
-        // Trả về URL của file
-        const fileUrl = `/uploads/${type}/${filename}`;
+        // Trả về URL của file theo cấu trúc mới
+        const fileUrl = `/upload/${type}/${filename}`;
         return NextResponse.json({ url: fileUrl });
 
     } catch (error) {

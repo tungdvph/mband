@@ -118,7 +118,7 @@ export default function MusicManagement() {
                   <div className="flex items-center">
                     <img
                       className="h-10 w-10 rounded-full"
-                      src={item.image}
+                      src={item.image || '/default-music.png'}  // Added default image
                       alt={item.title}
                     />
                     <div className="ml-4">
