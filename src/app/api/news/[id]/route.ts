@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
+import News from '@/lib/models/News';
 import { connectToDatabase } from '@/lib/mongodb';
-import { ObjectId } from 'mongodb';
-import { promises as fs } from 'fs';
+import { unlink } from 'fs/promises';  // Thêm import này
 import path from 'path';
 
 interface NewsUpdateData {
@@ -10,17 +10,14 @@ interface NewsUpdateData {
   content: string;
   isPublished: boolean;
   updatedAt: Date;
-  image?: string;  // Optional field
+  image?: string;
 }
-
-export const runtime = 'nodejs';
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
   try {
-    const { db } = await connectToDatabase();
+    await connectToDatabase();
     const formData = await request.formData();
 
-    // Add null checks and default values
     const updateData: NewsUpdateData = {
       title: formData.get('title')?.toString() || '',
       author: formData.get('author')?.toString() || '',
@@ -34,17 +31,17 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       updateData.image = image;
     }
 
-    const result = await db.collection('news').findOneAndUpdate(
-      { _id: new ObjectId(params.id) },
-      { $set: updateData },
-      { returnDocument: 'after' }
+    const updatedNews = await News.findByIdAndUpdate(
+      params.id,
+      updateData,
+      { new: true }
     );
 
-    if (!result) {
+    if (!updatedNews) {
       return NextResponse.json({ error: 'Không tìm thấy tin tức' }, { status: 404 });
     }
 
-    return NextResponse.json({ news: result });
+    return NextResponse.json({ news: updatedNews });
   } catch (error) {
     console.error('Update error:', error);
     return NextResponse.json({ error: 'Lỗi cập nhật tin tức' }, { status: 500 });
@@ -53,37 +50,24 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   try {
-    const { db } = await connectToDatabase();
-
-    // Lấy thông tin news trước khi xóa
-    const news = await db.collection('news').findOne({
-      _id: new ObjectId(params.id)
-    });
+    await connectToDatabase();
+    const news = await News.findById(params.id);
 
     if (!news) {
       return NextResponse.json({ error: 'Không tìm thấy tin tức' }, { status: 404 });
     }
 
-    // Xóa file ảnh nếu có và không phải ảnh mặc định
     if (news.image && !news.image.includes('default-news.png')) {
       try {
-        const imagePath = path.join(process.cwd(), 'public', news.image.replace(/^\//, ''));
-        await fs.unlink(imagePath);
+        const imagePath = path.join(process.cwd(), 'public', 'upload', 'news', path.basename(news.image));
+        await unlink(imagePath);
         console.log('Đã xóa file ảnh:', imagePath);
       } catch (error) {
         console.log('Lỗi khi xóa file ảnh:', error);
       }
     }
 
-    // Xóa news trong database
-    const result = await db.collection('news').deleteOne({
-      _id: new ObjectId(params.id)
-    });
-
-    if (result.deletedCount === 0) {
-      return NextResponse.json({ error: 'Không thể xóa tin tức' }, { status: 500 });
-    }
-
+    await news.deleteOne();
     return NextResponse.json({ success: true, message: 'Đã xóa tin tức thành công' });
   } catch (error) {
     console.error('Delete error:', error);

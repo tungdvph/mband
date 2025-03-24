@@ -1,24 +1,20 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
-import { ObjectId } from 'mongodb';
-import { writeFile } from 'fs/promises';
+import Member from '@/lib/models/Member';
+import { writeFile, unlink } from 'fs/promises';
 import path from 'path';
 
-interface UpdateData {
-    name: string | null;
-    role: string | null;
-    description: string | null;
+interface UpdateMemberData {
+    name?: string;
+    role?: string;
+    description?: string;
     isActive: boolean;
-    updatedAt: Date;
     image?: string;
 }
 
-export async function PUT(
-    request: Request,
-    { params }: { params: { id: string } }
-) {
+export async function PUT(request: Request, { params }: { params: { id: string } }) {
     try {
-        const { db } = await connectToDatabase();
+        await connectToDatabase();
         const formData = await request.formData();
         
         // Xử lý file ảnh mới nếu có
@@ -37,32 +33,58 @@ export async function PUT(
             imagePath = `/upload/member/${fileName}`;
         }
 
-        const updateData: UpdateData = {
-            name: formData.get('name')?.toString() || null,
-            role: formData.get('role')?.toString() || null,
-            description: formData.get('description')?.toString() || null,
-            isActive: formData.get('isActive') === 'true',
-            updatedAt: new Date()
+        const updateData: UpdateMemberData = {
+            name: formData.get('name')?.toString(),
+            role: formData.get('role')?.toString(),
+            description: formData.get('description')?.toString(),
+            isActive: formData.get('isActive') === 'true'
         };
 
         if (imagePath) {
             updateData.image = imagePath;
         }
 
-        const result = await db.collection('member').findOneAndUpdate(
-            { _id: new ObjectId(params.id) },
-            { $set: updateData },
-            { returnDocument: 'after' }
+        const result = await Member.findByIdAndUpdate(
+            params.id,
+            updateData,
+            { new: true }
         );
 
         if (!result) {
-            return NextResponse.json({ error: 'Member not found' }, { status: 404 });
+            return NextResponse.json({ error: 'Không tìm thấy thành viên' }, { status: 404 });
         }
 
         return NextResponse.json(result);
-
     } catch (error) {
         console.error('Update member error:', error);
-        return NextResponse.json({ error: 'Error updating member' }, { status: 500 });
+        return NextResponse.json({ error: 'Lỗi khi cập nhật thành viên' }, { status: 500 });
+    }
+}
+
+export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+    try {
+        await connectToDatabase();
+        const member = await Member.findById(params.id);
+
+        if (!member) {
+            return NextResponse.json({ error: 'Không tìm thấy thành viên' }, { status: 404 });
+        }
+
+        // Xóa file ảnh nếu có và không phải ảnh mặc định
+        if (member.image && !member.image.includes('default-member.png')) {
+            try {
+                const imagePath = path.join(process.cwd(), 'public', 'upload', 'member', path.basename(member.image));
+                await unlink(imagePath);
+                console.log('Đã xóa file ảnh:', imagePath);
+            } catch (error) {
+                console.log('Lỗi khi xóa file ảnh:', error);
+            }
+        }
+
+        await member.deleteOne();
+        return NextResponse.json({ success: true, message: 'Đã xóa thành viên thành công' });
+    } catch (error) {
+        console.error('Delete member error:', error);
+        return NextResponse.json({ error: 'Lỗi khi xóa thành viên' }, { status: 500 });
     }
 }

@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
-import { ObjectId } from 'mongodb';  // Add this import
+import Member from '@/lib/models/Member';
 import { writeFile } from 'fs/promises';
 import path from 'path';
 
 export async function POST(request: Request) {
     try {
-        const { db } = await connectToDatabase();
+        await connectToDatabase();
         const formData = await request.formData();
         
         // Xử lý file ảnh
@@ -30,56 +30,31 @@ export async function POST(request: Request) {
             role: formData.get('role'),
             description: formData.get('description'),
             isActive: formData.get('isActive') === 'true',
-            image: imagePath,
-            createdAt: new Date(),
-            updatedAt: new Date()
+            image: imagePath
         };
 
-        const result = await db.collection('member').insertOne(memberData);
-        const savedMember = await db.collection('member').findOne({ _id: result.insertedId });
+        const member = new Member(memberData);
+        const savedMember = await member.save();
 
         return NextResponse.json(savedMember);
     } catch (error) {
         console.error('Create member error:', error);
-        return NextResponse.json({ error: 'Error creating member' }, { status: 500 });
+        return NextResponse.json({ error: 'Lỗi khi tạo thành viên' }, { status: 500 });
     }
 }
 
 export async function GET() {
     try {
-        const { db } = await connectToDatabase();
-        const members = await db.collection('member').find().toArray();
+        await connectToDatabase();
+        const members = await Member.find();
         
-        // Transform each member to include default image if none exists
         const transformedMembers = members.map(member => ({
-            ...member,
+            ...member.toObject(),
             image: member.image || '/default-member.png'
         }));
         
         return NextResponse.json(transformedMembers);
     } catch (error) {
-        return NextResponse.json({ error: 'Error fetching members' }, { status: 500 });
-    }
-}
-
-export async function DELETE(request: Request) {
-    try {
-        const { db } = await connectToDatabase();
-        const { searchParams } = new URL(request.url);
-        const id = searchParams.get('id');
-
-        if (!id) {
-            return NextResponse.json({ error: 'ID is required' }, { status: 400 });
-        }
-
-        const result = await db.collection('member').deleteOne({ _id: new ObjectId(id) });
-        
-        if (result.deletedCount === 0) {
-            return NextResponse.json({ error: 'Member not found' }, { status: 404 });
-        }
-
-        return NextResponse.json({ success: true });
-    } catch (error) {
-        return NextResponse.json({ error: 'Error deleting member' }, { status: 500 });
+        return NextResponse.json({ error: 'Lỗi khi lấy danh sách thành viên' }, { status: 500 });
     }
 }

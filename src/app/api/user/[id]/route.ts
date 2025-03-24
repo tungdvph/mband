@@ -1,14 +1,14 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
-import { ObjectId } from 'mongodb';
+import User from '@/lib/models/User';
 import { unlink } from 'fs/promises';
 import path from 'path';
 
-interface UpdateData {
-    username: string | null;
-    email: string | null;
-    fullName: string | null;
-    role: string | null;
+interface UpdateUserData {
+    username?: string;
+    email?: string;
+    fullName?: string;
+    role?: string;
     isActive: boolean;
     updatedAt: Date;
     avatar?: string;
@@ -17,34 +17,30 @@ interface UpdateData {
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
     try {
-        const { db } = await connectToDatabase();
+        await connectToDatabase();
         const formData = await request.formData();
 
-        const updateData: Partial<UpdateData> = {
-            username: formData.get('username')?.toString() || null,
-            email: formData.get('email')?.toString() || null,
-            fullName: formData.get('fullName')?.toString() || null,
-            role: formData.get('role')?.toString() || null,
-            isActive: formData.has('isActive'), // Sửa lại cách check isActive
+        const updateData: UpdateUserData = {
+            username: formData.get('username')?.toString() || undefined,
+            email: formData.get('email')?.toString() || undefined,
+            fullName: formData.get('fullName')?.toString() || undefined,
+            role: formData.get('role')?.toString() || undefined,
+            isActive: formData.has('isActive'),
             updatedAt: new Date()
         };
 
-        // Chỉ cập nhật avatar nếu có avatar mới
-        const avatar = formData.get('avatar')?.toString();
-        if (avatar) {
-            updateData.avatar = avatar;
+        if (formData.get('avatar')) {
+            updateData.avatar = formData.get('avatar')?.toString();
         }
 
-        // Chỉ cập nhật password nếu có password mới
-        const password = formData.get('password')?.toString();
-        if (password) {
-            updateData.password = password;
+        if (formData.get('password')) {
+            updateData.password = formData.get('password')?.toString();
         }
 
-        const result = await db.collection('user').findOneAndUpdate(
-            { _id: new ObjectId(params.id) },
-            { $set: updateData },
-            { returnDocument: 'after' }
+        const result = await User.findByIdAndUpdate(
+            params.id,
+            updateData,
+            { new: true }
         );
 
         if (!result) {
@@ -53,37 +49,29 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 
         return NextResponse.json({ 
             user: {
-                ...result,
+                ...result.toObject(),
                 avatar: result.avatar || '/default-avatar.png'
             }
         });
-
     } catch (error) {
         console.error('Update user error:', error);
         return NextResponse.json({ error: 'Lỗi cập nhật người dùng' }, { status: 500 });
     }
 }
 
-
-export async function DELETE(
-    request: Request,
-    { params }: { params: { id: string } }
-) {
+export async function DELETE(request: Request, { params }: { params: { id: string } }) {
     try {
-        const { db } = await connectToDatabase();
-        const id = params.id;
-
-        // Lấy thông tin user trước khi xóa
-        const user = await db.collection('user').findOne({ _id: new ObjectId(id) });
+        await connectToDatabase();
+        const user = await User.findById(params.id);
 
         if (!user) {
             return NextResponse.json({ error: 'Không tìm thấy người dùng' }, { status: 404 });
         }
 
-        // Xóa file avatar nếu có và không phải ảnh mặc định
-        if (user.avatar && !user.avatar.includes('default-user.png')) {
+        // Sửa lại phần kiểm tra và xóa file ảnh
+        if (user.avatar && !user.avatar.includes('default-avatar.png')) {
             try {
-                const avatarPath = path.join(process.cwd(), 'public', user.avatar.replace(/^\//, ''));
+                const avatarPath = path.join(process.cwd(), 'public', 'upload', 'user', path.basename(user.avatar));
                 await unlink(avatarPath);
                 console.log('Đã xóa file avatar:', avatarPath);
             } catch (error) {
@@ -91,15 +79,8 @@ export async function DELETE(
             }
         }
 
-        // Xóa user trong database
-        const result = await db.collection('user').deleteOne({ _id: new ObjectId(id) });
-        
-        if (result.deletedCount === 0) {
-            return NextResponse.json({ error: 'Không thể xóa người dùng' }, { status: 500 });
-        }
-
+        await user.deleteOne();
         return NextResponse.json({ success: true, message: 'Đã xóa người dùng thành công' });
-
     } catch (error) {
         console.error('Delete user error:', error);
         return NextResponse.json({ error: 'Lỗi khi xóa người dùng' }, { status: 500 });

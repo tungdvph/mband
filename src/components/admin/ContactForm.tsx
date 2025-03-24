@@ -50,6 +50,8 @@ const ContactForm = ({ contact, onSubmit, onCancel }: ContactFormProps) => {
     onSubmit(formData);
   };
 
+  const isEditing = !!contact; // Kiểm tra xem đang sửa hay thêm mới
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
@@ -61,6 +63,7 @@ const ContactForm = ({ contact, onSubmit, onCancel }: ContactFormProps) => {
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
             required
+            disabled={isEditing}
           />
         </div>
 
@@ -72,6 +75,7 @@ const ContactForm = ({ contact, onSubmit, onCancel }: ContactFormProps) => {
             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
             required
+            disabled={isEditing}
           />
         </div>
 
@@ -83,6 +87,7 @@ const ContactForm = ({ contact, onSubmit, onCancel }: ContactFormProps) => {
             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
             required
+            disabled={isEditing}
           />
         </div>
 
@@ -98,19 +103,21 @@ const ContactForm = ({ contact, onSubmit, onCancel }: ContactFormProps) => {
             <option value="replied">Đã trả lời</option>
           </select>
         </div>
-
-        <div className="col-span-2">
-          <label className="block text-sm font-medium text-gray-700">Chủ đề</label>
+      </div>
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Tiêu đề</label>
           <input
             type="text"
             value={formData.subject}
             onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
             required
+            disabled={isEditing}
           />
         </div>
 
-        <div className="col-span-2">
+        <div>
           <label className="block text-sm font-medium text-gray-700">Nội dung</label>
           <textarea
             value={formData.message}
@@ -118,6 +125,7 @@ const ContactForm = ({ contact, onSubmit, onCancel }: ContactFormProps) => {
             rows={4}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
             required
+            disabled={isEditing}
           />
         </div>
       </div>

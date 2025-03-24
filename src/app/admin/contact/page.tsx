@@ -10,7 +10,7 @@ export default function ContactManagement() {
 
   const fetchContacts = async () => {
     try {
-      const response = await fetch('/api/contacts');
+      const response = await fetch('/api/contact'); // Sửa từ contacts thành contact
       if (response.ok) {
         const data = await response.json();
         setContacts(data);
@@ -29,15 +29,57 @@ export default function ContactManagement() {
     setIsModalOpen(true);
   };
 
+  // Trong component ContactManagement
+  
   const handleEditContact = (contact: Contact) => {
     setCurrentContact(contact);
     setIsModalOpen(true);
   };
+  
+  // Sửa lại phần xử lý submit trong modal
+  {isModalOpen && (
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center">
+      <div className="bg-white p-6 rounded-lg w-full max-w-2xl">
+        <h2 className="text-xl font-bold mb-4">
+          {currentContact ? 'Chi tiết liên hệ' : 'Thêm liên hệ mới'}
+        </h2>
+        <ContactForm
+          contact={currentContact || undefined}
+          onSubmit={async (data) => {
+            try {
+              const url = data._id ? `/api/contact/${data._id}` : '/api/contact'; // Sửa từ contacts thành contact
+              const method = data._id ? 'PUT' : 'POST';
+  
+              const response = await fetch(url, {
+                method,
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+              });
+  
+              if (response.ok) {
+                await fetchContacts();
+                setIsModalOpen(false);
+                alert(data._id ? 'Cập nhật thành công!' : 'Thêm mới thành công!');
+              } else {
+                throw new Error('Lỗi khi lưu liên hệ');
+              }
+            } catch (error) {
+              console.error('Error saving contact:', error);
+              alert('Có lỗi xảy ra khi lưu liên hệ');
+            }
+          }}
+          onCancel={() => setIsModalOpen(false)}
+        />
+      </div>
+    </div>
+  )}
 
   const handleDeleteContact = async (contactId: string) => {
     if (window.confirm('Bạn có chắc chắn muốn xóa liên hệ này?')) {
       try {
-        const response = await fetch(`/api/contacts/${contactId}`, {
+        const response = await fetch(`/api/contact/${contactId}`, { // Sửa từ contacts thành contact
           method: 'DELETE',
         });
 

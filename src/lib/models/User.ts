@@ -1,4 +1,17 @@
-import mongoose from 'mongoose';
+import mongoose, { Document } from 'mongoose';
+
+interface IUser extends Document {
+  username: string;
+  email: string;
+  password: string;
+  fullName: string;
+  role: 'user' | 'admin';
+  avatar?: string;
+  isActive: boolean;
+  lastLogin?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 const userSchema = new mongoose.Schema({
   username: { type: String, required: true },
@@ -10,8 +23,15 @@ const userSchema = new mongoose.Schema({
   isActive: { type: Boolean, default: true },
   lastLogin: { type: Date }
 }, {
-  timestamps: true // Tự động thêm createdAt và updatedAt
+  versionKey: '__v',
+  timestamps: true
 });
 
-const User = mongoose.models.User || mongoose.model('User', userSchema);
+// Xóa model cũ nếu tồn tại
+if (mongoose.models.User) {
+  delete mongoose.models.User;
+}
+
+// Tạo model mới
+const User = mongoose.model<IUser>('User', userSchema);
 export default User;

@@ -1,4 +1,13 @@
-import mongoose from 'mongoose';
+import mongoose, { Document } from 'mongoose';
+
+interface IContact extends Document {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  status: 'pending' | 'responded' | 'closed';
+  createdAt: Date;
+}
 
 const contactSchema = new mongoose.Schema({
   name: { type: String, required: true },
@@ -11,7 +20,9 @@ const contactSchema = new mongoose.Schema({
     default: 'pending'
   },
   createdAt: { type: Date, default: Date.now }
+}, {
+  timestamps: true
 });
 
-const Contact = mongoose.models.Contact || mongoose.model('Contact', contactSchema);
+const Contact = mongoose.models.Contact || mongoose.model<IContact>('Contact', contactSchema);
 export default Contact;

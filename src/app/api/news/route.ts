@@ -1,58 +1,68 @@
 import { NextResponse } from 'next/server';
+import News from '@/lib/models/News';
 import { connectToDatabase } from '@/lib/mongodb';
-import { promises as fs } from 'fs';
-import path from 'path';
 
 export const runtime = 'nodejs';
 
-interface NewsData {
-  title: FormDataEntryValue | null;
-  content: FormDataEntryValue | null;
-  author: FormDataEntryValue | null;
-  isPublished: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-  image?: string;
-}
-
 export async function POST(request: Request) {
   try {
-    const { db } = await connectToDatabase();
+    await connectToDatabase();
     const formData = await request.formData();
+
+    console.log('FormData received:', Object.fromEntries(formData.entries()));
 
     const newsData = {
       title: formData.get('title')?.toString() || '',
       author: formData.get('author')?.toString() || '',
       content: formData.get('content')?.toString() || '',
       isPublished: formData.get('isPublished') === 'true',
-      image: formData.get('image')?.toString() || '/default-news.png', // Thêm default image
+      image: formData.get('image') ? formData.get('image')?.toString() : '/default-news.png',
       createdAt: new Date(),
       updatedAt: new Date()
     };
 
-    const result = await db.collection('news').insertOne(newsData);
-    const savedNews = await db.collection('news').findOne({ _id: result.insertedId });
+    console.log('NewsData before save:', newsData);
 
-    return NextResponse.json({ news: savedNews });
+    if (!newsData.title || !newsData.content) {
+      return NextResponse.json(
+        { error: 'Tiêu đề và nội dung không được để trống' }, 
+        { status: 400 }
+      );
+    }
+
+    try {
+      const news = new News(newsData);
+      console.log('News model instance:', news);
+      const savedNews = await news.save();
+      console.log('Saved news:', savedNews);
+      return NextResponse.json({ news: savedNews });
+    } catch (mongooseError: any) {
+      console.error('Mongoose save error:', mongooseError);
+      return NextResponse.json({ 
+        error: 'Lỗi khi lưu vào database',
+        details: mongooseError?.message || 'Unknown mongoose error'
+      }, { status: 500 });
+    }
+
   } catch (error) {
     console.error('Create news error:', error);
-    return NextResponse.json({ error: 'Lỗi khi tạo tin tức' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Lỗi khi tạo tin tức',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 }
 
 export async function GET(request: Request) {
   try {
-    const { db } = await connectToDatabase();
+    await connectToDatabase();
     const { searchParams } = new URL(request.url);
     const isAdmin = searchParams.get('admin') === 'true';
 
-    // Query khác nhau cho admin và public
     const query = isAdmin ? {} : { isPublished: true };
-    
-    const news = await db.collection('news')
-      .find(query)
+    const news = await News.find(query)
       .sort({ createdAt: -1 })
-      .toArray();
+      .exec();
 
     return NextResponse.json(news);
   } catch (error) {

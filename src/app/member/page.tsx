@@ -17,7 +17,7 @@ interface Member {
   };  // Removed optional chaining from socialLinks
 }
 
-export default function MemberPage() {  // Changed from MembersPage
+export default function MemberPage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -25,12 +25,14 @@ export default function MemberPage() {  // Changed from MembersPage
   useEffect(() => {
     const fetchMembers = async () => {
       try {
-        const response = await fetch('/api/member');  // Changed from /api/members
+        const response = await fetch('/api/member');
         if (!response.ok) {
           throw new Error('Failed to fetch members');
         }
         const data = await response.json();
-        setMembers(data);
+        // Lọc chỉ lấy các thành viên đang hoạt động
+        const activeMembers = data.filter((member: Member) => member.isActive);
+        setMembers(activeMembers);
       } catch (error) {
         console.error('Error fetching members:', error);
         setError('Failed to load members');

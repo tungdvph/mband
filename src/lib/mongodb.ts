@@ -1,4 +1,5 @@
 import { MongoClient } from 'mongodb';
+import mongoose from 'mongoose';
 
 if (!process.env.MONGODB_URI) {
   throw new Error('Please add your Mongo URI to .env.local');
@@ -27,7 +28,16 @@ if (process.env.NODE_ENV === 'development') {
 export async function connectToDatabase() {
   try {
     const client = await clientPromise;
-    const db = client.db();  // Không cần chỉ định tên DB vì đã có trong URI
+    const db = client.db();
+
+    // Connect mongoose if not already connected
+    if (mongoose.connection.readyState !== 1) {
+      await mongoose.connect(process.env.MONGODB_URI as string);
+    }
+
+    // Force refresh collections list
+    await db.listCollections().toArray();
+    
     return { db, client };
   } catch (error) {
     console.error('MongoDB connection error:', error);

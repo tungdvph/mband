@@ -57,12 +57,13 @@ export default function MemberPage() {
     }
 
     try {
-      const response = await fetch(`/api/member?id=${memberId}`, {  // Changed from /api/members
+      // Sửa lại đường dẫn API
+      const response = await fetch(`/api/member/${memberId}`, {
         method: 'DELETE',
       });
 
       if (response.ok) {
-        fetchMembers(); // Refresh the list after deletion
+        fetchMembers();
       } else {
         const error = await response.json();
         console.error('Failed to delete member:', error);
