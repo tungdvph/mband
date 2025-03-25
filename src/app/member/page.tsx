@@ -3,19 +3,8 @@ import { useEffect, useState } from 'react';
 import MemberCard from '@/components/ui/MemberCard';
 import Layout from '@/components/layout/Layout';
 
-interface Member {
-  _id: string;
-  name: string;
-  role: string;
-  image: string;
-  description: string;
-  isActive: boolean;
-  socialLinks: {
-    facebook?: string;
-    instagram?: string;
-    twitter?: string;
-  };  // Removed optional chaining from socialLinks
-}
+// Thay thế interface Member bằng import
+import { Member } from '@/types/member';
 
 export default function MemberPage() {
   const [members, setMembers] = useState<Member[]>([]);
@@ -61,11 +50,12 @@ export default function MemberPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {members.map((member) => (
+              // Sửa lại đường dẫn ảnh mặc định
               <MemberCard
-                key={member._id}
+                key={member._id.toString()} // Convert ObjectId to string
                 name={member.name}
                 role={member.role}
-                image={member.image || '/default-avatar.png'}
+                image={member.image || '/default-member.png'} // Sửa từ default-avatar.png thành default-member.png
                 description={member.description}
                 socialLinks={member.socialLinks || {}}
               />

@@ -2,7 +2,7 @@ interface MemberCardProps {
   name: string;
   role: string;
   image: string;
-  description: string;
+  description?: string;  // Thêm ? để làm cho description là tùy chọn
   socialLinks: {
     facebook?: string;
     instagram?: string;
@@ -10,7 +10,7 @@ interface MemberCardProps {
   };
 }
 
-const MemberCard = ({ name, role, image, description, socialLinks }: MemberCardProps) => {
+const MemberCard = ({ name, role, image, description = '', socialLinks }: MemberCardProps) => {
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden">
       <img src={image} alt={name} className="w-full h-64 object-cover" />

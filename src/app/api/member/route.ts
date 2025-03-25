@@ -1,60 +1,66 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import Member from '@/lib/models/Member';
-import { writeFile } from 'fs/promises';
+import { promises as fs } from 'fs';
 import path from 'path';
 
+interface MemberData {
+  name: string;
+  role: string;
+  description?: string;
+  isActive: boolean;
+  image?: string;
+  socialLinks?: {
+    facebook?: string;
+    instagram?: string;
+    twitter?: string;
+  };
+}
+
 export async function POST(request: Request) {
-    try {
-        await connectToDatabase();
-        const formData = await request.formData();
-        
-        // Xử lý file ảnh
-        const file = formData.get('image') as File;
-        let imagePath = '/default-avatar.png';
-        
-        if (file) {
-            const bytes = await file.arrayBuffer();
-            const buffer = Buffer.from(bytes);
-            
-            const fileName = `${Date.now()}-${file.name}`;
-            const uploadDir = path.join(process.cwd(), 'public', 'upload', 'member');
-            const filePath = path.join(uploadDir, fileName);
-            
-            await writeFile(filePath, buffer);
-            imagePath = `/upload/member/${fileName}`;
-        }
+  try {
+    await connectToDatabase();
+    const formData = await request.formData();
+    
+    const memberData: MemberData = {
+      name: formData.get('name')?.toString() || '',
+      role: formData.get('role')?.toString() || '',
+      description: formData.get('description')?.toString(),
+      isActive: formData.get('isActive') === 'true',
+      socialLinks: {
+        facebook: formData.get('facebook')?.toString(),
+        instagram: formData.get('instagram')?.toString(),
+        twitter: formData.get('twitter')?.toString()
+      }
+    };
 
-        const memberData = {
-            name: formData.get('name'),
-            role: formData.get('role'),
-            description: formData.get('description'),
-            isActive: formData.get('isActive') === 'true',
-            image: imagePath
-        };
-
-        const member = new Member(memberData);
-        const savedMember = await member.save();
-
-        return NextResponse.json(savedMember);
-    } catch (error) {
-        console.error('Create member error:', error);
-        return NextResponse.json({ error: 'Lỗi khi tạo thành viên' }, { status: 500 });
+    // Handle image upload
+    const imageFile = formData.get('image') as File;
+    if (imageFile && imageFile.size > 0) {
+      const imageBytes = await imageFile.arrayBuffer();
+      const imageBuffer = Buffer.from(imageBytes);
+      const imagePath = `/upload/member/${Date.now()}_${imageFile.name}`;
+      const fullImagePath = path.join(process.cwd(), 'public', imagePath);
+      await fs.mkdir(path.dirname(fullImagePath), { recursive: true });
+      await fs.writeFile(fullImagePath, imageBuffer);
+      memberData.image = imagePath;
     }
+
+    const member = new Member(memberData);
+    const savedMember = await member.save();
+    return NextResponse.json({ member: savedMember });
+  } catch (error) {
+    console.error('Error:', error);
+    return NextResponse.json({ error: 'Error creating member' }, { status: 500 });
+  }
 }
 
 export async function GET() {
-    try {
-        await connectToDatabase();
-        const members = await Member.find();
-        
-        const transformedMembers = members.map(member => ({
-            ...member.toObject(),
-            image: member.image || '/default-member.png'
-        }));
-        
-        return NextResponse.json(transformedMembers);
-    } catch (error) {
-        return NextResponse.json({ error: 'Lỗi khi lấy danh sách thành viên' }, { status: 500 });
-    }
+  try {
+    await connectToDatabase();
+    const members = await Member.find().sort({ createdAt: -1 });
+    return NextResponse.json(members);
+  } catch (error) {
+    return NextResponse.json({ error: 'Error fetching members' }, { status: 500 });
+  }
 }

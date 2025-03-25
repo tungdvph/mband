@@ -38,12 +38,14 @@ export default function MemberPage() {
       });
 
       if (response.ok) {
-        setIsModalOpen(false);
-        setSelectedMember(null);
-        fetchMembers();
-      } else {
-        const error = await response.json();
-        console.error('Failed to save member:', error);
+        const result = await response.json();
+        if (result.member || result.success) {  // Thêm kiểm tra result.success
+          setIsModalOpen(false);
+          setSelectedMember(null);
+          fetchMembers();
+        } else {
+          console.error('Failed to save member:', result.error);
+        }
       }
     } catch (error) {
       console.error('Error:', error);
@@ -174,4 +176,4 @@ export default function MemberPage() {
       )}
     </div>
   );
-} 
+}
