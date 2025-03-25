@@ -92,6 +92,7 @@ export default function ContactManagement() {
     }
   };
 
+  // Xóa đoạn modal form đầu tiên và chỉ giữ lại đoạn cuối cùng, sửa lại URL API
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
@@ -186,7 +187,7 @@ export default function ContactManagement() {
               contact={currentContact || undefined}
               onSubmit={async (data) => {
                 try {
-                  const url = data._id ? `/api/contacts/${data._id}` : '/api/contacts';
+                  const url = data._id ? `/api/contact/${data._id}` : '/api/contact'; // Sửa URL
                   const method = data._id ? 'PUT' : 'POST';
 
                   const response = await fetch(url, {
@@ -200,9 +201,13 @@ export default function ContactManagement() {
                   if (response.ok) {
                     await fetchContacts();
                     setIsModalOpen(false);
+                    alert(data._id ? 'Cập nhật thành công!' : 'Thêm mới thành công!');
+                  } else {
+                    throw new Error('Lỗi khi lưu liên hệ');
                   }
                 } catch (error) {
                   console.error('Error saving contact:', error);
+                  alert('Có lỗi xảy ra khi lưu liên hệ');
                 }
               }}
               onCancel={() => setIsModalOpen(false)}
