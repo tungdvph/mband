@@ -10,7 +10,7 @@ export default function ScheduleManagement() {
 
   const fetchSchedules = async () => {
     try {
-      const response = await fetch('/api/schedules');
+      const response = await fetch('/api/schedule'); // Sửa URL
       if (response.ok) {
         const data = await response.json();
         setSchedules(data);
@@ -50,6 +50,44 @@ export default function ScheduleManagement() {
         console.error('Error deleting schedule:', error);
         alert('Có lỗi xảy ra khi xóa lịch trình');
       }
+    }
+  };
+
+  const handleSubmit = async (formData: any) => {
+    try {
+      const url = currentSchedule?._id 
+        ? `/api/schedule/${currentSchedule._id}` 
+        : '/api/schedule';
+
+      // Tạo FormData object để khớp với API
+      const submitData = new FormData();
+      submitData.append('title', formData.eventName);
+      submitData.append('description', formData.description || '');
+      submitData.append('date', formData.date);
+      submitData.append('startTime', formData.startTime);
+      submitData.append('endTime', formData.endTime || '');
+      submitData.append('type', formData.type);
+      submitData.append('status', formData.status);
+      submitData.append('venueName', formData.venue.name);
+      submitData.append('venueAddress', formData.venue.address);
+      submitData.append('venueCity', formData.venue.city);
+
+      const response = await fetch(url, {
+        method: currentSchedule ? 'PUT' : 'POST',
+        body: submitData // Gửi FormData thay vì JSON
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Có lỗi xảy ra');
+      }
+
+      await fetchSchedules();
+      setIsModalOpen(false);
+      alert(currentSchedule ? 'Cập nhật thành công!' : 'Thêm mới thành công!');
+    } catch (error) {
+      console.error('Error:', error);
+      alert(error instanceof Error ? error.message : 'Có lỗi xảy ra khi lưu lịch trình');
     }
   };
 
@@ -96,7 +134,7 @@ export default function ScheduleManagement() {
                   <div className="flex items-center">
                     <div>
                       <div className="text-sm font-medium text-gray-900">
-                        {schedule.title}
+                        {schedule.eventName} {/* Sửa từ title thành eventName */}
                       </div>
                       <div className="text-sm text-gray-500">
                         {schedule.description}
@@ -106,29 +144,36 @@ export default function ScheduleManagement() {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-900">
-                    {schedule.type === 'show' ? 'Biểu diễn' :
-                     schedule.type === 'practice' ? 'Tập luyện' :
-                     schedule.type === 'meeting' ? 'Họp' : 'Khác'}
+                    {schedule.type === 'concert' ? 'Biểu diễn' : // Sửa các loại type
+                     schedule.type === 'rehearsal' ? 'Tập luyện' :
+                     schedule.type === 'meeting' ? 'Họp' :
+                     schedule.type === 'interview' ? 'Phỏng vấn' : 'Khác'}
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-900">
                     {new Date(schedule.date).toLocaleDateString()}
                   </div>
+                  <div className="text-sm text-gray-500">
+                    {schedule.startTime} {schedule.endTime ? `- ${schedule.endTime}` : ''} {/* Thêm startTime và endTime */}
+                  </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-900">
-                    {schedule.location}
+                    {schedule.venue.name} {/* Sửa location thành venue */}
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    {schedule.venue.address}, {schedule.venue.city}
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                    schedule.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                    schedule.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                    schedule.status === 'scheduled' ? 'bg-green-100 text-green-800' : // Sửa các loại status
+                    schedule.status === 'completed' ? 'bg-blue-100 text-blue-800' :
                     'bg-red-100 text-red-800'
                   }`}>
-                    {schedule.status === 'confirmed' ? 'Đã xác nhận' :
-                     schedule.status === 'pending' ? 'Chờ xác nhận' :
+                    {schedule.status === 'scheduled' ? 'Đã lên lịch' :
+                     schedule.status === 'completed' ? 'Đã hoàn thành' :
                      'Đã hủy'}
                   </span>
                 </td>
@@ -157,28 +202,11 @@ export default function ScheduleManagement() {
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center">
           <div className="bg-white p-6 rounded-lg w-full max-w-2xl">
             <h2 className="text-xl font-bold mb-4">
-              {currentSchedule ? 'Sửa lịch trình' : 'Thêm lịch trình mới'}
+              {currentSchedule ? 'Chi tiết lịch trình' : 'Thêm lịch trình mới'}
             </h2>
             <ScheduleForm
-              schedule={currentSchedule || undefined}
-              onSubmit={async (formData) => {
-                try {
-                  const url = currentSchedule?._id ? `/api/schedules/${currentSchedule._id}` : '/api/schedules';
-                  const method = currentSchedule?._id ? 'PUT' : 'POST';
-
-                  const response = await fetch(url, {
-                    method,
-                    body: formData,
-                  });
-
-                  if (response.ok) {
-                    await fetchSchedules();
-                    setIsModalOpen(false);
-                  }
-                } catch (error) {
-                  console.error('Error saving schedule:', error);
-                }
-              }}
+              schedule={currentSchedule}  // currentSchedule đã là Schedule | null
+              onSubmit={handleSubmit}
               onCancel={() => setIsModalOpen(false)}
             />
           </div>

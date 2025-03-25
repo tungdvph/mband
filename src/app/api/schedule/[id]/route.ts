@@ -1,31 +1,40 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
-import { ObjectId } from 'mongodb';
+import Schedule from '@/lib/models/Schedule';
 
 export const runtime = 'nodejs';
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
   try {
-    const { db } = await connectToDatabase();
+    await connectToDatabase();
     const formData = await request.formData();
     
     const updateData = {
-      title: formData.get('title'),
+      eventName: formData.get('title'),
       description: formData.get('description'),
       date: new Date(formData.get('date') as string),
-      location: formData.get('location'),
+      startTime: formData.get('startTime'),
+      endTime: formData.get('endTime'),
+      venue: {
+        name: formData.get('venueName'),
+        address: formData.get('venueAddress'),
+        city: formData.get('venueCity')
+      },
       type: formData.get('type'),
-      participants: JSON.parse(formData.get('participants') as string),
-      status: formData.get('status'),
-      updatedAt: new Date()
+      status: formData.get('status')
     };
 
-    const result = await db.collection('schedules').updateOne(
-      { _id: new ObjectId(params.id) },
-      { $set: updateData }
+    const updatedSchedule = await Schedule.findByIdAndUpdate(
+      params.id,
+      { $set: updateData },
+      { new: true }
     );
 
-    return NextResponse.json(result);
+    if (!updatedSchedule) {
+      return NextResponse.json({ error: 'Schedule not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({ schedule: updatedSchedule });
   } catch (error) {
     console.error('Error:', error);
     return NextResponse.json({ error: 'Error updating schedule' }, { status: 500 });
@@ -34,13 +43,17 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   try {
-    const { db } = await connectToDatabase();
-    const result = await db.collection('schedules').deleteOne({
-      _id: new ObjectId(params.id)
-    });
+    await connectToDatabase();
+    const schedule = await Schedule.findById(params.id);
 
-    return NextResponse.json(result);
+    if (!schedule) {
+      return NextResponse.json({ error: 'Schedule not found' }, { status: 404 });
+    }
+
+    await schedule.deleteOne();
+    return NextResponse.json({ success: true, message: 'Schedule deleted successfully' });
   } catch (error) {
+    console.error('Error:', error);
     return NextResponse.json({ error: 'Error deleting schedule' }, { status: 500 });
   }
 }

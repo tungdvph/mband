@@ -4,21 +4,26 @@ import { Schedule } from '@/types/schedule';
 import { Member } from '@/types/member';
 
 interface ScheduleFormProps {
-  schedule?: Schedule;
-  onSubmit: (data: FormData) => void;
+  schedule: Schedule | null;  // Thay đổi từ undefined sang null
+  onSubmit: (data: any) => void;
   onCancel: () => void;
 }
 
 const ScheduleForm = ({ schedule, onSubmit, onCancel }: ScheduleFormProps) => {
   const [members, setMembers] = useState<Member[]>([]);
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    date: '',
-    location: '',
-    type: 'show',
-    participants: [] as string[],
-    status: 'pending'
+    eventName: schedule?.eventName || '',
+    description: schedule?.description || '',
+    date: schedule?.date ? new Date(schedule.date).toISOString().split('T')[0] : '',
+    startTime: schedule?.startTime || '',
+    endTime: schedule?.endTime || '',
+    venue: {
+      name: schedule?.venue?.name || '',
+      address: schedule?.venue?.address || '',
+      city: schedule?.venue?.city || ''
+    },
+    type: schedule?.type || 'concert',
+    status: schedule?.status || 'scheduled'
   });
 
   useEffect(() => {
@@ -39,12 +44,17 @@ const ScheduleForm = ({ schedule, onSubmit, onCancel }: ScheduleFormProps) => {
 
     if (schedule) {
       setFormData({
-        title: schedule.title,
-        description: schedule.description,
+        eventName: schedule.eventName,
+        description: schedule.description || '',
         date: new Date(schedule.date).toISOString().split('T')[0],
-        location: schedule.location,
+        startTime: schedule.startTime,
+        endTime: schedule.endTime || '',
+        venue: {
+          name: schedule.venue.name,
+          address: schedule.venue.address,
+          city: schedule.venue.city
+        },
         type: schedule.type,
-        participants: schedule.participants,
         status: schedule.status
       });
     }
@@ -52,27 +62,17 @@ const ScheduleForm = ({ schedule, onSubmit, onCancel }: ScheduleFormProps) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const submitData = new FormData();
-    
-    Object.entries(formData).forEach(([key, value]) => {
-      if (key === 'participants') {
-        submitData.append(key, JSON.stringify(value));
-      } else {
-        submitData.append(key, value.toString());
-      }
-    });
-
-    onSubmit(submitData);
+    onSubmit(formData);
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700">Tiêu đề</label>
+        <label className="block text-sm font-medium text-gray-700">Tên sự kiện</label>
         <input
           type="text"
-          value={formData.title}
-          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+          value={formData.eventName}
+          onChange={(e) => setFormData({...formData, eventName: e.target.value})}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
           required
         />
@@ -82,31 +82,59 @@ const ScheduleForm = ({ schedule, onSubmit, onCancel }: ScheduleFormProps) => {
         <label className="block text-sm font-medium text-gray-700">Mô tả</label>
         <textarea
           value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-          rows={3}
+          onChange={(e) => setFormData({...formData, description: e.target.value})}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-          required
+          rows={3}
         />
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Ngày</label>
-        <input
-          type="date"
-          value={formData.date}
-          onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-          required
-        />
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Ngày</label>
+          <input
+            type="date"
+            value={formData.date}
+            onChange={(e) => setFormData({...formData, date: e.target.value})}
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Giờ bắt đầu</label>
+          <input
+            type="time"
+            value={formData.startTime}
+            onChange={(e) => setFormData({...formData, startTime: e.target.value})}
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+            required
+          />
+        </div>
       </div>
 
       <div>
         <label className="block text-sm font-medium text-gray-700">Địa điểm</label>
         <input
           type="text"
-          value={formData.location}
-          onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+          value={formData.venue.name}
+          onChange={(e) => setFormData({...formData, venue: {...formData.venue, name: e.target.value}})}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+          placeholder="Tên địa điểm"
+          required
+        />
+        <input
+          type="text"
+          value={formData.venue.address}
+          onChange={(e) => setFormData({...formData, venue: {...formData.venue, address: e.target.value}})}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+          placeholder="Địa chỉ"
+          required
+        />
+        <input
+          type="text"
+          value={formData.venue.city}
+          onChange={(e) => setFormData({...formData, venue: {...formData.venue, city: e.target.value}})}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+          placeholder="Thành phố"
           required
         />
       </div>
@@ -115,65 +143,45 @@ const ScheduleForm = ({ schedule, onSubmit, onCancel }: ScheduleFormProps) => {
         <label className="block text-sm font-medium text-gray-700">Loại</label>
         <select
           value={formData.type}
-          onChange={(e) => setFormData({ ...formData, type: e.target.value as Schedule['type'] })}
+          onChange={(e) => setFormData({...formData, type: e.target.value as Schedule['type']})}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+          required
         >
-          <option value="show">Biểu diễn</option>
-          <option value="practice">Tập luyện</option>
+          <option value="concert">Biểu diễn</option>
+          <option value="rehearsal">Tập luyện</option>
           <option value="meeting">Họp</option>
+          <option value="interview">Phỏng vấn</option>
           <option value="other">Khác</option>
         </select>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Thành viên tham gia</label>
-        <div className="mt-2 space-y-2">
-          {members.map((member) => (
-            <label key={member._id.toString()} className="flex items-center">
-              <input
-                type="checkbox"
-                checked={formData.participants.includes(member._id.toString())}
-                onChange={(e) => {
-                  const memberId = member._id.toString();
-                  const newParticipants = e.target.checked
-                    ? [...formData.participants, memberId]
-                    : formData.participants.filter(id => id !== memberId);
-                  setFormData({ ...formData, participants: newParticipants });
-                }}
-                className="rounded border-gray-300 text-blue-600"
-              />
-              <span className="ml-2 text-sm text-gray-600">{member.name}</span>
-            </label>
-          ))}
-        </div>
       </div>
 
       <div>
         <label className="block text-sm font-medium text-gray-700">Trạng thái</label>
         <select
           value={formData.status}
-          onChange={(e) => setFormData({ ...formData, status: e.target.value as Schedule['status'] })}
+          onChange={(e) => setFormData({...formData, status: e.target.value as Schedule['status']})}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+          required
         >
-          <option value="pending">Chờ xác nhận</option>
-          <option value="confirmed">Đã xác nhận</option>
+          <option value="scheduled">Đã lên lịch</option>
+          <option value="completed">Đã hoàn thành</option>
           <option value="cancelled">Đã hủy</option>
         </select>
       </div>
 
-      <div className="flex justify-end space-x-3">
+      <div className="flex justify-end space-x-2">
         <button
           type="button"
           onClick={onCancel}
-          className="px-4 py-2 border rounded text-gray-600 hover:bg-gray-100"
+          className="px-4 py-2 border rounded-md hover:bg-gray-100"
         >
           Hủy
         </button>
         <button
           type="submit"
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
         >
-          {schedule ? 'Cập nhật' : 'Thêm'}
+          {schedule ? 'Cập nhật' : 'Thêm mới'}
         </button>
       </div>
     </form>
