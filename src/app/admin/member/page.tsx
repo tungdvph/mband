@@ -28,7 +28,7 @@ export default function MemberPage() {
   const handleSubmit = async (formData: FormData) => {
     try {
       const method = selectedMember ? 'PUT' : 'POST';
-      const url = selectedMember 
+      const url = selectedMember
         ? `/api/member/${selectedMember._id}`
         : '/api/member';
 
@@ -48,7 +48,7 @@ export default function MemberPage() {
     } catch (error) {
       console.error('Error:', error);
     }
-};
+  };
 
   // Add this function after fetchMembers
   const handleDelete = async (memberId: string) => {
@@ -125,11 +125,10 @@ export default function MemberPage() {
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                    member.isActive 
-                      ? 'bg-green-100 text-green-800' 
+                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${member.isActive
+                      ? 'bg-green-100 text-green-800'
                       : 'bg-red-100 text-red-800'
-                  }`}>
+                    }`}>
                     {member.isActive ? 'Đang hoạt động' : 'Ngừng hoạt động'}
                   </span>
                 </td>
@@ -174,5 +173,5 @@ export default function MemberPage() {
         </div>
       )}
     </div>
-  ); // Đóng ngoặc return ở đây
-} // Đóng ngoặc function ở đây
+  );
+} 

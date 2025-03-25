@@ -1,19 +1,16 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
-import { ObjectId } from 'mongodb';
 import { promises as fs } from 'fs';
 import path from 'path';
+import Music from '@/lib/models/Music';
 
 export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const { db } = await connectToDatabase();
-    const id = params.id;
-
-    // Lấy thông tin bài hát trước khi xóa
-    const music = await db.collection('music').findOne({ _id: new ObjectId(id) });
+    await connectToDatabase();
+    const music = await Music.findById(params.id);
 
     if (music) {
       // Xóa file ảnh nếu tồn tại
@@ -28,9 +25,8 @@ export async function DELETE(
         await fs.unlink(audioPath).catch(() => {});
       }
 
-      // Xóa record trong database
-      const result = await db.collection('music').deleteOne({ _id: new ObjectId(id) });
-      return NextResponse.json(result);
+      await music.deleteOne();
+      return NextResponse.json({ success: true });
     }
 
     return NextResponse.json({ error: 'Music not found' }, { status: 404 });
@@ -40,24 +36,32 @@ export async function DELETE(
   }
 }
 
+interface MusicUpdateData {
+  title?: string;
+  description?: string;
+  artist?: string;
+  isPublished: boolean;
+  updatedAt: Date;
+  image?: string;
+  audio?: string;
+}
+
 export async function PUT(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const { db } = await connectToDatabase();
+    await connectToDatabase();
     const formData = await request.formData();
-    const id = params.id;
 
-    const updateData: any = {
-      title: formData.get('title'),
-      description: formData.get('description'),
-      artist: formData.get('artist'),
-      isPublished: formData.has('isPublished'), // Sửa lại cách check checkbox
+    const updateData: MusicUpdateData = {
+      title: formData.get('title')?.toString(),
+      description: formData.get('description')?.toString(),
+      artist: formData.get('artist')?.toString(),
+      isPublished: formData.get('isPublished') === 'true' || formData.get('isPublished') === 'on',
       updatedAt: new Date()
     };
 
-    console.log('Update data:', updateData); // Thêm log để debug
     // Handle image upload
     const imageFile = formData.get('image') as File;
     if (imageFile?.size > 0) {
@@ -82,12 +86,17 @@ export async function PUT(
       updateData.audio = audioPath;
     }
 
-    const result = await db.collection('music').updateOne(
-      { _id: new ObjectId(id) },
-      { $set: updateData }
+    const updatedMusic = await Music.findByIdAndUpdate(
+      params.id,
+      { $set: updateData },
+      { new: true }
     );
 
-    return NextResponse.json(result);
+    if (!updatedMusic) {
+      return NextResponse.json({ error: 'Music not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({ music: updatedMusic });
   } catch (error) {
     console.error('Error:', error);
     return NextResponse.json({ error: 'Error updating music' }, { status: 500 });

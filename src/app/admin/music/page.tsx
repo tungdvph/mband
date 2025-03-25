@@ -17,7 +17,7 @@ export default function MusicManagement() {
       const response = await fetch('/api/music');
       if (response.ok) {
         const data = await response.json();
-        setMusic(data);
+        setMusic(data); // Mongoose đã trả về trực tiếp array music
       }
     } catch (error) {
       console.error('Error fetching music:', error);

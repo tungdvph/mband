@@ -2,32 +2,29 @@ import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { promises as fs } from 'fs';
 import path from 'path';
+import Music from '@/lib/models/Music';
 
 export const runtime = 'nodejs';
 
 interface MusicData {
-  title: FormDataEntryValue | null;
-  description: FormDataEntryValue | null;
-  artist: FormDataEntryValue | null;
+  title: string;
+  description?: string;
+  artist: string;
   isPublished: boolean;
   image?: string;
   audio?: string;
-  createdAt: Date;
-  updatedAt: Date;
 }
 
 export async function POST(request: Request) {
   try {
-    const { db } = await connectToDatabase();
+    await connectToDatabase();
     const formData = await request.formData();
     
     const musicData: MusicData = {
-      title: formData.get('title'),
-      description: formData.get('description'),
-      artist: formData.get('artist'),
-      isPublished: formData.get('isPublished') === 'true' || formData.get('isPublished') === 'on',  // Thêm kiểm tra 'on'
-      createdAt: new Date(),
-      updatedAt: new Date()
+      title: formData.get('title')?.toString() || '',
+      description: formData.get('description')?.toString(),
+      artist: formData.get('artist')?.toString() || '',
+      isPublished: formData.get('isPublished') === 'true' || formData.get('isPublished') === 'on'
     };
 
     // Handle image upload
@@ -35,7 +32,7 @@ export async function POST(request: Request) {
     if (imageFile && imageFile.size > 0) {
       const imageBytes = await imageFile.arrayBuffer();
       const imageBuffer = Buffer.from(imageBytes);
-      const imagePath = `/upload/music/image/${Date.now()}_${imageFile.name}`; // Changed from uploads to upload
+      const imagePath = `/upload/music/image/${Date.now()}_${imageFile.name}`;
       const fullImagePath = path.join(process.cwd(), 'public', imagePath);
       await fs.mkdir(path.dirname(fullImagePath), { recursive: true });
       await fs.writeFile(fullImagePath, imageBuffer);
@@ -47,15 +44,16 @@ export async function POST(request: Request) {
     if (audioFile && audioFile.size > 0) {
       const audioBytes = await audioFile.arrayBuffer();
       const audioBuffer = Buffer.from(audioBytes);
-      const audioPath = `/upload/music/audio/${Date.now()}_${audioFile.name}`; // Changed from uploads to upload
+      const audioPath = `/upload/music/audio/${Date.now()}_${audioFile.name}`;
       const fullAudioPath = path.join(process.cwd(), 'public', audioPath);
       await fs.mkdir(path.dirname(fullAudioPath), { recursive: true });
       await fs.writeFile(fullAudioPath, audioBuffer);
       musicData.audio = audioPath;
     }
 
-    const result = await db.collection('music').insertOne(musicData);
-    return NextResponse.json(result);
+    const music = new Music(musicData);
+    const savedMusic = await music.save();
+    return NextResponse.json({ music: savedMusic });
   } catch (error) {
     console.error('Error:', error);
     return NextResponse.json({ error: 'Error creating music' }, { status: 500 });
@@ -64,8 +62,8 @@ export async function POST(request: Request) {
 
 export async function GET() {
   try {
-    const { db } = await connectToDatabase();
-    const music = await db.collection('music').find().sort({ createdAt: -1 }).toArray();
+    await connectToDatabase();
+    const music = await Music.find().sort({ createdAt: -1 });
     return NextResponse.json(music);
   } catch (error) {
     return NextResponse.json({ error: 'Error fetching music' }, { status: 500 });
