@@ -2,38 +2,49 @@ import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import connectDB from '@/lib/db';
 import User from '@/lib/models/User';
+import { generateToken } from '@/lib/auth';
+import mongoose from 'mongoose';
 
 export async function POST(req: Request) {
   try {
     await connectDB();
-    const { name, email, password } = await req.json();
+    const { username, email, password, fullName } = await req.json();
 
-    // Check if user exists
-    const userExists = await User.findOne({ email });
-    if (userExists) {
+    // Kiểm tra email đã tồn tại
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
       return NextResponse.json(
-        { error: 'User already exists' },
+        { error: 'Email đã được sử dụng' },
         { status: 400 }
       );
     }
 
     // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Create user
+    // Tạo user mới
     const user = await User.create({
-      name,
+      username,
       email,
       password: hashedPassword,
+      fullName,
+      role: 'user'
     });
 
-    return NextResponse.json(
-      { message: 'User created successfully' },
-      { status: 201 }
-    );
+    // Chuyển đổi kiểu dữ liệu
+    const userObject = {
+      _id: (user._id as mongoose.Types.ObjectId).toString(),
+      role: user.role as 'user' | 'admin'
+    };
+
+    // Tạo token
+    const token = generateToken(userObject);
+
+    return NextResponse.json({ token });
   } catch (error) {
+    console.error('Registration error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Đăng ký thất bại' },
       { status: 500 }
     );
   }

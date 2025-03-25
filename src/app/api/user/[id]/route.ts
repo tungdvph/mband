@@ -3,43 +3,29 @@ import { connectToDatabase } from '@/lib/mongodb';
 import User from '@/lib/models/User';
 import { unlink } from 'fs/promises';
 import path from 'path';
-
-interface UpdateUserData {
-    username?: string;
-    email?: string;
-    fullName?: string;
-    role?: string;
-    isActive: boolean;
-    updatedAt: Date;
-    avatar?: string;
-    password?: string;
-}
+import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
     try {
         await connectToDatabase();
-        const formData = await request.formData();
+        const updateData = await request.json();
 
-        const updateData: UpdateUserData = {
-            username: formData.get('username')?.toString() || undefined,
-            email: formData.get('email')?.toString() || undefined,
-            fullName: formData.get('fullName')?.toString() || undefined,
-            role: formData.get('role')?.toString() || undefined,
-            isActive: formData.has('isActive'),
-            updatedAt: new Date()
-        };
-
-        if (formData.get('avatar')) {
-            updateData.avatar = formData.get('avatar')?.toString();
+        if (updateData.password) {
+            updateData.password = await bcrypt.hash(updateData.password, 12);
         }
 
-        if (formData.get('password')) {
-            updateData.password = formData.get('password')?.toString();
+        // Xử lý avatar path khi update
+        if (updateData.avatar && !updateData.avatar.startsWith('/default-avatar')) {
+            updateData.avatar = `/upload/user/${path.basename(updateData.avatar)}`;
         }
 
         const result = await User.findByIdAndUpdate(
             params.id,
-            updateData,
+            {
+                ...updateData,
+                updatedAt: new Date()
+            },
             { new: true }
         );
 
@@ -47,10 +33,13 @@ export async function PUT(request: Request, { params }: { params: { id: string }
             return NextResponse.json({ error: 'Không tìm thấy người dùng' }, { status: 404 });
         }
 
+        const userObject = result.toObject();
+
         return NextResponse.json({ 
             user: {
-                ...result.toObject(),
-                avatar: result.avatar || '/default-avatar.png'
+                ...userObject,
+                _id: (userObject._id as mongoose.Types.ObjectId).toString(),
+                avatar: userObject.avatar || '/default-avatar.png'
             }
         });
     } catch (error) {
@@ -68,14 +57,13 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
             return NextResponse.json({ error: 'Không tìm thấy người dùng' }, { status: 404 });
         }
 
-        // Sửa lại phần kiểm tra và xóa file ảnh
-        if (user.avatar && !user.avatar.includes('default-avatar.png')) {
+        // Xóa file avatar nếu không phải default avatar
+        if (user.avatar && !user.avatar.includes('default-avatar')) {
             try {
-                const avatarPath = path.join(process.cwd(), 'public', 'upload', 'user', path.basename(user.avatar));
+                const avatarPath = path.join(process.cwd(), 'public', user.avatar);
                 await unlink(avatarPath);
-                console.log('Đã xóa file avatar:', avatarPath);
             } catch (error) {
-                console.log('Lỗi khi xóa file avatar:', error);
+                console.error('Lỗi khi xóa file avatar:', error);
             }
         }
 

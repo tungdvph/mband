@@ -8,20 +8,46 @@ interface IUser extends Document {
   role: 'user' | 'admin';
   avatar?: string;
   isActive: boolean;
-  lastLogin?: Date;
   createdAt: Date;
   updatedAt: Date;
+  lastLogin?: Date;
 }
 
 const userSchema = new mongoose.Schema({
-  username: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-  fullName: { type: String, required: true },
-  role: { type: String, enum: ['user', 'admin'], default: 'user' },
-  avatar: { type: String },
-  isActive: { type: Boolean, default: true },
-  lastLogin: { type: Date }
+  username: {
+    type: String,
+    required: [true, 'Username is required'],
+    unique: true,
+  },
+  email: {
+    type: String,
+    required: [true, 'Email is required'],
+    unique: true,
+  },
+  password: {
+    type: String,
+    required: [true, 'Password is required'],
+  },
+  fullName: {
+    type: String,
+    required: [true, 'Full name is required'],
+  },
+  role: {
+    type: String,
+    enum: ['user', 'admin'],
+    default: 'user',
+  },
+  avatar: {
+    type: String,
+    default: '/default-avatar.png'
+  },
+  isActive: {
+    type: Boolean,
+    default: true
+  },
+  lastLogin: {
+    type: Date
+  }
 }, {
   versionKey: '__v',
   timestamps: true

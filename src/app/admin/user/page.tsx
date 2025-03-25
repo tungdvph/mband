@@ -4,13 +4,13 @@ import UserForm from '@/components/admin/UserForm';
 import { User } from '@/types/user';
 
 export default function UserManagement() {
-  const [users, setUsers] = useState<User[]>([]);  // We'll keep this plural for array
+  const [users, setUsers] = useState<User[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch('/api/user');  // Changed from /api/users
+      const response = await fetch('/api/user');
       if (response.ok) {
         const data = await response.json();
         setUsers(data);
@@ -37,7 +37,7 @@ export default function UserManagement() {
   const handleDeleteUser = async (userId: string) => {
     if (window.confirm('Bạn có chắc chắn muốn xóa người dùng này?')) {
       try {
-        const response = await fetch(`/api/user/${userId}`, {  // Changed from /api/users
+        const response = await fetch(`/api/user/${userId}`, {
           method: 'DELETE',
         });
         if (response.ok) {
@@ -51,49 +51,30 @@ export default function UserManagement() {
 
   const handleSubmit = async (formData: FormData) => {
     try {
-      const file = formData.get('file') as File;
-      if (file?.size > 0) {
-        const uploadData = new FormData();
-        uploadData.append('file', file);
-        
-        const uploadRes = await fetch('/api/upload', {
-          method: 'POST',
-          body: uploadData
-        });
-    
-        if (!uploadRes.ok) {
-          throw new Error('Không thể tải ảnh lên');
-        }
-    
-        const { url } = await uploadRes.json();
-        formData.delete('file');
-        formData.append('avatar', url);
-      }
-    
-      const url = currentUser 
-        ? `/api/user/${currentUser._id}`  // Changed from /api/users
-        : '/api/user';  // Changed from /api/users
-        
+      const url = currentUser
+        ? `/api/user/${currentUser._id}`
+        : '/api/user';
+
       const response = await fetch(url, {
         method: currentUser ? 'PUT' : 'POST',
-        body: formData,
+        body: formData
       });
-    
+
       const result = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(result.error || 'Không thể lưu thông tin người dùng');
       }
-    
-      setUsers(prev => 
+
+      setUsers(prev =>
         currentUser
           ? prev.map(u => u._id === currentUser._id ? result.user : u)
           : [...prev, result.user]
       );
-    
+
       setIsModalOpen(false);
       alert(currentUser ? 'Cập nhật thành công!' : 'Thêm người dùng thành công!');
-      
+
     } catch (error) {
       console.error('Error:', error);
       alert(error instanceof Error ? error.message : 'Có lỗi xảy ra khi xử lý yêu cầu');
@@ -171,16 +152,12 @@ export default function UserManagement() {
                   <div className="text-sm text-gray-900">{user.email}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                    user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
-                  }`}>
+                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`}>
                     {user.role === 'admin' ? 'Quản trị viên' : 'Người dùng'}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                    user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                  }`}>
+                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                     {user.isActive ? 'Hoạt động' : 'Không hoạt động'}
                   </span>
                 </td>

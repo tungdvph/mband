@@ -7,13 +7,13 @@ import User from '@/lib/models/User';
 export async function POST(req: Request) {
   try {
     await connectDB();
-    const { email, password } = await req.json();
+    const { username, password } = await req.json();
 
-    // Find user
-    const user = await User.findOne({ email });
+    // Find user by username instead of email
+    const user = await User.findOne({ username });
     if (!user) {
       return NextResponse.json(
-        { error: 'Invalid credentials' },
+        { error: 'Tên đăng nhập không tồn tại' },
         { status: 400 }
       );
     }
@@ -22,7 +22,7 @@ export async function POST(req: Request) {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return NextResponse.json(
-        { error: 'Invalid credentials' },
+        { error: 'Mật khẩu không chính xác' },
         { status: 400 }
       );
     }
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ token });
   } catch (error) {
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Lỗi hệ thống' },
       { status: 500 }
     );
   }
