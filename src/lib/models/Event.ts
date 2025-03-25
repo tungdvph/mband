@@ -1,4 +1,17 @@
-import mongoose from 'mongoose';
+import mongoose, { Document } from 'mongoose';
+
+interface IEvent extends Document {
+  title: string;
+  date: Date;
+  location: string;
+  description?: string;
+  price: number;
+  availableTickets: number;
+  image?: string;
+  status: 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 const eventSchema = new mongoose.Schema({
   title: { type: String, required: true },
@@ -13,7 +26,16 @@ const eventSchema = new mongoose.Schema({
     enum: ['upcoming', 'ongoing', 'completed', 'cancelled'],
     default: 'upcoming'
   }
+}, {
+  versionKey: '__v',
+  timestamps: true
 });
 
-const Event = mongoose.models.Event || mongoose.model('Event', eventSchema);
+// Xóa model cũ nếu tồn tại
+if (mongoose.models.Event) {
+  delete mongoose.models.Event;
+}
+
+// Tạo model mới
+const Event = mongoose.model<IEvent>('Event', eventSchema);
 export default Event;

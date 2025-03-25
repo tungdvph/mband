@@ -15,6 +15,8 @@ interface ISchedule extends Document {
   description?: string;
   type: 'concert' | 'rehearsal' | 'meeting' | 'interview' | 'other';
   status: 'scheduled' | 'completed' | 'cancelled';
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const scheduleSchema = new mongoose.Schema({
@@ -39,8 +41,15 @@ const scheduleSchema = new mongoose.Schema({
     default: 'scheduled'
   }
 }, {
+  versionKey: '__v',
   timestamps: true
 });
 
-const Schedule = mongoose.models.Schedule || mongoose.model<ISchedule>('Schedule', scheduleSchema);
+// Xóa model cũ nếu tồn tại
+if (mongoose.models.Schedule) {
+  delete mongoose.models.Schedule;
+}
+
+// Tạo model mới
+const Schedule = mongoose.model<ISchedule>('Schedule', scheduleSchema);
 export default Schedule;

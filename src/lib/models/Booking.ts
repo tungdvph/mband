@@ -1,4 +1,15 @@
-import mongoose from 'mongoose';
+import mongoose, { Document } from 'mongoose';
+
+interface IBooking extends Document {
+  userId: mongoose.Schema.Types.ObjectId;
+  eventId: mongoose.Schema.Types.ObjectId;
+  ticketCount: number;
+  totalPrice: number;
+  status: 'pending' | 'confirmed' | 'cancelled';
+  bookingDate: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 const bookingSchema = new mongoose.Schema({
   userId: { 
@@ -17,9 +28,17 @@ const bookingSchema = new mongoose.Schema({
     type: String, 
     enum: ['pending', 'confirmed', 'cancelled'],
     default: 'pending'
-  },
-  bookingDate: { type: Date, default: Date.now }
+  }
+}, {
+  versionKey: '__v',
+  timestamps: true
 });
 
-const Booking = mongoose.models.Booking || mongoose.model('Booking', bookingSchema);
+// Xóa model cũ nếu tồn tại
+if (mongoose.models.Booking) {
+  delete mongoose.models.Booking;
+}
+
+// Tạo model mới
+const Booking = mongoose.model<IBooking>('Booking', bookingSchema);
 export default Booking;

@@ -7,6 +7,7 @@ interface IContact extends Document {
   message: string;
   status: 'pending' | 'responded' | 'closed';
   createdAt: Date;
+  updatedAt: Date;
 }
 
 const contactSchema = new mongoose.Schema({
@@ -18,11 +19,17 @@ const contactSchema = new mongoose.Schema({
     type: String, 
     enum: ['pending', 'responded', 'closed'],
     default: 'pending'
-  },
-  createdAt: { type: Date, default: Date.now }
+  }
 }, {
+  versionKey: '__v',
   timestamps: true
 });
 
-const Contact = mongoose.models.Contact || mongoose.model<IContact>('Contact', contactSchema);
+// Xóa model cũ nếu tồn tại
+if (mongoose.models.Contact) {
+  delete mongoose.models.Contact;
+}
+
+// Tạo model mới
+const Contact = mongoose.model<IContact>('Contact', contactSchema);
 export default Contact;
