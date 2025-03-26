@@ -39,21 +39,17 @@ export async function POST(request: Request) {
             }, { status: 400 });
         }
 
+        // Sửa phần xử lý file trong hàm POST
         const imageFile = formData.get('file') as File;
         if (imageFile?.size > 0) {
             const imageBytes = await imageFile.arrayBuffer();
             const imageBuffer = Buffer.from(imageBytes);
+            // Thêm public vào đường dẫn để đảm bảo file được lưu đúng vị trí
             const imagePath = `/upload/user/${Date.now()}_${imageFile.name}`;
             const fullImagePath = path.join(process.cwd(), 'public', imagePath);
             await fs.mkdir(path.dirname(fullImagePath), { recursive: true });
             await fs.writeFile(fullImagePath, imageBuffer);
-            userData.avatar = imagePath;
-        } else {
-            userData.avatar = '/default-avatar.png';
-        }
-
-        if (userData.password) {
-            userData.password = await bcrypt.hash(userData.password, 12);
+            userData.avatar = imagePath; // Lưu đường dẫn tương đối
         }
 
         const user = new User(userData);
@@ -64,16 +60,21 @@ export async function POST(request: Request) {
             user: {
                 ...userObject,
                 _id: (userObject._id as mongoose.Types.ObjectId).toString(),
+                // Đảm bảo trả về đường dẫn đầy đủ
+                avatar: userObject.avatar || '/default-avatar.png'
             }
         });
-    } catch (error: any) {
+    } catch (error: any) { // Type assertion for error
         console.error('Create user error:', error);
         if (error.code === 11000) {
             return NextResponse.json({ 
                 error: 'Email hoặc tên đăng nhập đã tồn tại' 
             }, { status: 400 });
         }
-        return NextResponse.json({ error: 'Lỗi khi tạo người dùng' }, { status: 500 });
+        return NextResponse.json({ 
+            error: 'Lỗi khi tạo người dùng',
+            details: error.message || 'Unknown error'
+        }, { status: 500 });
     }
 }
 
@@ -91,7 +92,11 @@ export async function GET() {
         }));
 
         return NextResponse.json(transformedUsers);
-    } catch (error) {
-        return NextResponse.json({ error: 'Lỗi khi lấy danh sách người dùng' }, { status: 500 });
+    } catch (error: any) { // Type assertion for error
+        console.error('Get users error:', error);
+        return NextResponse.json({ 
+            error: 'Lỗi khi lấy danh sách người dùng',
+            details: error.message || 'Unknown error'
+        }, { status: 500 });
     }
 }

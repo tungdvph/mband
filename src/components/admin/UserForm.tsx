@@ -10,48 +10,31 @@ interface UserFormProps {
 
 export default function UserForm({ user, onSubmit, onCancel }: UserFormProps) {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [avatarPreview, setAvatarPreview] = useState(user?.avatar || '/default-user.png'); // Đổi từ default-avatar.png
+  const [avatarPreview, setAvatarPreview] = useState(user?.avatar || '/default-avatar.png');
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     
     if (!user && !formData.get('password')) {
-      alert('Vui lòng nhập mật khẩu');
-      return;
+        alert('Vui lòng nhập mật khẩu');
+        return;
     }
 
     try {
-      // Upload avatar first if exists
-      if (avatarFile) {
-        const uploadData = new FormData();
-        uploadData.append('file', avatarFile);
-        
-        const uploadRes = await fetch('/api/upload', {
-          method: 'POST',
-          body: uploadData
-        });
-
-        if (!uploadRes.ok) {
-          throw new Error('Không thể tải ảnh lên');
+        // Nếu có file ảnh mới
+        if (avatarFile) {
+            formData.set('file', avatarFile); // Đổi từ append sang set
+        } else if (user?.avatar) {
+            formData.set('avatar', user.avatar);
         }
 
-        const { url } = await uploadRes.json();
-        // Xóa file cũ nếu có
-        formData.delete('file');
-        // Thêm URL avatar mới
-        formData.set('avatar', url);
-      } else if (user?.avatar) {
-        // Giữ lại avatar cũ nếu không upload ảnh mới
-        formData.set('avatar', user.avatar);
-      }
-
-      onSubmit(formData);
+        onSubmit(formData);
     } catch (error) {
-      console.error('Error:', error);
-      alert(error instanceof Error ? error.message : 'Có lỗi xảy ra');
+        console.error('Error:', error);
+        alert(error instanceof Error ? error.message : 'Có lỗi xảy ra');
     }
-  };
+};
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -69,9 +52,9 @@ export default function UserForm({ user, onSubmit, onCancel }: UserFormProps) {
     <form onSubmit={handleSubmit}>
       <div className="space-y-4">
         <div className="flex items-center space-x-4 mb-4">
-          <img 
-            src={avatarPreview} 
-            alt="Avatar preview" 
+          <img
+            src={avatarPreview}
+            alt="Avatar preview"
             className="w-20 h-20 rounded-full object-cover"
           />
           <div>

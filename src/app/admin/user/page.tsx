@@ -13,7 +13,12 @@ export default function UserManagement() {
       const response = await fetch('/api/user');
       if (response.ok) {
         const data = await response.json();
-        setUsers(data);
+        // Transform để đảm bảo avatar luôn có giá trị
+        const transformedData = data.map((user: User) => ({
+            ...user,
+            avatar: user.avatar || '/default-avatar.png'
+        }));
+        setUsers(transformedData);
       }
     } catch (error) {
       console.error('Error fetching users:', error);
