@@ -1,102 +1,67 @@
 'use client';
-import { useEffect, useState } from 'react';
+
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import Layout from '@/components/layout/Layout';
 import BookingForm from '@/components/forms/BookingForm';
-
-interface Event {
-  _id: string;
-  title: string;
-  date: Date;
-  location: string;
-  price: number;
-  availableTickets: number;
-}
+import { useEffect } from 'react';
 
 export default function BookingPage() {
-  const [events, setEvents] = useState<Event[]>([]);
-  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: session, status } = useSession();
+  const router = useRouter();
 
   useEffect(() => {
-    const fetchEvents = async () => {
-      try {
-        const response = await fetch('/api/schedule?available=true');
-        if (response.ok) {
-          const data = await response.json();
-          setEvents(data);
-          if (data.length > 0) {
-            setSelectedEvent(data[0]);
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching events:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    if (status === "unauthenticated") {
+      router.push('/login');
+    }
+  }, [status, router]);
 
-    fetchEvents();
-  }, []);
+  if (status === "loading") {
+    return <div>Loading...</div>;
+  }
 
-  const handleBooking = async (data: any) => {
+  const handleBooking = async (formData: any) => {
+    if (!session?.user?.id) {
+      alert('Vui lòng đăng nhập để đặt lịch!');
+      router.push('/login');
+      return;
+    }
+
     try {
+      const bookingData = {
+        ...formData,
+        userId: session.user.id
+      };
+
       const response = await fetch('/api/booking', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(bookingData),
       });
 
       if (response.ok) {
-        alert('Booking successful!');
+        alert('Yêu cầu đặt lịch đã được gửi thành công!');
+        router.push('/profile');
       } else {
-        alert('Booking failed. Please try again.');
+        alert('Gửi yêu cầu thất bại. Vui lòng thử lại.');
       }
     } catch (error) {
       console.error('Error making booking:', error);
-      alert('Error making booking. Please try again.');
+      alert('Có lỗi xảy ra. Vui lòng thử lại.');
     }
   };
 
   return (
     <Layout>
       <div className="container mx-auto px-4 py-16">
-        <div className="max-w-2xl mx-auto">
-          <h1 className="text-4xl font-bold mb-8">Book an Event</h1>
-          {loading ? (
-            <div className="text-center">Loading...</div>
-          ) : events.length > 0 ? (
-            <>
-              <div className="mb-8">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select Event
-                </label>
-                <select
-                  className="w-full border-gray-300 rounded-md shadow-sm"
-                  onChange={(e) => {
-                    const event = events.find(evt => evt._id === e.target.value);
-                    setSelectedEvent(event || null);
-                  }}
-                >
-                  {events.map((event) => (
-                    <option key={event._id} value={event._id}>
-                      {event.title} - {new Date(event.date).toLocaleDateString()}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              {selectedEvent && (
-                <BookingForm
-                  eventId={selectedEvent._id}
-                  price={selectedEvent.price}
-                  onSubmit={handleBooking}
-                />
-              )}
-            </>
-          ) : (
-            <p className="text-center text-gray-600">No events available for booking.</p>
-          )}
+        <div className="max-w-4xl mx-auto">
+          <h1 className="text-4xl font-bold mb-8">Đặt lịch thuê ban nhạc</h1>
+          <p className="text-gray-600 mb-8">
+            Hãy điền thông tin chi tiết về sự kiện của bạn để chúng tôi có thể hỗ trợ tốt nhất.
+          </p>
+          <BookingForm onSubmit={handleBooking} />
         </div>
       </div>
     </Layout>

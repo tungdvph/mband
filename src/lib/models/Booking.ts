@@ -2,11 +2,18 @@ import mongoose, { Document } from 'mongoose';
 
 interface IBooking extends Document {
   userId: mongoose.Schema.Types.ObjectId;
-  eventId: mongoose.Schema.Types.ObjectId;
-  ticketCount: number;
-  totalPrice: number;
+  eventName: string;
+  eventDate: Date;
+  location: string;
+  eventType: string;
+  duration: number;
+  expectedGuests: number;
+  requirements: string;
+  budget: number;
   status: 'pending' | 'confirmed' | 'cancelled';
-  bookingDate: Date;
+  contactName: string;
+  contactPhone: string;
+  contactEmail: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -17,17 +24,54 @@ const bookingSchema = new mongoose.Schema({
     ref: 'User',
     required: true 
   },
-  eventId: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'Event',
+  eventName: { 
+    type: String, 
     required: true 
   },
-  ticketCount: { type: Number, required: true },
-  totalPrice: { type: Number, required: true },
+  eventDate: { 
+    type: Date, 
+    required: true 
+  },
+  location: { 
+    type: String, 
+    required: true 
+  },
+  eventType: { 
+    type: String, 
+    required: true 
+  },
+  duration: { 
+    type: Number, 
+    required: true 
+  },
+  expectedGuests: { 
+    type: Number, 
+    required: true 
+  },
+  requirements: { 
+    type: String, 
+    default: '' 
+  },
+  budget: { 
+    type: Number, 
+    required: true 
+  },
   status: { 
     type: String, 
     enum: ['pending', 'confirmed', 'cancelled'],
     default: 'pending'
+  },
+  contactName: { 
+    type: String, 
+    required: true 
+  },
+  contactPhone: { 
+    type: String, 
+    required: true 
+  },
+  contactEmail: { 
+    type: String, 
+    required: true 
   }
 }, {
   versionKey: '__v',

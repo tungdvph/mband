@@ -2,22 +2,26 @@
 import { useState } from 'react';
 
 interface BookingFormProps {
+  booking?: any;
   onSubmit: (data: any) => void;
+  onClose: () => void;
 }
 
-export default function BookingForm({ onSubmit }: BookingFormProps) {
+export default function BookingForm({ booking, onSubmit, onClose }: BookingFormProps) {
   const [formData, setFormData] = useState({
-    eventName: '',
-    eventDate: '',
-    location: '',
-    eventType: '',
-    duration: 2,
-    expectedGuests: 50,
-    requirements: '',
-    budget: 0,
-    contactName: '',
-    contactPhone: '',
-    contactEmail: ''
+    userId: booking?.userId || '',
+    eventName: booking?.eventName || '',
+    eventDate: booking?.eventDate ? new Date(booking.eventDate).toISOString().slice(0, 16) : '',
+    location: booking?.location || '',
+    eventType: booking?.eventType || '',
+    duration: booking?.duration || 2,
+    expectedGuests: booking?.expectedGuests || 50,
+    requirements: booking?.requirements || '',
+    budget: booking?.budget || 0,
+    status: booking?.status || 'pending',
+    contactName: booking?.contactName || '',
+    contactPhone: booking?.contactPhone || '',
+    contactEmail: booking?.contactEmail || ''
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -113,6 +117,19 @@ export default function BookingForm({ onSubmit }: BookingFormProps) {
             required
           />
         </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Trạng thái</label>
+          <select
+            value={formData.status}
+            onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+          >
+            <option value="pending">Chờ xác nhận</option>
+            <option value="confirmed">Đã xác nhận</option>
+            <option value="cancelled">Đã hủy</option>
+          </select>
+        </div>
       </div>
 
       <div>
@@ -160,12 +177,19 @@ export default function BookingForm({ onSubmit }: BookingFormProps) {
         </div>
       </div>
 
-      <div className="flex justify-end mt-6">
+      <div className="flex justify-end space-x-3 mt-5">
+        <button
+          type="button"
+          onClick={onClose}
+          className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md"
+        >
+          Hủy
+        </button>
         <button
           type="submit"
           className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md"
         >
-          Gửi yêu cầu đặt lịch
+          {booking ? 'Cập nhật' : 'Thêm mới'}
         </button>
       </div>
     </form>

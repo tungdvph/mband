@@ -1,6 +1,7 @@
 import './globals.css'
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
+import SessionProvider from '@/components/providers/SessionProvider'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -9,8 +10,6 @@ export const metadata: Metadata = {
   description: 'Your favorite music band website',
 }
 
-import { AuthProvider } from '@/contexts/AuthContext';
-
 export default function RootLayout({
   children,
 }: {
@@ -18,10 +17,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+      <body className={inter.className}>
+        <SessionProvider>
+          <main className="min-h-screen">
+            {children}
+          </main>
+        </SessionProvider>
       </body>
     </html>
   );

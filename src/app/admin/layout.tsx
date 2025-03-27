@@ -24,6 +24,9 @@ export default function AdminLayout({
           <Link href="/admin/member" className="block px-4 py-2 hover:bg-[#234156]">
             Quản Lý Thành Viên
           </Link>
+          <Link href="/admin/booking" className="block px-4 py-2 hover:bg-[#234156]">
+            Quản lý Đặt lịch
+          </Link>
           <Link href="/admin/schedule" className="block px-4 py-2 hover:bg-[#234156]">
             Quản lý Lịch trình
           </Link>
