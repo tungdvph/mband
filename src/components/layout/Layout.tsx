@@ -1,46 +1,59 @@
-import Navbar from './Navbar';
+'use client';
+import { useSession, signOut } from 'next-auth/react';
+import Link from 'next/link';
 
-interface LayoutProps {
-  children: React.ReactNode;
-}
+export default function Layout({ children }: { children: React.ReactNode }) {
+  const { data: session } = useSession();
 
-const Layout = ({ children }: LayoutProps) => {
+  const handleSignOut = async () => {
+    await signOut({ callbackUrl: '/' });
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar />
+      <header className="bg-black text-white">
+        <div className="container mx-auto px-4">
+          <div className="flex justify-between items-center h-16">
+            <Link href="/" className="text-xl font-bold">
+              Band Name
+            </Link>
+            
+            <nav className="flex items-center space-x-4">
+              <Link href="/member" className="hover:text-gray-300">Thành viên</Link>
+              <Link href="/schedule" className="hover:text-gray-300">Lịch trình</Link>
+              <Link href="/music" className="hover:text-gray-300">Âm nhạc</Link>
+              <Link href="/news" className="hover:text-gray-300">Tin tức</Link>
+              <Link href="/booking" className="hover:text-gray-300">Đặt lịch</Link>
+              <Link href="/contact" className="hover:text-gray-300">Liên hệ</Link>
+              
+              {session?.user ? (
+                <div className="flex items-center space-x-4">
+                  <span className="text-white">{session.user.username}</span>
+                  <button
+                    onClick={handleSignOut}
+                    className="text-red-500 hover:text-red-400"
+                  >
+                    Đăng xuất
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center space-x-4">
+                  <Link href="/login" className="hover:text-gray-300">
+                    Đăng nhập
+                  </Link>
+                  <Link href="/register" className="hover:text-gray-300">
+                    Đăng ký
+                  </Link>
+                </div>
+              )}
+            </nav>
+          </div>
+        </div>
+      </header>
+
       <main className="flex-grow">
         {children}
       </main>
-      <footer className="bg-black text-white py-12">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div>
-              <h3 className="text-xl font-bold mb-4">Band Name</h3>
-              <p>Professional music band available for events and performances.</p>
-            </div>
-            <div>
-              <h3 className="text-xl font-bold mb-4">Quick Links</h3>
-              <ul>
-                <li>About Us</li>
-                <li>Schedule</li>
-                <li>Book Us</li>
-                <li>Contact</li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-xl font-bold mb-4">Contact Us</h3>
-              <p>Email: contact@bandname.com</p>
-              <p>Phone: (123) 456-7890</p>
-              <p>Address: Your City, Country</p>
-            </div>
-          </div>
-          <div className="text-center mt-8">
-            <p>© {new Date().getFullYear()} Band Name. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
     </div>
   );
-};
-
-export default Layout;
+}
