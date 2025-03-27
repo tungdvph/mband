@@ -60,9 +60,16 @@ export default function UserManagement() {
         ? `/api/user/${currentUser._id}`
         : '/api/user';
 
+      // Chuyển FormData thành object
+      const formDataObj = Object.fromEntries(formData.entries());
+      
+      const method = currentUser ? 'PUT' : 'PUT';
       const response = await fetch(url, {
-        method: currentUser ? 'PUT' : 'POST',
-        body: formData
+        method: method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formDataObj)
       });
 
       const result = await response.json();

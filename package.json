@@ -6,13 +6,16 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "create-admin": "cross-env TS_NODE_PROJECT=\"scripts/tsconfig.json\" ts-node src/scripts/create-admin.ts",
+    "check-admin": "cross-env TS_NODE_PROJECT=\"scripts/tsconfig.json\" ts-node src/scripts/check-admin.ts"
   },
   "dependencies": {
     "@auth/core": "^0.34.2",
     "@types/draft-js": "^0.11.18",
     "bcryptjs": "^3.0.2",
     "chart.js": "^4.4.8",
+    "dotenv": "^16.4.7",
     "draft-js": "^0.11.7",
     "draft-js-export-html": "^1.4.1",
     "draftjs-to-html": "^0.9.1",
@@ -37,9 +40,12 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "cross-env": "^7.0.3",
     "eslint": "^9",
     "eslint-config-next": "15.2.3",
     "tailwindcss": "^4",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
     "typescript": "^5"
   }
 }

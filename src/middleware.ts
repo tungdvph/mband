@@ -2,10 +2,13 @@ import { withAuth } from "next-auth/middleware";
 
 export default withAuth({
   pages: {
-    signIn: "/login",
+    signIn: "/admin/login",
   },
 });
 
 export const config = {
-  matcher: [] // Empty array to disable route protection
+  matcher: [
+    "/admin/:path*",
+    "/admin/login" // Sửa lại định dạng path
+  ]
 };

@@ -1,12 +1,12 @@
 'use client';
 import { useState } from 'react';
 
-interface ContactFormProps {
+interface ContactRequestFormProps {
   onSubmit: (formData: any) => Promise<void>;
   disabled?: boolean;
 }
 
-const ContactForm = ({ onSubmit, disabled = false }: ContactFormProps) => {
+const ContactRequestForm = ({ onSubmit, disabled = false }: ContactRequestFormProps) => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -83,4 +83,4 @@ const ContactForm = ({ onSubmit, disabled = false }: ContactFormProps) => {
   );
 };
 
-export default ContactForm;
+export default ContactRequestForm;

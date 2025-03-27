@@ -1,4 +1,7 @@
 'use client';
+// Xóa dòng import AdminHeader
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import {
@@ -9,7 +12,7 @@ import {
   Title,
   Tooltip,
   Legend,
-  ArcElement,     // Thêm ArcElement cho Doughnut chart
+  ArcElement,
 } from 'chart.js';
 
 ChartJS.register(
@@ -19,10 +22,14 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
-  ArcElement      // Đăng ký ArcElement
+  ArcElement
 );
 
 export default function AdminDashboard() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  
+  // Khai báo state trước khi sử dụng useEffect
   const [stats, setStats] = useState({
     users: 0,
     bookings: 0,
@@ -41,52 +48,56 @@ export default function AdminDashboard() {
   });
 
   useEffect(() => {
-    // Fetch thống kê tổng quan
-    const fetchStats = async () => {
-      try {
-        const response = await fetch('/api/stats');
-        const data = await response.json();
-        setStats(data);
-      } catch (error) {
-        console.error('Error fetching stats:', error);
-      }
-    };
+    if (status === 'unauthenticated') {
+      router.push('/admin/login');
+    }
+  }, [status, router]);
 
-    // Fetch dữ liệu doanh thu
-    const fetchRevenue = async () => {
-      try {
-        const response = await fetch('/api/stats/revenue');
-        const data = await response.json();
-        setRevenueData({
-          labels: data.map((item: any) => item.month),
-          data: data.map((item: any) => item.revenue)
-        });
-      } catch (error) {
-        console.error('Error fetching revenue:', error);
-      }
-    };
+  // Các useEffect khác
+  useEffect(() => {
+    if (status === 'authenticated') {
+      // Fetch data chỉ khi đã xác thực
+      const fetchData = async () => {
+        try {
+          const [statsRes, revenueRes, bookingRes] = await Promise.all([
+            fetch('/api/stats'),
+            fetch('/api/stats/revenue'),
+            fetch('/api/stats/booking-status')
+          ]);
 
-    // Fetch trạng thái booking
-    const fetchBookingStatus = async () => {
-      try {
-        const response = await fetch('/api/stats/booking-status');
-        const data = await response.json();
-        setBookingStatus({
-          labels: ['Đã xác nhận', 'Chờ xác nhận', 'Đã hủy'],
-          data: [data.confirmed, data.pending, data.cancelled]
-        });
-      } catch (error) {
-        console.error('Error fetching booking status:', error);
-      }
-    };
+          const statsData = await statsRes.json();
+          const revenueData = await revenueRes.json();
+          const bookingData = await bookingRes.json();
 
-    fetchStats();
-    fetchRevenue();
-    fetchBookingStatus();
-  }, []);
+          setStats(statsData);
+          setRevenueData({
+            labels: revenueData.map((item: any) => item.month),
+            data: revenueData.map((item: any) => item.revenue)
+          });
+          setBookingStatus({
+            labels: ['Đã xác nhận', 'Chờ xác nhận', 'Đã hủy'],
+            data: [bookingData.confirmed, bookingData.pending, bookingData.cancelled]
+          });
+        } catch (error) {
+          console.error('Error fetching data:', error);
+        }
+      };
+
+      fetchData();
+    }
+  }, [status]);
+
+  if (status === 'loading') {
+    return <div>Đang tải...</div>;
+  }
+
+  if (!session?.user || session.user.role !== 'admin') {
+    return null;
+  }
 
   return (
-    <div>
+    // Xóa AdminHeader và thẻ fragment
+    <div className="p-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <div className="bg-blue-500 text-white p-6 rounded-lg">
           <h3 className="text-xl mb-2">Tổng số Users: {stats.users}</h3>
@@ -105,7 +116,7 @@ export default function AdminDashboard() {
           <p>Chi tiết</p>
         </div>
       </div>
-
+  
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white p-6 rounded-lg shadow">
           <h3 className="text-lg font-semibold mb-4">Biểu đồ Doanh thu</h3>

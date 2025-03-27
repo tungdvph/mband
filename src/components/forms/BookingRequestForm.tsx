@@ -1,11 +1,11 @@
 'use client';
 import { useState } from 'react';
 
-interface BookingFormProps {
+interface BookingRequestFormProps {
   onSubmit: (data: any) => void;
 }
 
-export default function BookingForm({ onSubmit }: BookingFormProps) {
+export default function BookingRequestForm({ onSubmit }: BookingRequestFormProps) {
   const [formData, setFormData] = useState({
     eventName: '',
     eventDate: '',

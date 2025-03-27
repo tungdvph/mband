@@ -5,9 +5,20 @@ import { unlink } from 'fs/promises';
 import path from 'path';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
     try {
+        const session = await getServerSession(authOptions);
+        
+        // Thêm kiểm tra quyền
+        if (!session || !session.user || session.user.role !== 'admin') {
+            return NextResponse.json(
+                { error: 'Bạn không có quyền thực hiện thao tác này' }, 
+                { status: 401 }
+            );
+        }
         await connectToDatabase();
         const updateData = await request.json();
 

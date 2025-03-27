@@ -2,35 +2,46 @@ import mongoose, { Document, Model } from 'mongoose';
 
 export interface IUser extends Document {
   _id: mongoose.Types.ObjectId;
+  username: string;
   email: string;
   password: string;
-  name: string;
+  fullName: string;
   role: 'user' | 'admin';
   avatar?: string;
+  isActive: boolean;
 }
 
 const userSchema = new mongoose.Schema({
-  email: { 
-    type: String, 
-    required: true, 
-    unique: true 
+  username: {
+    type: String,
+    required: true,
+    unique: true
   },
-  password: { 
-    type: String, 
-    required: true 
+  email: {
+    type: String,
+    required: true,
+    unique: true
   },
-  name: { 
-    type: String, 
-    required: true 
+  password: {
+    type: String,
+    required: true
   },
-  role: { 
-    type: String, 
-    enum: ['user', 'admin'], 
-    default: 'user' 
+  fullName: {
+    type: String,
+    required: true
+  },
+  role: {
+    type: String,
+    enum: ['user', 'admin'],
+    default: 'user'
   },
   avatar: {
     type: String,
     default: '/default-avatar.png'
+  },
+  isActive: {
+    type: Boolean,
+    default: true
   }
 }, {
   timestamps: true

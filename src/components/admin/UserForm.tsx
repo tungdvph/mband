@@ -16,6 +16,16 @@ export default function UserForm({ user, onSubmit, onCancel }: UserFormProps) {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     
+    // Validate dữ liệu
+    const username = formData.get('username');
+    const email = formData.get('email');
+    const fullName = formData.get('fullName');
+    
+    if (!username || !email || !fullName) {
+        alert('Vui lòng điền đầy đủ thông tin bắt buộc');
+        return;
+    }
+
     if (!user && !formData.get('password')) {
         alert('Vui lòng nhập mật khẩu');
         return;

@@ -1,17 +1,32 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
+import { useSession, signOut } from 'next-auth/react';
+import { usePathname } from 'next/navigation';
 
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const { data: session, status } = useSession();
   const [isOpen, setIsOpen] = useState(false);
+  const pathname = usePathname();
+
+  const handleSignOut = async () => {
+    await signOut({ 
+      callbackUrl: '/admin/login',
+      redirect: true 
+    });
+  };
+
+  // Nếu đang ở trang login, chỉ hiển thị form login
+  if (pathname === '/admin/login') {
+    return <>{children}</>;
+  }
 
   return (
     <div className="min-h-screen flex">
-      {/* Sidebar */}
       <div className="bg-[#1a3547] text-white w-64 min-h-screen">
         <div className="p-4">
           <h1 className="text-xl font-bold">Trang Quản Trị</h1>
@@ -45,20 +60,24 @@ export default function AdminLayout({
         </nav>
       </div>
 
-      {/* Main Content */}
       <div className="flex-1">
-        {/* Header */}
         <header className="bg-white shadow">
           <div className="flex justify-between items-center px-4 py-3">
             <h2 className="text-xl font-semibold">Admin Dashboard</h2>
-            <div className="flex items-center space-x-4">
-              <span>Admin</span>
-              <button className="text-red-600">Đăng xuất</button>
-            </div>
+            {status === 'authenticated' && session?.user && (
+              <div className="flex items-center space-x-4">
+                <span>{session.user.username}</span>
+                <button 
+                  onClick={handleSignOut}
+                  className="text-red-600 hover:text-red-800 transition-colors"
+                >
+                  Đăng xuất
+                </button>
+              </div>
+            )}
           </div>
         </header>
 
-        {/* Content */}
         <main className="p-6">
           {children}
         </main>
