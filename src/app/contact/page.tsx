@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import Layout from '@/components/layout/Layout';
-import ContactForm from '@/components/forms/ContactForm';
+import ContactForm from '@/components/forms/ContactRequestForm';  // Đã đúng tên file
 
 export default function ContactPage() {
   const [submitting, setSubmitting] = useState(false);

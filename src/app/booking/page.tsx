@@ -3,7 +3,7 @@
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Layout from '@/components/layout/Layout';
-import BookingForm from '@/components/forms/BookingForm';
+import BookingForm from '@/components/forms/BookingRequestForm';  // Đã đúng tên file
 import { useEffect } from 'react';
 
 export default function BookingPage() {
