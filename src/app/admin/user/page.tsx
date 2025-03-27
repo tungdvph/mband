@@ -59,39 +59,51 @@ export default function UserManagement() {
       const url = currentUser
         ? `/api/user/${currentUser._id}`
         : '/api/user';
-
-      // Chuyển FormData thành object
-      const formDataObj = Object.fromEntries(formData.entries());
-      
-      const method = currentUser ? 'PUT' : 'PUT';
-      const response = await fetch(url, {
-        method: method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formDataObj)
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Không thể lưu thông tin người dùng');
+    
+    // Giữ nguyên method PUT cho cả hai trường hợp
+    const method = 'PUT';
+    
+    // Tạo form data mới để gửi file
+    const submitFormData = new FormData();
+    
+    // Thêm các trường dữ liệu vào FormData
+    Array.from(formData.entries()).forEach(([key, value]) => {
+      if (key === 'file' && value instanceof File && value.size > 0) {
+        submitFormData.append('file', value);
+      } else if (key === 'isActive') {
+        // Đảm bảo isActive được gửi đúng kiểu
+        submitFormData.append(key, value === 'true' ? 'true' : 'false');
+      } else {
+        submitFormData.append(key, value as string);
       }
+    });
 
-      setUsers(prev =>
-        currentUser
-          ? prev.map(u => u._id === currentUser._id ? result.user : u)
-          : [...prev, result.user]
-      );
-
-      setIsModalOpen(false);
-      alert(currentUser ? 'Cập nhật thành công!' : 'Thêm người dùng thành công!');
-
-    } catch (error) {
-      console.error('Error:', error);
-      alert(error instanceof Error ? error.message : 'Có lỗi xảy ra khi xử lý yêu cầu');
+    // Thêm ID vào FormData khi cập nhật
+    if (currentUser) {
+      submitFormData.append('_id', currentUser._id);
+      submitFormData.append('currentAvatar', currentUser.avatar || '');
     }
-  };
+
+    const response = await fetch(url, {
+      method,
+      body: submitFormData
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || 'Không thể lưu thông tin người dùng');
+    }
+
+    await fetchUsers();
+    setIsModalOpen(false);
+    alert(currentUser ? 'Cập nhật thành công!' : 'Thêm người dùng thành công!');
+
+  } catch (error) {
+    console.error('Error:', error);
+    alert(error instanceof Error ? error.message : 'Có lỗi xảy ra khi xử lý yêu cầu');
+  }
+};
 
   return (
     <div>
