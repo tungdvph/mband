@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import Layout from '@/components/layout/Layout';
-import ContactForm from '@/components/forms/ContactRequestForm';  // Đã đúng tên file
+import ContactForm from '@/components/forms/ContactRequestForm';
 
 export default function ContactPage() {
   const [submitting, setSubmitting] = useState(false);
@@ -35,14 +35,14 @@ export default function ContactPage() {
     <Layout>
       <div className="container mx-auto px-4 py-16">
         <div className="max-w-2xl mx-auto">
-          <h1 className="text-4xl font-bold mb-8">Contact Us</h1>
+          <h1 className="text-4xl font-bold mb-8">Liên Hệ</h1>
           {submitStatus === 'success' ? (
             <div className="bg-green-100 text-green-700 p-4 rounded mb-8">
-              Thank you for your message. We will get back to you soon!
+              Cảm ơn bạn đã gửi tin nhắn. Chúng tôi sẽ phản hồi sớm nhất có thể!
             </div>
           ) : submitStatus === 'error' ? (
             <div className="bg-red-100 text-red-700 p-4 rounded mb-8">
-              There was an error sending your message. Please try again.
+              Đã xảy ra lỗi khi gửi tin nhắn. Vui lòng thử lại.
             </div>
           ) : null}
           <ContactForm onSubmit={handleSubmit} disabled={submitting} />

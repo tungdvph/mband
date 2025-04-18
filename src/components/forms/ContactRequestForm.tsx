@@ -25,7 +25,7 @@ const ContactRequestForm = ({ onSubmit, disabled = false }: ContactRequestFormPr
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700">Name</label>
+        <label className="block text-sm font-medium text-gray-700">Họ và tên</label>
         <input
           type="text"
           value={formData.name}
@@ -49,7 +49,7 @@ const ContactRequestForm = ({ onSubmit, disabled = false }: ContactRequestFormPr
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700">Subject</label>
+        <label className="block text-sm font-medium text-gray-700">Tiêu đề</label>
         <input
           type="text"
           value={formData.subject}
@@ -61,7 +61,7 @@ const ContactRequestForm = ({ onSubmit, disabled = false }: ContactRequestFormPr
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700">Message</label>
+        <label className="block text-sm font-medium text-gray-700">Nội dung</label>
         <textarea
           value={formData.message}
           onChange={(e) => setFormData({ ...formData, message: e.target.value })}
@@ -77,7 +77,7 @@ const ContactRequestForm = ({ onSubmit, disabled = false }: ContactRequestFormPr
         className="w-full bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700 disabled:bg-gray-400"
         disabled={disabled}
       >
-        {disabled ? 'Sending...' : 'Send Message'}
+        {disabled ? 'Đang gửi...' : 'Gửi tin nhắn'}
       </button>
     </form>
   );
