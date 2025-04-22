@@ -21,7 +21,8 @@ const UserLoginForm = () => {
         username: formData.username,
         password: formData.password,
         callbackUrl: '/',
-        redirect: false
+        redirect: false,
+        basePath: '/api/auth'
       });
 
       if (!result) {

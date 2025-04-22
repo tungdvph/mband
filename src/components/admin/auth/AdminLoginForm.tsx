@@ -29,9 +29,8 @@ export default function AdminLoginForm() {
         username,
         password,
         redirect: false,
-        callbackUrl: '/admin', // callbackUrl thực tế nên là biến callbackUrl ở trên
-        // signinUrl không phải là một option hợp lệ của signIn, NextAuth tự tìm đúng API route
-        // signinUrl: '/api/admin/auth/signin' // Xóa hoặc comment dòng này
+        callbackUrl: callbackUrl,
+        basePath: '/api/admin/auth'
       });
 
       console.log('[AdminLoginForm] signIn Result Object:', JSON.stringify(result, null, 2));
