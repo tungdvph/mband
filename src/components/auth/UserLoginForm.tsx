@@ -1,23 +1,15 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { usePathname } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 
-const LoginForm = () => {
+const UserLoginForm = () => {
   const router = useRouter();
-  const pathname = usePathname(); // Thêm dòng này
-  const [formData, setFormData] = useState({
-    username: '',
-    password: ''
-  });
+  const [formData, setFormData] = useState({ username: '', password: '' });
   const [error, setError] = useState('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -25,28 +17,24 @@ const LoginForm = () => {
     setError('');
 
     try {
-      // Xác định provider dựa vào pathname
-      const provider = pathname.startsWith('/admin') ? 'admin-credentials' : 'user-credentials';
-      const callbackUrl = pathname.startsWith('/admin') ? '/admin' : '/';
-
-      const result = await signIn(provider, {
+      const result = await signIn('user-credentials', {
         username: formData.username,
         password: formData.password,
-        callbackUrl,
+        callbackUrl: '/',
         redirect: false
       });
-  
+
       if (!result) {
         throw new Error('Không nhận được phản hồi từ server');
       }
-  
+
       if (result.error) {
         setError('Tên đăng nhập hoặc mật khẩu không đúng');
         return;
       }
-  
+
       if (result.ok) {
-        router.replace('/admin');
+        router.replace('/');
       }
     } catch (err: any) {
       console.error('Login error:', err);
@@ -54,13 +42,12 @@ const LoginForm = () => {
     }
   };
 
-  // Phần JSX không thay đổi
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Đăng nhập
+            Đăng nhập User
           </h2>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
@@ -110,4 +97,4 @@ const LoginForm = () => {
   );
 };
 
-export default LoginForm;
+export default UserLoginForm;
