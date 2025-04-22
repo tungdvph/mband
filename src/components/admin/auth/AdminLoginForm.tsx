@@ -9,7 +9,7 @@ export default function AdminLoginForm() {
   const router = useRouter();
   // Bây giờ useSearchParams đã được import và có thể sử dụng
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get('callbackUrl') || '/admin';
+  const callbackUrl = searchParams?.get('callbackUrl') || '/admin';
 
   const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState(false);
