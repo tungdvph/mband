@@ -2,11 +2,11 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import UserMenu from '../auth/UserMenu';
-import { useAuth } from '@/contexts/AuthContext';
+import { usePublicAuth } from '@/contexts/PublicAuthContext';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const { isLoggedIn } = useAuth();
+  const { isAuthenticated } = usePublicAuth();
 
   return (
     <nav className="bg-black text-white">
@@ -27,7 +27,7 @@ const Navbar = () => {
               <Link href="/news" className="hover:text-gray-300">Tin tức</Link>
               <Link href="/booking" className="hover:text-gray-300">Đặt lịch</Link>
               <Link href="/contact" className="hover:text-gray-300">Liên hệ</Link>
-              {!isLoggedIn ? (
+              {!isAuthenticated ? (
                 <>
                   <Link href="/login" className="hover:text-gray-300">Đăng nhập</Link>
                   <Link href="/register" className="hover:text-gray-300">Đăng ký</Link>
@@ -69,7 +69,7 @@ const Navbar = () => {
             <Link href="/news" className="block hover:text-gray-300 py-2">Tin tức</Link>
             <Link href="/booking" className="block hover:text-gray-300 py-2">Đặt lịch</Link>
             <Link href="/contact" className="block hover:text-gray-300 py-2">Liên hệ</Link>
-            {!isLoggedIn ? (
+            {!isAuthenticated ? (
               <>
                 <Link href="/login" className="block hover:text-gray-300 py-2">Đăng nhập</Link>
                 <Link href="/register" className="block hover:text-gray-300 py-2">Đăng ký</Link>
