@@ -1,7 +1,9 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { signOut, useSession } from 'next-auth/react';
+// Import signOut nếu bạn vẫn muốn dùng nó ở đâu đó khác, nhưng không dùng cho nút logout này
+// import { signOut } from 'next-auth/react';
+import { useSession, getCsrfToken } from 'next-auth/react'; // Import thêm getCsrfToken
 import { usePathname, useRouter } from 'next/navigation';
 import AdminSessionProvider from '@/components/providers/AdminSessionProvider'; // Đảm bảo import đúng
 import { AdminAuthProvider, useAdminAuth } from '@/contexts/AdminAuthContext'; // Đảm bảo import đúng
@@ -23,65 +25,84 @@ export default function AdminLayout({
 
 // Component con để chứa logic và giao diện chính của layout
 function AdminLayoutContent({ children }: { children: React.ReactNode }) {
-  // Lấy trạng thái xác thực từ context tùy chỉnh (hoặc trực tiếp từ useSession nếu không dùng context riêng)
+  // Lấy trạng thái xác thực từ context tùy chỉnh
   const { isAuthenticated, isLoading, user } = useAdminAuth();
-  // Có thể vẫn cần useSession để lấy thông tin hiển thị như username nếu context không cung cấp đủ
+  // Lấy session để hiển thị thông tin user (có thể lấy từ user của useAdminAuth nếu đủ)
   const { data: session } = useSession();
   const pathname = usePathname(); // Lấy đường dẫn hiện tại
-  const router = useRouter(); // Hook để điều hướng
+  const router = useRouter(); // Hook để điều hướng (có thể dùng trong manual signout)
   const [isOpen, setIsOpen] = useState(false); // State cho menu mobile
 
-  // --- useEffect ĐÃ SỬA LỖI ---
+  // useEffect đã sửa lỗi để xử lý redirect khi login/chưa login
   useEffect(() => {
-    // Chỉ thực hiện logic chuyển hướng sau khi trạng thái loading hoàn tất
     if (!isLoading) {
-      // 1. Nếu KHÔNG xác thực VÀ đang truy cập một trang admin KHÁC trang login
-      //    => Chuyển hướng về trang login.
       if (!isAuthenticated && pathname !== '/admin/login') {
         console.log('[AdminLayout] Chưa xác thực, đang ở trang admin khác login -> Về Login');
-        router.replace('/admin/login'); // Dùng replace để không lưu vào lịch sử trình duyệt
-      }
-      // 2. Nếu ĐÃ xác thực VÀ đang tình cờ ở trang login
-      //    => Chuyển hướng vào trang dashboard admin chính.
-      else if (isAuthenticated && pathname === '/admin/login') {
+        router.replace('/admin/login');
+      } else if (isAuthenticated && pathname === '/admin/login') {
         console.log('[AdminLayout] Đã xác thực, đang ở trang login -> Vào Admin');
-        router.replace('/admin'); // Dùng replace
+        router.replace('/admin');
       }
-      // 3. Các trường hợp còn lại là hợp lệ (Đã xác thực và ở trang admin,
-      //    hoặc chưa xác thực và ở trang login) => Không làm gì cả.
     }
-  }, [isAuthenticated, isLoading, pathname, router]); // Dependencies của useEffect
+  }, [isAuthenticated, isLoading, pathname, router]);
 
-  // --- Các phần xử lý hiển thị ---
-
-  // Hiển thị trạng thái đang tải trong khi chờ xác thực
+  // Hiển thị trạng thái đang tải
   if (isLoading) {
-    // Có thể thay bằng spinner hoặc skeleton UI đẹp hơn
     return <div className="flex justify-center items-center min-h-screen">Đang tải trang quản trị...</div>;
   }
 
-  // Nếu đang ở trang đăng nhập, chỉ hiển thị nội dung của trang đó (không hiển thị sidebar, header)
+  // Nếu đang ở trang đăng nhập, chỉ hiển thị nội dung của trang đó
   if (pathname === '/admin/login') {
     return <>{children}</>;
   }
 
-  // Nếu không ở trang login MÀ vẫn chưa xác thực (sau khi isLoading=false)
-  // => Không hiển thị gì cả (vì useEffect đã xử lý redirect về login)
-  // Điều này tránh việc hiển thị layout trống trước khi redirect hoàn tất.
+  // Nếu không ở trang login mà vẫn chưa xác thực (sau khi isLoading=false), không hiển thị gì
   if (!isAuthenticated) {
     return null;
   }
 
-  // Hàm xử lý đăng xuất
-  const handleSignOut = async () => {
-    await signOut({
-      callbackUrl: '/admin/login', // Sau khi đăng xuất, quay về trang login admin
-      redirect: true // Để NextAuth tự xử lý redirect
-    });
+  // --- Hàm xử lý đăng xuất THỦ CÔNG ĐÃ SỬA ---
+  const handleSignOutManual = async () => {
+    console.log("[Manual Signout] Bắt đầu quá trình đăng xuất thủ công...");
+    try {
+      // 1. Lấy CSRF token cho context admin
+      const csrfToken = await getCsrfToken();
+      if (!csrfToken) {
+        console.error("[Manual Signout] Lỗi: Không lấy được CSRF token.");
+        alert("Lỗi: Không thể thực hiện đăng xuất (mã bảo vệ).");
+        return;
+      }
+      console.log("[Manual Signout] Đã lấy được CSRF token.");
+
+      // 2. Gửi yêu cầu POST đến đúng endpoint signout của admin
+      const response = await fetch('/api/admin/auth/signout', { // Chỉ định rõ đường dẫn admin
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ csrfToken: csrfToken }),
+      });
+
+      console.log("[Manual Signout] Đã gửi yêu cầu đăng xuất. Status:", response.status);
+
+      // 3. Xử lý kết quả trả về
+      if (response.ok) {
+        console.log("[Manual Signout] Server xác nhận đăng xuất thành công. Chuyển hướng...");
+        // Chuyển hướng về trang login admin.
+        window.location.href = '/admin/login';
+      } else {
+        const errorText = await response.text();
+        console.error("[Manual Signout] Server báo lỗi đăng xuất:", response.status, errorText);
+        alert(`Lỗi: Đăng xuất thất bại (Server Status: ${response.status}).`);
+      }
+    } catch (error) {
+      console.error("[Manual Signout] Lỗi xảy ra trong quá trình đăng xuất:", error);
+      alert("Lỗi: Đã có lỗi xảy ra khi cố gắng đăng xuất.");
+    }
   };
 
+
   // --- Giao diện Layout chính (Sidebar, Header, Main Content) ---
-  // Chỉ hiển thị khi đã xác thực và không ở trang login
   return (
     <div className="min-h-screen flex">
       {/* Nút toggle menu cho mobile */}
@@ -89,27 +110,10 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
         className="lg:hidden fixed top-4 left-4 z-20 p-2 rounded-md bg-[#1a3547] text-white"
         onClick={() => setIsOpen(!isOpen)}
       >
-        <svg
-          className="w-6 h-6"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          {isOpen ? (
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
-          ) : (
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 6h16M4 12h16M4 18h16"
-            />
-          )}
+        {/* SVG Icon */}
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" >
+          {isOpen ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />}
         </svg>
       </button>
 
@@ -123,31 +127,15 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
           <h1 className="text-xl font-bold">Trang Quản Trị</h1>
         </div>
         <nav className="mt-4">
-          {/* Các Link điều hướng trong admin */}
-          <Link href="/admin" className="block px-4 py-2 hover:bg-[#234156]" onClick={() => setIsOpen(false)}>
-            Trang chủ
-          </Link>
-          <Link href="/admin/member" className="block px-4 py-2 hover:bg-[#234156]" onClick={() => setIsOpen(false)}>
-            Quản Lý Thành Viên
-          </Link>
-          <Link href="/admin/booking" className="block px-4 py-2 hover:bg-[#234156]" onClick={() => setIsOpen(false)}>
-            Quản lý Đặt lịch
-          </Link>
-          <Link href="/admin/schedule" className="block px-4 py-2 hover:bg-[#234156]" onClick={() => setIsOpen(false)}>
-            Quản lý Lịch trình
-          </Link>
-          <Link href="/admin/music" className="block px-4 py-2 hover:bg-[#234156]" onClick={() => setIsOpen(false)}>
-            Quản lý Bài Hát
-          </Link>
-          <Link href="/admin/news" className="block px-4 py-2 hover:bg-[#234156]" onClick={() => setIsOpen(false)}>
-            Quản lý Tin Tức
-          </Link>
-          <Link href="/admin/contact" className="block px-4 py-2 hover:bg-[#234156]" onClick={() => setIsOpen(false)}>
-            Quản lý Liên Hệ
-          </Link>
-          <Link href="/admin/user" className="block px-4 py-2 hover:bg-[#234156]" onClick={() => setIsOpen(false)}>
-            Quản lý Người Dùng
-          </Link>
+          {/* Các Link điều hướng */}
+          <Link href="/admin" className="block px-4 py-2 hover:bg-[#234156]" onClick={() => setIsOpen(false)}>Trang chủ</Link>
+          <Link href="/admin/member" className="block px-4 py-2 hover:bg-[#234156]" onClick={() => setIsOpen(false)}>Quản Lý Thành Viên</Link>
+          <Link href="/admin/booking" className="block px-4 py-2 hover:bg-[#234156]" onClick={() => setIsOpen(false)}>Quản lý Đặt lịch</Link>
+          <Link href="/admin/schedule" className="block px-4 py-2 hover:bg-[#234156]" onClick={() => setIsOpen(false)}>Quản lý Lịch trình</Link>
+          <Link href="/admin/music" className="block px-4 py-2 hover:bg-[#234156]" onClick={() => setIsOpen(false)}>Quản lý Bài Hát</Link>
+          <Link href="/admin/news" className="block px-4 py-2 hover:bg-[#234156]" onClick={() => setIsOpen(false)}>Quản lý Tin Tức</Link>
+          <Link href="/admin/contact" className="block px-4 py-2 hover:bg-[#234156]" onClick={() => setIsOpen(false)}>Quản lý Liên Hệ</Link>
+          <Link href="/admin/user" className="block px-4 py-2 hover:bg-[#234156]" onClick={() => setIsOpen(false)}>Quản lý Người Dùng</Link>
         </nav>
       </div>
 
@@ -155,25 +143,22 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
       {isOpen && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 lg:hidden z-0"
-          onClick={() => setIsOpen(false)} // Click vào overlay để đóng menu
+          onClick={() => setIsOpen(false)}
         />
       )}
 
       {/* Phần nội dung chính */}
       <div className="flex-1 transition-all duration-300 ease-in-out lg:ml-0">
-        {/* Thêm margin-left khi sidebar ẩn trên desktop nếu cần */}
-        {/* lg:ml-64 nếu sidebar cố định */}
-        <header className="bg-white shadow sticky top-0 z-5"> {/* Header có thể để sticky */}
+        <header className="bg-white shadow sticky top-0 z-5">
           <div className="flex justify-between items-center px-4 py-3">
-            {/* Tiêu đề trang có thể thay đổi động ở đây */}
             <h2 className="text-xl font-semibold ml-10 lg:ml-0">Admin Dashboard</h2>
             {/* Hiển thị thông tin người dùng và nút đăng xuất */}
             {session?.user && (
               <div className="flex items-center space-x-4">
-                {/* Sử dụng session.user.username hoặc user?.username từ context nếu có */}
                 <span>{session.user.username ?? user?.username ?? 'Admin'}</span>
+                {/* Nút đăng xuất gọi hàm manual */}
                 <button
-                  onClick={handleSignOut}
+                  onClick={handleSignOutManual} // <<< ĐÃ CẬP NHẬT onClick
                   className="text-red-600 hover:text-red-800 transition-colors"
                 >
                   Đăng xuất
