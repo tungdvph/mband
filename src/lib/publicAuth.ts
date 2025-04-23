@@ -6,7 +6,7 @@ import connectDB from "@/lib/db";         // Đảm bảo đường dẫn đúng
 // Bỏ type User nếu không dùng: import type { User } from "@/types/user";
 
 // *** Đặt tên cookie cho public (dùng tên mặc định hoặc khác admin - phiên bản localhost) ***
-const publicCookieNameBase = 'next-auth'; // Tên cơ sở (giống mặc định)
+const publicCookieNameBase = 'next-auth-public'; // Thay đổi tên cơ sở
 
 export const publicAuthOptions: NextAuthOptions = {
   providers: [
