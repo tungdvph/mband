@@ -1,43 +1,45 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
+import { signIn } from 'next-auth/react';
 
-const LoginForm = () => {
+const UserLoginForm = () => {
   const router = useRouter();
-  const { login } = useAuth();
-  const [formData, setFormData] = useState({
-    username: '',
-    password: ''
-  });
+  const [formData, setFormData] = useState({ username: '', password: '' });
   const [error, setError] = useState('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setError('');
+
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+      const result = await signIn('user-credentials', {
+        username: formData.username,
+        password: formData.password,
+        callbackUrl: '/',
+        redirect: false,
+        basePath: '/api/auth'
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Đăng nhập thất bại');
+      if (!result) {
+        throw new Error('Không nhận được phản hồi từ server');
       }
 
-      await login(data.token); // Sử dụng hàm login từ context
-      router.push('/');
+      if (result.error) {
+        setError('Tên đăng nhập hoặc mật khẩu không đúng');
+        return;
+      }
+
+      if (result.ok) {
+        router.replace('/');
+      }
     } catch (err: any) {
-      setError(err.message);
+      console.error('Login error:', err);
+      setError('Có lỗi xảy ra khi đăng nhập');
     }
   };
 
@@ -46,7 +48,7 @@ const LoginForm = () => {
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Đăng nhập
+            Đăng nhập User
           </h2>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
@@ -96,4 +98,4 @@ const LoginForm = () => {
   );
 };
 
-export default LoginForm;
+export default UserLoginForm;

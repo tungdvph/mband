@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import connectDB from '@/lib/db';
 import UserModel from '@/lib/models/User';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { adminAuthOptions } from '@/lib/adminAuth';  // Sửa dòng này
 import path from 'path';
 import * as fs from 'fs/promises';
 
@@ -70,7 +70,7 @@ export async function POST(req: Request) {
 // Endpoint cho admin tạo người dùng mới
 export async function PUT(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(adminAuthOptions);  // Sửa dòng này
     
     // Kiểm tra session và role kỹ hơn
     if (!session || !session.user || session.user.role !== 'admin') {
@@ -142,7 +142,7 @@ export async function PUT(req: Request) {
 // Add this GET handler at the top of the file
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(adminAuthOptions);  // Sửa dòng này
     
     if (!session?.user?.role || session.user.role !== 'admin') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

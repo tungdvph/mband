@@ -6,7 +6,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession();
 
   const handleSignOut = async () => {
-    await signOut({ callbackUrl: '/' });
+    await signOut({ 
+      callbackUrl: '/',
+      redirect: true
+    });
   };
 
   return (

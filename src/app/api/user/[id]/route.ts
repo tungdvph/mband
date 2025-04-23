@@ -6,11 +6,11 @@ import path from 'path';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { adminAuthOptions } from '@/lib/adminAuth'; // Thay đổi import
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
     try {
-        const session = await getServerSession(authOptions);
+        const session = await getServerSession(adminAuthOptions); // Sử dụng adminAuthOptions
         
         if (!session || !session.user || session.user.role !== 'admin') {
             return NextResponse.json(

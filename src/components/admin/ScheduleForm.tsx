@@ -108,6 +108,14 @@ const ScheduleForm = ({ schedule, onSubmit, onCancel }: ScheduleFormProps) => {
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
             required
           />
+          {/* Thêm phần hiển thị AM/PM */}
+          <span className="text-sm text-gray-500 mt-1">
+            {formData.startTime && new Date(`2000-01-01T${formData.startTime}`).toLocaleTimeString('en-US', {
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: true
+            })}
+          </span>
         </div>
       </div>
 

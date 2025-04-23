@@ -24,7 +24,8 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: true
+    required: true,
+    select: true  // Đổi thành true để có thể query password
   },
   fullName: {
     type: String,

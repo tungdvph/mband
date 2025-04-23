@@ -2,15 +2,15 @@
 import { createContext, useContext, ReactNode } from 'react';
 import { useSession } from 'next-auth/react';
 
-interface AuthContextType {
+interface PublicAuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   user: any;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const PublicAuthContext = createContext<PublicAuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function PublicAuthProvider({ children }: { children: ReactNode }) {
   const { data: session, status } = useSession();
 
   const value = {
@@ -20,16 +20,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={value}>
+    <PublicAuthContext.Provider value={value}>
       {children}
-    </AuthContext.Provider>
+    </PublicAuthContext.Provider>
   );
 }
 
-export function useAuth() {
-  const context = useContext(AuthContext);
+export function usePublicAuth() {
+  const context = useContext(PublicAuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error('usePublicAuth must be used within a PublicAuthProvider');
   }
   return context;
 }

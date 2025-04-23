@@ -1,5 +1,4 @@
 'use client';
-// Xóa dòng import AdminHeader
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -29,7 +28,6 @@ export default function AdminDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
   
-  // Khai báo state trước khi sử dụng useEffect
   const [stats, setStats] = useState({
     users: 0,
     bookings: 0,
@@ -50,13 +48,17 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/admin/login');
+      return;
     }
-  }, [status, router]);
 
-  // Các useEffect khác
+    if (status === 'authenticated' && (!session?.user || session.user.role !== 'admin')) {
+      router.push('/admin/login');
+      return;
+    }
+  }, [status, router, session]);
+
   useEffect(() => {
-    if (status === 'authenticated') {
-      // Fetch data chỉ khi đã xác thực
+    if (status === 'authenticated' && session?.user?.role === 'admin') {
       const fetchData = async () => {
         try {
           const [statsRes, revenueRes, bookingRes] = await Promise.all([
@@ -85,10 +87,14 @@ export default function AdminDashboard() {
 
       fetchData();
     }
-  }, [status]);
+  }, [status, session]);
 
   if (status === 'loading') {
-    return <div>Đang tải...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-xl">Đang tải...</div>
+      </div>
+    );
   }
 
   if (!session?.user || session.user.role !== 'admin') {
@@ -96,8 +102,17 @@ export default function AdminDashboard() {
   }
 
   return (
-    // Xóa AdminHeader và thẻ fragment
     <div className="p-6">
+      <h1 className="text-2xl font-bold mb-4">Bảng điều khiển Admin</h1>
+      <div className="mb-8">
+        <div className="bg-white shadow rounded-lg p-4">
+          <h2 className="text-lg font-semibold mb-2">Thông tin tài khoản</h2>
+          <p>Tên đăng nhập: {session.user.username}</p>
+          <p>Họ tên: {session.user.fullName}</p>
+          <p>Email: {session.user.email}</p>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <div className="bg-blue-500 text-white p-6 rounded-lg">
           <h3 className="text-xl mb-2">Tổng số Users: {stats.users}</h3>

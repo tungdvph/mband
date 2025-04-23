@@ -2,10 +2,15 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import Booking from '@/lib/models/Booking';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';  // Sửa lại đường dẫn import
+import { adminAuthOptions } from '@/lib/adminAuth';
 
 export async function GET() {
   try {
+    const session = await getServerSession(adminAuthOptions);
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     await connectDB();
     const bookings = await Booking.find()
       .populate('userId', 'name email');
@@ -18,7 +23,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(adminAuthOptions);
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
