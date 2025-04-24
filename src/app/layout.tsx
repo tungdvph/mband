@@ -1,8 +1,6 @@
 import './globals.css'
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
-import PublicSessionProvider from '@/components/providers/PublicSessionProvider';
-import { PublicAuthProvider } from '@/contexts/PublicAuthContext';
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -19,11 +17,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <PublicSessionProvider>
-          <PublicAuthProvider>
-            {children}
-          </PublicAuthProvider>
-        </PublicSessionProvider>
+        {/* Đã bỏ PublicSessionProvider và PublicAuthProvider */}
+        {children}
       </body>
     </html>
   );
