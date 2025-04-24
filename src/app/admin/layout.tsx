@@ -1,9 +1,8 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-// Import signOut nếu bạn vẫn muốn dùng nó ở đâu đó khác, nhưng không dùng cho nút logout này
-// import { signOut } from 'next-auth/react';
-import { useSession, getCsrfToken } from 'next-auth/react'; // Import thêm getCsrfToken
+// Import signOut từ next-auth/react
+import { useSession, signOut } from 'next-auth/react'; // Bỏ getCsrfToken nếu không dùng ở đâu khác
 import { usePathname, useRouter } from 'next/navigation';
 import AdminSessionProvider from '@/components/providers/AdminSessionProvider'; // Đảm bảo import đúng
 import { AdminAuthProvider, useAdminAuth } from '@/contexts/AdminAuthContext'; // Đảm bảo import đúng
@@ -28,12 +27,12 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   // Lấy trạng thái xác thực từ context tùy chỉnh
   const { isAuthenticated, isLoading, user } = useAdminAuth();
   // Lấy session để hiển thị thông tin user (có thể lấy từ user của useAdminAuth nếu đủ)
-  const { data: session } = useSession();
+  const { data: session } = useSession(); // Vẫn dùng useSession để lấy thông tin hiển thị nếu cần
   const pathname = usePathname(); // Lấy đường dẫn hiện tại
-  const router = useRouter(); // Hook để điều hướng (có thể dùng trong manual signout)
+  const router = useRouter(); // Hook để điều hướng
   const [isOpen, setIsOpen] = useState(false); // State cho menu mobile
 
-  // useEffect đã sửa lỗi để xử lý redirect khi login/chưa login
+  // useEffect xử lý redirect khi login/chưa login (giữ nguyên)
   useEffect(() => {
     if (!isLoading) {
       if (!isAuthenticated && pathname !== '/admin/login') {
@@ -46,57 +45,37 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     }
   }, [isAuthenticated, isLoading, pathname, router]);
 
-  // Hiển thị trạng thái đang tải
+  // Hiển thị trạng thái đang tải (giữ nguyên)
   if (isLoading) {
     return <div className="flex justify-center items-center min-h-screen">Đang tải trang quản trị...</div>;
   }
 
-  // Nếu đang ở trang đăng nhập, chỉ hiển thị nội dung của trang đó
+  // Nếu đang ở trang đăng nhập, chỉ hiển thị nội dung của trang đó (giữ nguyên)
   if (pathname === '/admin/login') {
     return <>{children}</>;
   }
 
-  // Nếu không ở trang login mà vẫn chưa xác thực (sau khi isLoading=false), không hiển thị gì
+  // Nếu không ở trang login mà vẫn chưa xác thực (sau khi isLoading=false), không hiển thị gì (giữ nguyên)
+  // Điều này quan trọng để tránh flash nội dung trước khi redirect
   if (!isAuthenticated) {
-    return null;
+    return null; // Hoặc có thể trả về một trang loading khác nếu muốn
   }
 
-  // --- Hàm xử lý đăng xuất THỦ CÔNG ĐÃ SỬA ---
-  const handleSignOutManual = async () => {
-    console.log("[Manual Signout] Bắt đầu quá trình đăng xuất thủ công...");
+  // --- Hàm xử lý đăng xuất sử dụng signOut của NextAuth ---
+  const handleSignOut = async () => {
+    console.log("[NextAuth Signout] Bắt đầu quá trình đăng xuất admin...");
     try {
-      // 1. Lấy CSRF token cho context admin
-      const csrfToken = await getCsrfToken();
-      if (!csrfToken) {
-        console.error("[Manual Signout] Lỗi: Không lấy được CSRF token.");
-        alert("Lỗi: Không thể thực hiện đăng xuất (mã bảo vệ).");
-        return;
-      }
-      console.log("[Manual Signout] Đã lấy được CSRF token.");
-
-      // 2. Gửi yêu cầu POST đến đúng endpoint signout của admin
-      const response = await fetch('/api/admin/auth/signout', { // Chỉ định rõ đường dẫn admin
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ csrfToken: csrfToken }),
+      // Gọi hàm signOut của NextAuth
+      // SessionProvider được cấu hình trong AdminSessionProvider sẽ đảm bảo
+      // lời gọi này nhắm đúng vào /api/admin/auth/signout
+      await signOut({
+        callbackUrl: '/admin/login', // Vẫn giữ callbackUrl
+        redirect: true              // Vẫn giữ redirect
+        // Không cần 'basePath' ở đây nữa
       });
-
-      console.log("[Manual Signout] Đã gửi yêu cầu đăng xuất. Status:", response.status);
-
-      // 3. Xử lý kết quả trả về
-      if (response.ok) {
-        console.log("[Manual Signout] Server xác nhận đăng xuất thành công. Chuyển hướng...");
-        // Chuyển hướng về trang login admin.
-        window.location.href = '/admin/login';
-      } else {
-        const errorText = await response.text();
-        console.error("[Manual Signout] Server báo lỗi đăng xuất:", response.status, errorText);
-        alert(`Lỗi: Đăng xuất thất bại (Server Status: ${response.status}).`);
-      }
+      console.log("[NextAuth Signout] Yêu cầu đăng xuất admin đã được gửi và xử lý.");
     } catch (error) {
-      console.error("[Manual Signout] Lỗi xảy ra trong quá trình đăng xuất:", error);
+      console.error("[NextAuth Signout] Lỗi xảy ra trong quá trình đăng xuất admin:", error);
       alert("Lỗi: Đã có lỗi xảy ra khi cố gắng đăng xuất.");
     }
   };
@@ -127,7 +106,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
           <h1 className="text-xl font-bold">Trang Quản Trị</h1>
         </div>
         <nav className="mt-4">
-          {/* Các Link điều hướng */}
+          {/* Các Link điều hướng (đóng menu khi click trên mobile) */}
           <Link href="/admin" className="block px-4 py-2 hover:bg-[#234156]" onClick={() => setIsOpen(false)}>Trang chủ</Link>
           <Link href="/admin/member" className="block px-4 py-2 hover:bg-[#234156]" onClick={() => setIsOpen(false)}>Quản Lý Thành Viên</Link>
           <Link href="/admin/booking" className="block px-4 py-2 hover:bg-[#234156]" onClick={() => setIsOpen(false)}>Quản lý Đặt lịch</Link>
@@ -153,12 +132,14 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
           <div className="flex justify-between items-center px-4 py-3">
             <h2 className="text-xl font-semibold ml-10 lg:ml-0">Admin Dashboard</h2>
             {/* Hiển thị thông tin người dùng và nút đăng xuất */}
-            {session?.user && (
+            {/* Kiểm tra cả session và user từ context nếu cần */}
+            {(session?.user || user) && (
               <div className="flex items-center space-x-4">
-                <span>{session.user.username ?? user?.username ?? 'Admin'}</span>
-                {/* Nút đăng xuất gọi hàm manual */}
+                {/* Ưu tiên hiển thị từ session hoặc từ context nếu session không có */}
+                <span>{session?.user?.username ?? user?.username ?? 'Admin'}</span>
+                {/* Nút đăng xuất gọi hàm handleSignOut mới */}
                 <button
-                  onClick={handleSignOutManual} // <<< ĐÃ CẬP NHẬT onClick
+                  onClick={handleSignOut} // <<< ĐÃ CẬP NHẬT onClick để gọi hàm mới
                   className="text-red-600 hover:text-red-800 transition-colors"
                 >
                   Đăng xuất
