@@ -1,12 +1,13 @@
+// Giả sử file này nằm ở src/app/admin/layout.tsx hoặc vị trí tương tự
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-// Import signOut từ next-auth/react
-import { useSession, signOut } from 'next-auth/react'; // Bỏ getCsrfToken nếu không dùng ở đâu khác
+import { useSession, signOut } from 'next-auth/react';
 import { usePathname, useRouter } from 'next/navigation';
 import AdminSessionProvider from '@/components/providers/AdminSessionProvider'; // Đảm bảo import đúng
 import { AdminAuthProvider, useAdminAuth } from '@/contexts/AdminAuthContext'; // Đảm bảo import đúng
 
+// Component cha cung cấp các Provider
 export default function AdminLayout({
   children,
 }: {
@@ -32,7 +33,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter(); // Hook để điều hướng
   const [isOpen, setIsOpen] = useState(false); // State cho menu mobile
 
-  // useEffect xử lý redirect khi login/chưa login (giữ nguyên)
+  // useEffect xử lý redirect khi login/chưa login
   useEffect(() => {
     if (!isLoading) {
       if (!isAuthenticated && pathname !== '/admin/login') {
@@ -45,33 +46,28 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     }
   }, [isAuthenticated, isLoading, pathname, router]);
 
-  // Hiển thị trạng thái đang tải (giữ nguyên)
+  // Hiển thị trạng thái đang tải
   if (isLoading) {
     return <div className="flex justify-center items-center min-h-screen">Đang tải trang quản trị...</div>;
   }
 
-  // Nếu đang ở trang đăng nhập, chỉ hiển thị nội dung của trang đó (giữ nguyên)
+  // Nếu đang ở trang đăng nhập, chỉ hiển thị nội dung của trang đó
   if (pathname === '/admin/login') {
     return <>{children}</>;
   }
 
-  // Nếu không ở trang login mà vẫn chưa xác thực (sau khi isLoading=false), không hiển thị gì (giữ nguyên)
-  // Điều này quan trọng để tránh flash nội dung trước khi redirect
+  // Nếu không ở trang login mà vẫn chưa xác thực (sau khi isLoading=false), không hiển thị gì
   if (!isAuthenticated) {
-    return null; // Hoặc có thể trả về một trang loading khác nếu muốn
+    return null;
   }
 
-  // --- Hàm xử lý đăng xuất sử dụng signOut của NextAuth ---
+  // Hàm xử lý đăng xuất sử dụng signOut của NextAuth
   const handleSignOut = async () => {
     console.log("[NextAuth Signout] Bắt đầu quá trình đăng xuất admin...");
     try {
-      // Gọi hàm signOut của NextAuth
-      // SessionProvider được cấu hình trong AdminSessionProvider sẽ đảm bảo
-      // lời gọi này nhắm đúng vào /api/admin/auth/signout
       await signOut({
-        callbackUrl: '/admin/login', // Vẫn giữ callbackUrl
-        redirect: true              // Vẫn giữ redirect
-        // Không cần 'basePath' ở đây nữa
+        callbackUrl: '/admin/login',
+        redirect: true
       });
       console.log("[NextAuth Signout] Yêu cầu đăng xuất admin đã được gửi và xử lý.");
     } catch (error) {
@@ -111,6 +107,11 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
           <Link href="/admin/member" className="block px-4 py-2 hover:bg-[#234156]" onClick={() => setIsOpen(false)}>Quản Lý Thành Viên</Link>
           <Link href="/admin/booking" className="block px-4 py-2 hover:bg-[#234156]" onClick={() => setIsOpen(false)}>Quản lý Đặt lịch</Link>
           <Link href="/admin/schedule" className="block px-4 py-2 hover:bg-[#234156]" onClick={() => setIsOpen(false)}>Quản lý Lịch trình</Link>
+
+          {/* --- LINK QUẢN LÝ ĐẶT VÉ ĐÃ THÊM --- */}
+          <Link href="/admin/ticket-booking" className="block px-4 py-2 hover:bg-[#234156]" onClick={() => setIsOpen(false)}>Quản lý Đặt vé</Link>
+          {/* --- KẾT THÚC LINK QUẢN LÝ ĐẶT VÉ --- */}
+
           <Link href="/admin/music" className="block px-4 py-2 hover:bg-[#234156]" onClick={() => setIsOpen(false)}>Quản lý Bài Hát</Link>
           <Link href="/admin/news" className="block px-4 py-2 hover:bg-[#234156]" onClick={() => setIsOpen(false)}>Quản lý Tin Tức</Link>
           <Link href="/admin/contact" className="block px-4 py-2 hover:bg-[#234156]" onClick={() => setIsOpen(false)}>Quản lý Liên Hệ</Link>
@@ -132,14 +133,13 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
           <div className="flex justify-between items-center px-4 py-3">
             <h2 className="text-xl font-semibold ml-10 lg:ml-0">Admin Dashboard</h2>
             {/* Hiển thị thông tin người dùng và nút đăng xuất */}
-            {/* Kiểm tra cả session và user từ context nếu cần */}
             {(session?.user || user) && (
               <div className="flex items-center space-x-4">
                 {/* Ưu tiên hiển thị từ session hoặc từ context nếu session không có */}
                 <span>{session?.user?.username ?? user?.username ?? 'Admin'}</span>
                 {/* Nút đăng xuất gọi hàm handleSignOut mới */}
                 <button
-                  onClick={handleSignOut} // <<< ĐÃ CẬP NHẬT onClick để gọi hàm mới
+                  onClick={handleSignOut}
                   className="text-red-600 hover:text-red-800 transition-colors"
                 >
                   Đăng xuất

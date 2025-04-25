@@ -88,8 +88,8 @@ export default function ScheduleDetailPage() {
                                             schedule.type === 'interview' ? 'Phỏng vấn' : 'Khác'
                             }</p>
                             <p><strong>Trạng thái:</strong> <span className={`font-semibold ${schedule.status === 'scheduled' ? 'text-green-600' :
-                                    schedule.status === 'completed' ? 'text-blue-600' :
-                                        'text-red-600' // cancelled
+                                schedule.status === 'completed' ? 'text-blue-600' :
+                                    'text-red-600' // cancelled
                                 }`}>
                                 {schedule.status === 'scheduled' ? 'Đã lên lịch' :
                                     schedule.status === 'completed' ? 'Đã hoàn thành' : 'Đã hủy'}
