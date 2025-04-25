@@ -92,9 +92,7 @@ export default function ScheduleListPage() {
                   {/* Chỉ hiển thị nút đặt vé nếu sự kiện là concert và chưa bị hủy? (Ví dụ điều kiện) */}
                   {schedule.type === 'concert' && schedule.status !== 'cancelled' && (
                     <Link
-                      // href={`/booking/ticket/${schedule._id}`} // Link tới trang đặt vé (sẽ tạo sau)
-                      href="#" // Tạm thời chưa có link
-                      onClick={(e) => { e.preventDefault(); alert('Chức năng Đặt vé sắp ra mắt!'); }} // Thông báo tạm
+                      href={`/booking/ticket/${schedule._id}`}
                       className="flex-1 text-center px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors duration-200 text-sm font-medium"
                     >
                       Đặt vé

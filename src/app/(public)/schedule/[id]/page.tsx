@@ -116,9 +116,7 @@ export default function ScheduleDetailPage() {
                         <div className="mt-8 border-t pt-8 text-center">
                             {schedule.type === 'concert' && schedule.status === 'scheduled' && ( // Chỉ hiển thị nếu là concert và chưa hủy/hoàn thành
                                 <Link
-                                    // href={`/booking/ticket/${schedule._id}`} // Link tới trang đặt vé (sẽ tạo sau)
-                                    href="#"
-                                    onClick={(e) => { e.preventDefault(); alert('Chức năng Đặt vé sắp ra mắt!'); }}
+                                    href={`/booking/ticket/${schedule._id}`}
                                     className="inline-block px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 text-lg font-semibold"
                                 >
                                     Đặt vé ngay

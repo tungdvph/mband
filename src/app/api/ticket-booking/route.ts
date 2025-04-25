@@ -3,9 +3,37 @@ import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import TicketBooking from '@/lib/models/TicketBooking';
 import { getServerSession } from 'next-auth';
-import { adminAuthOptions } from '@/lib/adminAuth'; // Dùng auth của admin
+import { adminAuthOptions } from '@/lib/adminAuth';
 
 export const runtime = 'nodejs';
+
+export async function POST(request: Request) {
+    try {
+        const session = await getServerSession(adminAuthOptions);
+        if (!session) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        await connectToDatabase();
+
+        const { scheduleId, ticketCount } = await request.json();
+
+        const newBooking = new TicketBooking({
+            scheduleId,
+            userId: session.user.id,
+            ticketCount,
+            totalPrice: 100000 * ticketCount, // Giả sử giá vé là 100,000 VND
+            status: 'pending',
+        });
+
+        await newBooking.save();
+
+        return NextResponse.json(newBooking);
+    } catch (error) {
+        console.error('Error creating ticket booking:', error);
+        return NextResponse.json({ error: 'Error creating ticket booking' }, { status: 500 });
+    }
+}
 
 export async function GET() {
     try {
