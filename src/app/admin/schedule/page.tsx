@@ -37,7 +37,7 @@ export default function ScheduleManagement() {
   const handleDeleteSchedule = async (scheduleId: string) => {
     if (window.confirm('Bạn có chắc chắn muốn xóa lịch trình này?')) {
       try {
-        const response = await fetch(`/api/schedules/${scheduleId}`, {
+        const response = await fetch(`/api/schedule/${scheduleId}`, {
           method: 'DELETE',
         });
 
