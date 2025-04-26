@@ -13,6 +13,22 @@ interface NewsUpdateData {
   image?: string;
 }
 
+export async function GET(request: Request, { params }: { params: { id: string } }) {
+  try {
+    await connectToDatabase();
+    const news = await News.findById(params.id);
+
+    if (!news) {
+      return NextResponse.json({ error: 'Không tìm thấy tin tức' }, { status: 404 });
+    }
+
+    return NextResponse.json(news);
+  } catch (error) {
+    console.error('Get news error:', error);
+    return NextResponse.json({ error: 'Lỗi khi lấy chi tiết tin tức' }, { status: 500 });
+  }
+}
+
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
   try {
     await connectToDatabase();
