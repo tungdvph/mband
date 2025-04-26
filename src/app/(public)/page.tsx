@@ -11,7 +11,7 @@ interface HomeData {
     title: string;
     content: string;
     image: string;
-    date: Date;
+    createdAt: string; // Thay đổi từ date thành createdAt
     author: string;
   }>;
   events: Array<{
@@ -27,8 +27,8 @@ interface HomeData {
     _id: string;
     title: string;
     artist: string;
-    coverImage: string;
-    audioUrl: string;
+    image: string;
+    audio: string;
   }>;
 }
 
@@ -100,10 +100,11 @@ export default function Home() {
             {data.news.map((item) => (
               <NewsCard
                 key={item._id}
+                _id={item._id}
                 title={item.title}
                 content={item.content}
-                image={item.image}
-                date={new Date(item.date)}
+                image={item.image || '/default-news.png'}
+                date={new Date(item.createdAt)}
                 author={item.author}
               />
             ))}
@@ -141,8 +142,8 @@ export default function Home() {
                 key={track._id}
                 title={track.title}
                 artist={track.artist}
-                image={track.coverImage}      // Đổi từ coverImage sang image
-                audio={track.audioUrl}        // Đổi từ audioUrl sang audio
+                image={track.image}
+                audio={track.audio}
               />
             ))}
           </div>

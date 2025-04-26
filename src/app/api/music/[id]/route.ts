@@ -4,6 +4,25 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import Music from '@/lib/models/Music';
 
+export async function GET(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    await connectToDatabase();
+    const music = await Music.findById(params.id);
+    
+    if (!music) {
+      return NextResponse.json({ error: 'Music not found' }, { status: 404 });
+    }
+    
+    return NextResponse.json(music);
+  } catch (error) {
+    console.error('Error:', error);
+    return NextResponse.json({ error: 'Error fetching music' }, { status: 500 });
+  }
+}
+
 export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }
