@@ -98,3 +98,22 @@ export async function PUT(
     return NextResponse.json({ error: 'Error updating member' }, { status: 500 });
   }
 }
+
+export async function GET(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    await connectToDatabase();
+    const member = await Member.findById(params.id);
+    
+    if (!member) {
+      return NextResponse.json({ error: 'Member not found' }, { status: 404 });
+    }
+    
+    return NextResponse.json(member);
+  } catch (error) {
+    console.error('Error:', error);
+    return NextResponse.json({ error: 'Error fetching member' }, { status: 500 });
+  }
+}

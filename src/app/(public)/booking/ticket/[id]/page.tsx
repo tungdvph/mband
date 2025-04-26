@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Layout from '@/components/layout/Layout';
 import { Schedule } from '@/types/schedule';
+import Link from 'next/link';
 
 export default function TicketBookingPage() {
     const params = useParams();
@@ -113,6 +114,12 @@ export default function TicketBookingPage() {
 
                 {!loading && !error && schedule && (
                     <div className="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-lg">
+                        <div className="mb-6">
+                            <Link href="/schedule">
+                                <span className="text-red-600 hover:text-red-700">← Quay lại</span>
+                            </Link>
+                        </div>
+                        
                         <h1 className="text-3xl font-bold mb-4">Đặt vé cho {schedule.eventName}</h1>
                         
                         <div className="mb-6">

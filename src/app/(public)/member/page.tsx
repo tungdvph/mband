@@ -50,12 +50,12 @@ export default function MemberPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {members.map((member) => (
-              // Sửa lại đường dẫn ảnh mặc định
               <MemberCard
-                key={member._id.toString()} // Convert ObjectId to string
+                key={member._id.toString()}
+                _id={member._id.toString()} // Thêm _id vào đây
                 name={member.name}
                 role={member.role}
-                image={member.image || '/default-member.png'} // Sửa từ default-avatar.png thành default-member.png
+                image={member.image || '/default-member.png'}
                 description={member.description}
                 socialLinks={member.socialLinks || {}}
               />

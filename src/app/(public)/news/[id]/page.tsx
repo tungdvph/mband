@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Layout from '@/components/layout/Layout';
 import NewsContent from '@/components/ui/NewsContent';
+import Link from 'next/link';
 
 interface NewsDetail {
   _id: string;
@@ -61,6 +62,12 @@ export default function NewsDetailPage() {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-16">
+        <div className="mb-6">
+          <Link href="/news">
+            <span className="text-red-600 hover:text-red-700">← Quay lại</span>
+          </Link>
+        </div>
+        
         <div className="max-w-4xl mx-auto">
           <img 
             src={news.image || '/default-news.png'} 

@@ -1,8 +1,11 @@
+import Link from 'next/link';
+
 interface MemberCardProps {
+  _id: string;  // Thêm _id vào props
   name: string;
   role: string;
   image: string;
-  description?: string;  // Thêm ? để làm cho description là tùy chọn
+  description?: string;
   socialLinks: {
     facebook?: string;
     instagram?: string;
@@ -10,14 +13,14 @@ interface MemberCardProps {
   };
 }
 
-const MemberCard = ({ name, role, image, description = '', socialLinks }: MemberCardProps) => {
+const MemberCard = ({ _id, name, role, image, description = '', socialLinks }: MemberCardProps) => {
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden">
       <img src={image} alt={name} className="w-full h-64 object-cover" />
       <div className="p-4">
         <h3 className="text-xl font-semibold">{name}</h3>
         <p className="text-red-600">{role}</p>
-        <p className="mt-2 text-gray-600">{description}</p>
+        <p className="mt-2 text-gray-600 line-clamp-3">{description}</p>
         <div className="mt-4 flex space-x-4">
           {socialLinks.facebook && (
             <a href={socialLinks.facebook} className="text-gray-600 hover:text-red-600">
@@ -35,6 +38,11 @@ const MemberCard = ({ name, role, image, description = '', socialLinks }: Member
             </a>
           )}
         </div>
+        <Link href={`/member/${_id}`}>
+          <span className="mt-4 inline-block text-red-600 hover:text-red-700">
+            Xem chi tiết →
+          </span>
+        </Link>
       </div>
     </div>
   );
