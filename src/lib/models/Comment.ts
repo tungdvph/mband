@@ -1,26 +1,29 @@
 // src/lib/models/Comment.ts
 import mongoose, { Schema, Document, Model, models } from 'mongoose';
 
-// Interface vẫn giữ nguyên, đã bao gồm các trường cần thiết
+// Cập nhật interface để bao gồm parentId (tùy chọn)
 export interface IComment extends Document {
+    _id: mongoose.Types.ObjectId; // Thêm _id cho rõ ràng type
     musicId: mongoose.Types.ObjectId;
     userId: mongoose.Types.ObjectId;
     userFullName: string;
     content: string;
-    createdAt: Date; // Trường này sẽ được timestamps quản lý, nhưng để trong interface cho rõ ràng cũng không sao
-    // updatedAt không có do cấu hình timestamps
+    createdAt: Date;
+    updatedAt: Date; // Sẽ có do timestamps: true
+    parentId?: mongoose.Types.ObjectId | null; // Thêm parentId, có thể là null
 }
 
-// Schema cũng đã đúng, đặc biệt là các ref
+// Thêm parentId vào schema
 const commentSchema: Schema<IComment> = new Schema({
     musicId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Music', // Chính xác
-        required: true
+        ref: 'Music',
+        required: true,
+        index: true // Thêm index để tăng tốc query theo musicId
     },
     userId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User', // Chính xác
+        ref: 'User',
         required: true
     },
     userFullName: {
@@ -30,15 +33,19 @@ const commentSchema: Schema<IComment> = new Schema({
     content: {
         type: String,
         required: true
+    },
+    // Thêm trường parentId vào đây
+    parentId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Comment', // Tham chiếu lại chính model Comment
+        default: null, // Giá trị mặc định là null cho comment gốc
+        index: true // Thêm index để tăng tốc query tìm replies
     }
 }, {
-    // timestamps: { createdAt: true, updatedAt: false } // Cấu hình này đúng, sẽ tự thêm createdAt
-    timestamps: true // Có thể dùng timestamps: true nếu bạn muốn cả createdAt và updatedAt
-    // Hoặc giữ nguyên { createdAt: true, updatedAt: false } nếu chỉ muốn createdAt
+    timestamps: true // Giữ nguyên timestamps: true để có createdAt và updatedAt
 });
 
-// Cách định nghĩa model chuẩn hơn trong Next.js để tránh lỗi HMR (Hot Module Replacement)
-// Kiểm tra xem model 'Comment' đã tồn tại trong mongoose.models chưa, nếu có thì dùng lại, nếu chưa thì tạo mới.
+// Giữ nguyên cách định nghĩa model
 const Comment: Model<IComment> = models.Comment || mongoose.model<IComment>('Comment', commentSchema);
 
 export default Comment;
