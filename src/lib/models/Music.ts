@@ -1,6 +1,7 @@
 import mongoose, { Document } from 'mongoose';
 
-interface IMusic extends Document {
+// Chỉ cần thêm "export" vào dòng này
+export interface IMusic extends Document {
   title: string;
   description?: string;
   artist: string;
@@ -11,6 +12,7 @@ interface IMusic extends Document {
   updatedAt: Date;
 }
 
+// Giữ nguyên phần còn lại
 const musicSchema = new mongoose.Schema({
   title: { type: String, required: true },
   description: { type: String },
@@ -25,10 +27,11 @@ const musicSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Xóa model cũ nếu tồn tại
+// Giữ nguyên phần còn lại
 if (mongoose.models.Music) {
   delete mongoose.models.Music;
 }
 
+// Giữ nguyên phần còn lại
 const Music = mongoose.model<IMusic>('Music', musicSchema);
 export default Music;
