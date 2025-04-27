@@ -332,58 +332,49 @@ function CommentSection({ musicId }: { musicId: string }) {
 
 export default function MusicDetailPage() {
     const params = useParams();
-    const id = params?.id as string | undefined; // Lấy id, có thể là undefined ban đầu
+    const id = params?.id as string | undefined;
     const [music, setMusic] = useState<MusicDetail | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        // Chỉ fetch khi có id hợp lệ
         if (id && typeof id === 'string') {
             setIsLoading(true);
             setError(null);
-            setMusic(null); // Reset music state khi id thay đổi
+            setMusic(null);
 
             fetch(`/api/music/${id}`)
                 .then(res => {
                     if (!res.ok) {
-                        // Cố gắng đọc lỗi từ response nếu có thể
                         return res.json().then(errData => {
                             throw new Error(errData.error || `Lỗi mạng (status: ${res.status})`);
                         }).catch(() => {
-                            // Nếu không đọc được json lỗi, ném lỗi chung
                             throw new Error(`Lỗi mạng (status: ${res.status})`);
                         });
                     }
                     return res.json();
                 })
                 .then(data => {
-                    // API có thể trả về { music: ... } hoặc chỉ { ... }
                     const musicData = data.music || data;
                     if (musicData && musicData._id) {
                         setMusic(musicData);
                     } else {
-                        console.error("Dữ liệu bài hát không hợp lệ:", data);
                         setError("Không tìm thấy dữ liệu bài hát hợp lệ.");
                     }
                 })
                 .catch(err => {
-                    console.error('Lỗi fetch chi tiết nhạc:', err);
                     setError(err.message || "Đã xảy ra lỗi khi tải chi tiết bài hát.");
                 })
                 .finally(() => {
                     setIsLoading(false);
                 });
-        } else if (params?.id) { // Nếu params.id có tồn tại nhưng không phải string hợp lệ
+        } else if (params?.id) {
             setError("ID bài hát không hợp lệ.");
             setIsLoading(false);
         } else {
-            // Trường hợp không có ID trong params ngay từ đầu (ví dụ SSR/SSG chưa xong)
-            setIsLoading(true); // Có thể vẫn đang chờ ID từ router
+            setIsLoading(true);
         }
-    }, [id, params?.id]); // Thêm params?.id vào dependencies
-
-    // --- Phần Render ---
+    }, [id, params?.id]);
 
     if (isLoading) {
         return (
@@ -405,7 +396,6 @@ export default function MusicDetailPage() {
         return (
             <Layout>
                 <div className="container mx-auto px-4 py-8">
-                    {/* Phần thông tin bài hát và player */}
                     <div className="mb-8">
                         <h1 className="text-3xl font-bold mb-2">{music.title}</h1>
                         <p className="text-lg text-gray-600 mb-4">{music.artist}</p>
@@ -414,7 +404,6 @@ export default function MusicDetailPage() {
                             artist={music.artist}
                             image={music.image}
                             audio={music.audio}
-                        // description={music.description} // MusicPlayer có cần description không?
                         />
                         {music.description && (
                             <div className="mt-4 prose max-w-none">
@@ -422,15 +411,13 @@ export default function MusicDetailPage() {
                             </div>
                         )}
                     </div>
-
-                    {/* Phần bình luận */}
+                    {/* Sử dụng lại CommentSection mới */}
                     <CommentSection musicId={music._id} />
                 </div>
             </Layout>
         );
     }
 
-    // Trường hợp không loading, không error, không music
     return (
         <Layout>
             <div className="container mx-auto px-4 py-8 text-center">Không tìm thấy thông tin bài hát.</div>
