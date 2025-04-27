@@ -1,25 +1,32 @@
 // src/lib/models/Comment.ts
 import mongoose, { Schema, Document, Model, models } from 'mongoose';
 
-// Cập nhật interface để bao gồm parentId (tùy chọn)
 export interface IComment extends Document {
-    _id: mongoose.Types.ObjectId; // Thêm _id cho rõ ràng type
-    musicId: mongoose.Types.ObjectId;
+    _id: mongoose.Types.ObjectId;
+    // Thay đổi: Cả hai đều không bắt buộc ở mức schema,
+    // nhưng logic API sẽ đảm bảo ít nhất một cái được cung cấp
+    musicId?: mongoose.Types.ObjectId | null;
+    newsId?: mongoose.Types.ObjectId | null;
     userId: mongoose.Types.ObjectId;
     userFullName: string;
     content: string;
     createdAt: Date;
-    updatedAt: Date; // Sẽ có do timestamps: true
-    parentId?: mongoose.Types.ObjectId | null; // Thêm parentId, có thể là null
+    updatedAt: Date;
+    parentId?: mongoose.Types.ObjectId | null;
 }
 
-// Thêm parentId vào schema
 const commentSchema: Schema<IComment> = new Schema({
-    musicId: {
+    musicId: { // <-- Giữ lại nhưng không required
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Music',
-        required: true,
-        index: true // Thêm index để tăng tốc query theo musicId
+        required: false, // <-- Thay đổi: không bắt buộc
+        index: true
+    },
+    newsId: { // <-- Thêm trường newsId
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'News',
+        required: false, // <-- Thay đổi: không bắt buộc
+        index: true
     },
     userId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -34,18 +41,25 @@ const commentSchema: Schema<IComment> = new Schema({
         type: String,
         required: true
     },
-    // Thêm trường parentId vào đây
     parentId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Comment', // Tham chiếu lại chính model Comment
-        default: null, // Giá trị mặc định là null cho comment gốc
-        index: true // Thêm index để tăng tốc query tìm replies
+        ref: 'Comment',
+        default: null,
+        index: true
     }
 }, {
-    timestamps: true // Giữ nguyên timestamps: true để có createdAt và updatedAt
+    timestamps: true
 });
 
-// Giữ nguyên cách định nghĩa model
+// Thêm validator để đảm bảo có musicId hoặc newsId (hoặc cả hai nếu logic cho phép)
+commentSchema.pre('validate', function (next) {
+    if (!this.musicId && !this.newsId) {
+        next(new Error('Comment must belong to either Music or News (musicId or newsId is required).'));
+    } else {
+        next();
+    }
+});
+
 const Comment: Model<IComment> = models.Comment || mongoose.model<IComment>('Comment', commentSchema);
 
 export default Comment;

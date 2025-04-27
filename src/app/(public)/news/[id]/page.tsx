@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Layout from '@/components/layout/Layout';
 import NewsContent from '@/components/ui/NewsContent';
+import CommentSection from '@/components/CommentSection';
 
 interface NewsDetail {
   _id: string;
@@ -84,6 +85,7 @@ export default function NewsDetailPage() {
             <span>{news.author}</span>
           </div>
           <NewsContent content={news.content} />
+          <CommentSection type="news" id={news._id} />
         </div>
       </div>
     </Layout>

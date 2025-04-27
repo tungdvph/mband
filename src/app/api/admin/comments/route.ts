@@ -1,66 +1,101 @@
-// api/admin/comments/route.ts
+// /api/admin/comments/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import Comment, { IComment } from '@/lib/models/Comment';
-// Import IMusic đã được export và Model Music
-import Music, { IMusic } from '@/lib/models/Music'; // Import này bây giờ sẽ hoạt động
-import mongoose from 'mongoose'; // Import mongoose nếu cần dùng ObjectId
+import Music, { IMusic } from '@/lib/models/Music';
+import News, { INews } from '@/lib/models/News'; // <-- Import News model và interface (đảm bảo INews được export từ News.ts)
+import mongoose from 'mongoose';
 
-// Interface cho kết quả sau khi populate (dùng object thuần túy do .lean())
+// Interface cho comment sau khi populate - cần bao gồm cả newsId
 interface PopulatedCommentLean {
-    _id: mongoose.Types.ObjectId; // Hoặc string nếu bạn chuyển đổi ngay
-    musicId: { // musicId giờ là object thuần túy
-        _id: mongoose.Types.ObjectId; // Hoặc string
-        title: string;
-    } | null; // Populated field có thể là null nếu không tìm thấy Music
-    userId: mongoose.Types.ObjectId; // Hoặc string
+    _id: mongoose.Types.ObjectId;
+    musicId?: { _id: mongoose.Types.ObjectId; title: string; } | null; // Có thể là null hoặc không tồn tại
+    newsId?: { _id: mongoose.Types.ObjectId; title: string; } | null;  // <-- Thêm newsId (có thể là null hoặc không tồn tại)
+    userId?: mongoose.Types.ObjectId; // Giả sử schema có userId, nếu không thì bỏ qua
     userFullName: string;
     content: string;
-    createdAt: Date; // Hoặc string nếu chuyển đổi
+    createdAt: Date;
+    // Thêm các trường khác từ Comment schema nếu cần (vd: parentId, updatedAt)
+}
+
+// Interface cho dữ liệu trả về frontend
+interface FormattedAdminComment {
+    _id: string;
+    musicId?: string; // ID dưới dạng string (nếu có)
+    newsId?: string;  // ID dưới dạng string (nếu có)
+    referenceTitle: string; // Tên bài nhạc HOẶC bài viết
+    referenceType: 'Music' | 'News' | 'Unknown'; // Loại nội dung
+    userFullName: string;
+    content: string;
+    createdAt: string; // ISO string
 }
 
 
 export async function GET(req: NextRequest) {
     await connectToDatabase();
     try {
-        // Sử dụng populate và lean()
+        // Populate cả musicId và newsId. Chọn các trường cần thiết ('title', '_id')
         const comments = await Comment.find({})
             .sort({ createdAt: -1 })
-            // Chỉ định rõ kiểu cho populate nếu cần, nhưng lean() thường giải quyết vấn đề type
             .populate<{ musicId: Pick<IMusic, '_id' | 'title'> | null }>('musicId', 'title _id')
-            .lean<PopulatedCommentLean[]>(); // Ép kiểu kết quả của lean()
+            .populate<{ newsId: Pick<INews, '_id' | 'title'> | null }>('newsId', 'title _id') // <-- Populate newsId
+            .lean<PopulatedCommentLean[]>(); // Sử dụng lean để lấy plain object
 
-        // Định dạng lại dữ liệu, bây giờ comments là array các object thuần túy
-        const formattedComments = comments.map(comment => {
-            // Truy cập trực tiếp vào các thuộc tính của object thuần túy
-            // Kiểm tra null cho musicId do populate có thể thất bại
-            const musicTitle = comment.musicId?.title;
-            const musicIdString = comment.musicId?._id?.toString();
+        // Định dạng lại dữ liệu cho frontend
+        const formattedComments: FormattedAdminComment[] = comments.map(comment => {
+            let referenceTitle = 'Không rõ';
+            let referenceType: 'Music' | 'News' | 'Unknown' = 'Unknown';
+            let musicIdString: string | undefined = undefined;
+            let newsIdString: string | undefined = undefined;
+
+            // Kiểm tra xem musicId có được populate thành công không
+            if (comment.musicId?._id && comment.musicId.title) {
+                referenceTitle = comment.musicId.title;
+                referenceType = 'Music';
+                musicIdString = comment.musicId._id.toString();
+            }
+            // Nếu không phải music, kiểm tra xem newsId có được populate không
+            else if (comment.newsId?._id && comment.newsId.title) {
+                referenceTitle = comment.newsId.title;
+                referenceType = 'News';
+                newsIdString = comment.newsId._id.toString();
+            }
+            // Trường hợp comment không có musicId lẫn newsId hợp lệ (dữ liệu cũ hoặc lỗi)
+            // thì giữ nguyên giá trị mặc định 'Không rõ', 'Unknown'
 
             return {
-                _id: comment._id.toString(), // Chuyển ObjectId thành string
-                musicId: musicIdString || 'ID không xác định', // Id bài nhạc (string)
-                musicTitle: musicTitle || 'Không rõ', // Tên bài nhạc (string)
+                _id: comment._id.toString(),
+                musicId: musicIdString,
+                newsId: newsIdString,
+                referenceTitle: referenceTitle,
+                referenceType: referenceType,
                 userFullName: comment.userFullName,
                 content: comment.content,
-                createdAt: comment.createdAt.toISOString(), // Chuyển Date thành string ISO
+                createdAt: comment.createdAt.toISOString(),
             };
         });
 
         return NextResponse.json(formattedComments);
     } catch (error) {
         console.error("Error fetching comments for admin:", error);
-        return NextResponse.json({ error: 'Lỗi khi tải bình luận' }, { status: 500 });
+        const errorMessage = error instanceof Error ? error.message : 'Lỗi không xác định khi tải bình luận';
+        return NextResponse.json({ error: errorMessage }, { status: 500 });
     }
 }
 
 // --- Hàm POST ---
-// Interface cho body request POST
+// Hàm POST này hiện đang được thiết kế để admin thêm comment cho MUSIC.
+// Nếu bạn muốn admin có thể thêm comment cho cả NEWS từ đây, cần:
+// 1. Sửa PostRequestBody để nhận newsId (tùy chọn)
+// 2. Thêm logic để kiểm tra và chỉ định musicId HOẶC newsId khi tạo Comment.create
+// 3. Cập nhật form ở frontend để cho phép chọn loại và ID tương ứng.
+// Hiện tại giữ nguyên logic chỉ hỗ trợ Music.
+
 interface PostRequestBody {
-    musicId: string;
+    musicId: string; // Hiện chỉ hỗ trợ musicId
     userFullName: string;
     content: string;
-    userId?: string; // userId tùy chọn
+    // userId?: string; // Cân nhắc xem có cần admin gán userId không, thường là không cần
 }
 
 export async function POST(req: NextRequest) {
@@ -73,8 +108,8 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Request body không hợp lệ (không phải JSON)' }, { status: 400 });
     }
 
-
     // --- VALIDATION ---
+    // Giữ nguyên validation cho musicId vì form hiện tại chỉ hỗ trợ nó
     if (!body.musicId || !mongoose.Types.ObjectId.isValid(body.musicId)) {
         return NextResponse.json({ error: 'musicId không hợp lệ hoặc bị thiếu' }, { status: 400 });
     }
@@ -84,57 +119,58 @@ export async function POST(req: NextRequest) {
     if (!body.content || typeof body.content !== 'string' || body.content.trim().length === 0) {
         return NextResponse.json({ error: 'Nội dung bình luận (content) không được để trống' }, { status: 400 });
     }
-    // TODO: Thêm validation cho userId nếu bắt buộc
 
     try {
-        const newCommentData: Partial<IComment> = { // Sử dụng Partial vì _id, createdAt sẽ tự tạo
+        // Kiểm tra xem Music có tồn tại không trước khi tạo comment
+        const musicExists = await Music.findById(body.musicId);
+        if (!musicExists) {
+            return NextResponse.json({ error: `Không tìm thấy bài nhạc với ID: ${body.musicId}` }, { status: 404 });
+        }
+
+        // Tạo comment mới chỉ với musicId
+        const newCommentData: Partial<IComment> = {
             musicId: new mongoose.Types.ObjectId(body.musicId),
             userFullName: body.userFullName.trim(),
             content: body.content.trim(),
+            // Lưu ý: Thiếu userId. Admin comment có cần liên kết với User nào không?
+            // Nếu không, cần xem lại schema Comment xem userId có thực sự required không.
+            // Nếu required, bạn cần lấy userId của admin đang đăng nhập hoặc cho phép chọn User.
+            // Tạm thời bỏ qua userId nếu schema cho phép null hoặc không required.
+            // userId: adminUserId, // Ví dụ: lấy từ session admin
         };
-        // Thêm userId nếu có và hợp lệ
-        if (body.userId && mongoose.Types.ObjectId.isValid(body.userId)) {
-            newCommentData.userId = new mongoose.Types.ObjectId(body.userId);
-        } else {
-            // Xử lý nếu userId bắt buộc nhưng không hợp lệ/thiếu?
-            // Ví dụ: return NextResponse.json({ error: 'userId không hợp lệ hoặc bị thiếu' }, { status: 400 });
-            // Hoặc dựa vào schema (nếu userId là required: true) thì lỗi sẽ tự ném ra ở dưới
-        }
-
 
         const newComment = await Comment.create(newCommentData);
 
-        // Populate lại ngay sau khi tạo nếu muốn trả về đầy đủ thông tin
-        // Sử dụng lean() ở đây cũng rất hữu ích
+        // Populate lại thông tin để trả về (chủ yếu là lấy musicTitle)
         const populatedComment = await Comment.findById(newComment._id)
             .populate<{ musicId: Pick<IMusic, '_id' | 'title'> | null }>('musicId', 'title _id')
-            .lean<PopulatedCommentLean>(); // Ép kiểu kết quả lean
+            // Không cần populate newsId ở đây vì ta chỉ tạo cho Music
+            .lean<PopulatedCommentLean>(); // Dùng interface cũ vì chỉ populate music
 
         if (!populatedComment) {
             return NextResponse.json({ error: 'Không thể lấy thông tin bình luận vừa tạo' }, { status: 500 });
         }
 
-        // Định dạng comment trả về (object thuần túy từ lean())
-        const formattedComment = {
+        // Định dạng comment trả về theo format mới
+        const formattedComment: FormattedAdminComment = {
             _id: populatedComment._id.toString(),
-            musicId: populatedComment.musicId?._id?.toString() || 'ID không xác định',
-            musicTitle: populatedComment.musicId?.title || 'Không rõ',
+            musicId: populatedComment.musicId?._id?.toString(),
+            newsId: undefined, // Không có newsId khi tạo bằng form này
+            referenceTitle: populatedComment.musicId?.title || 'Không rõ',
+            referenceType: 'Music',
             userFullName: populatedComment.userFullName,
             content: populatedComment.content,
             createdAt: populatedComment.createdAt.toISOString(),
         };
 
-        return NextResponse.json(formattedComment, { status: 201 }); // Trả về 201 Created
+        return NextResponse.json(formattedComment, { status: 201 });
 
     } catch (error: any) {
         console.error("Error creating comment:", error);
-        // Bắt lỗi validation từ Mongoose
         if (error.name === 'ValidationError') {
-            // Lấy thông điệp lỗi đầu tiên
             const messages = Object.values(error.errors).map((err: any) => err.message);
             return NextResponse.json({ error: `Validation Lỗi: ${messages.join(', ')}` }, { status: 400 });
         }
-        // Lỗi chung khác
         return NextResponse.json({ error: 'Lỗi khi tạo bình luận' }, { status: 500 });
     }
 }
