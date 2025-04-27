@@ -171,13 +171,7 @@ export default function AdminCommentPage() {
             <h1 className="text-2xl font-bold mb-4">Quản lý Bình luận</h1>
 
             {/* Nút Thêm (Ghi rõ chỉ hỗ trợ Music) */}
-            <button
-                className="mb-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-                onClick={() => { setShowAdd(true); setEditing(null); setNewContent(''); setNewUserFullName(''); setNewMusicId(musicTracks.length > 0 ? musicTracks[0]._id : ''); }}
-                disabled={showAdd || !!editing}
-            >
-                + Thêm Bình luận (cho Bài nhạc)
-            </button>
+
 
             {error && !loading && <div className="mb-4 p-3 bg-red-100 text-red-700 border border-red-300 rounded">{error}</div>}
 
