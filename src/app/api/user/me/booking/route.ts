@@ -3,7 +3,8 @@ import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import TicketBooking from '@/lib/models/TicketBooking'; // Import model
 import { getServerSession } from 'next-auth';
-import { publicAuthOptions } from '@/lib/publicAuth';// <<< Dùng auth của User thông thường
+import { publicAuthOptions } from '@/lib/publicAuth';
+import Schedule from '@/lib/models/Schedule'; // Thêm import này
 
 export const runtime = 'nodejs';
 
@@ -11,7 +12,7 @@ export async function GET(request: Request) {
     console.log("--- GET /api/user/me/booking START ---");
     try {
         console.log("1. Getting session...");
-        const session = await getServerSession(publicAuthOptions); // Đảm bảo tên đúng
+        const session = await getServerSession(publicAuthOptions);
         if (!session?.user?.id) {
             console.log("   Session invalid or missing user ID.");
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -25,7 +26,11 @@ export async function GET(request: Request) {
 
         console.log("3. Finding bookings...");
         const bookings = await TicketBooking.find({ userId: loggedInUserId })
-            // .populate(...) // Tạm comment để test
+            .populate({
+                path: 'scheduleId',
+                model: Schedule,
+                select: 'eventName date'
+            })
             .sort({ createdAt: -1 });
         console.log(`   Found ${bookings.length} bookings.`);
 
@@ -33,7 +38,7 @@ export async function GET(request: Request) {
         return NextResponse.json(bookings);
 
     } catch (error) {
-        console.error('--- DETAILED ERROR in GET /api/user/me/booking: ---', error); // Log lỗi chi tiết
+        console.error('--- DETAILED ERROR in GET /api/user/me/booking: ---', error);
         return NextResponse.json(
             { error: 'Error fetching your booking history' },
             { status: 500 }
