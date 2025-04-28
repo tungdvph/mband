@@ -122,11 +122,26 @@ export default function Home() {
         </div>
         <div className="relative z-10 h-full flex items-center justify-center text-white text-center">
           <div>
-            <h1 className="text-6xl font-bold mb-4">Band Name</h1>
-            <p className="text-xl mb-8">Experience the Music</p>
-            <button className="bg-red-600 text-white px-8 py-3 rounded-full hover:bg-red-700">
-              Book Now
-            </button>
+            <h1 className="text-6xl font-bold mb-4 animate-shine bg-gradient-to-r from-yellow-300 via-pink-400 to-blue-400 bg-clip-text text-transparent drop-shadow-lg">
+              Band Name
+            </h1>
+            <p className="text-xl mb-8 animate-shine bg-gradient-to-r from-yellow-200 via-pink-300 to-blue-300 bg-clip-text text-transparent drop-shadow">
+              Trải Nghiệm Âm Nhạc
+            </p>
+            <div className="flex justify-center gap-4">
+              <a
+                href="/booking"
+                className="shine-btn px-8 py-3 rounded-full text-white font-semibold transition"
+              >
+                Đặt Lịch Ngay
+              </a>
+              <a
+                href="/schedule"
+                className="shine-btn px-8 py-3 rounded-full text-white font-semibold transition"
+              >
+                Đặt Vé Ngay
+              </a>
+            </div>
           </div>
         </div>
       </div>

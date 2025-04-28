@@ -24,3 +24,28 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@keyframes shine {
+  to {
+    background-position: 200% center;
+  }
+}
+.shine-btn {
+  background: linear-gradient(90deg, #fbbf24, #ec4899, #3b82f6, #fbbf24);
+  background-size: 200% auto;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  animation: shine 2s linear infinite;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  display: inline-block;
+  transition: filter 0.2s;
+}
+.shine-btn:hover {
+  filter: brightness(1.1);
+}
+.animate-shine {
+  background-size: 200% auto;
+  animation: shine 2s linear infinite;
+}
