@@ -115,10 +115,11 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
           <Link href="/admin/music" className="block px-4 py-2 hover:bg-[#234156]" onClick={() => setIsOpen(false)}>Quản lý Bài Hát</Link>
           <Link href="/admin/news" className="block px-4 py-2 hover:bg-[#234156]" onClick={() => setIsOpen(false)}>Quản lý Tin Tức</Link>
           <Link href="/admin/contact" className="block px-4 py-2 hover:bg-[#234156]" onClick={() => setIsOpen(false)}>Quản lý Liên Hệ</Link>
-          <Link href="/admin/user" className="block px-4 py-2 hover:bg-[#234156]" onClick={() => setIsOpen(false)}>Quản lý Người Dùng</Link>
+
           {/* --- LINK QUẢN LÝ BÌNH LUẬN MỚI --- */}
           <Link href="/admin/comment" className="block px-4 py-2 hover:bg-[#234156]" onClick={() => setIsOpen(false)}>Quản lý Bình luận</Link>
           {/* --- KẾT THÚC LINK QUẢN LÝ BÌNH LUẬN --- */}
+          <Link href="/admin/user" className="block px-4 py-2 hover:bg-[#234156]" onClick={() => setIsOpen(false)}>Quản lý Người Dùng</Link>
         </nav>
       </div>
 

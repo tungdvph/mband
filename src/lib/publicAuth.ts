@@ -66,6 +66,7 @@ export const publicAuthOptions: NextAuthOptions = {
           // Trả về object user (không bao gồm password)
           return {
             id: user._id.toString(),
+            _id: user._id.toString(),
             email: user.email,
             username: user.username,
             fullName: user.fullName,

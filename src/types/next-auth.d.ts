@@ -8,6 +8,7 @@ declare module 'next-auth' {
     email: string;
     fullName: string;
     role: string;
+    _id: string; // Thêm dòng này
   }
 
   interface Session extends DefaultSession {

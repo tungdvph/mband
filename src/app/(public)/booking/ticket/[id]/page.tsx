@@ -69,11 +69,14 @@ export default function TicketBookingPage() {
             });
 
             if (!response.ok) {
-                throw new Error('Failed to book ticket');
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to book ticket');
             }
 
+            const data = await response.json();
             setBookingSuccess(true);
         } catch (err) {
+            console.error('Booking error:', err);
             alert(err instanceof Error ? err.message : 'An unknown error occurred');
         }
     };
@@ -119,9 +122,9 @@ export default function TicketBookingPage() {
                                 <span className="text-red-600 hover:text-red-700">← Quay lại</span>
                             </Link>
                         </div>
-                        
+
                         <h1 className="text-3xl font-bold mb-4">Đặt vé cho {schedule.eventName}</h1>
-                        
+
                         <div className="mb-6">
                             <label className="block text-sm font-medium text-gray-700 mb-2">Số lượng vé</label>
                             <div className="flex items-center gap-2">

@@ -14,7 +14,7 @@ export const authOptions: NextAuthOptions = {
         username: { label: "Username", type: "text" },
         password: { label: "Password", type: "password" }
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         try {
           await connectDB();
           
@@ -39,6 +39,7 @@ export const authOptions: NextAuthOptions = {
 
           return {
             id: user._id.toString(),
+            _id: user._id.toString(), // Thêm trường _id
             email: user.email,
             username: user.username,
             fullName: user.fullName,
