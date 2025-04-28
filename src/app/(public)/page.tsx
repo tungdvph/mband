@@ -36,6 +36,14 @@ export default function Home() {
   const [data, setData] = useState<HomeData>({ news: [], events: [], featuredMusic: [] });
   const [loading, setLoading] = useState(true);
 
+  // Thêm state cho slideshow
+  const bannerImages = [
+    "/upload/home/hero-bg.jpg",
+    "/upload/home/hero-bg2.jpg",
+    "/upload/home/hero-bg3.jpg"
+  ];
+  const [currentSlide, setCurrentSlide] = useState(0);
+
   useEffect(() => {
     const fetchHomeData = async () => {
       try {
@@ -62,6 +70,14 @@ export default function Home() {
     fetchHomeData();
   }, []);
 
+  // Tự động chuyển slide mỗi 4 giây
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % bannerImages.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [bannerImages.length]);
+
   if (loading) {
     return (
       <Layout>
@@ -72,14 +88,37 @@ export default function Home() {
 
   return (
     <Layout>
-      {/* Hero Section */}
-      <div className="relative h-[600px]">
+      {/* Hero Section - Slideshow */}
+      <div className="relative h-[600px] overflow-hidden">
         <div className="absolute inset-0 bg-black/50">
           <img
-            src="/images/hero-bg.jpg"
+            src={bannerImages[currentSlide]}
             alt="Band Hero"
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover transition-all duration-700"
+            style={{ objectFit: 'cover' }}
           />
+        </div>
+        {/* Nút chuyển slide */}
+        <button
+          className="absolute left-4 top-1/2 z-20 bg-black/40 text-white rounded-full p-2"
+          onClick={() => setCurrentSlide((prev) => (prev - 1 + bannerImages.length) % bannerImages.length)}
+        >
+          &#8592;
+        </button>
+        <button
+          className="absolute right-4 top-1/2 z-20 bg-black/40 text-white rounded-full p-2"
+          onClick={() => setCurrentSlide((prev) => (prev + 1) % bannerImages.length)}
+        >
+          &#8594;
+        </button>
+        {/* Dots indicator */}
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+          {bannerImages.map((_, idx) => (
+            <span
+              key={idx}
+              className={`w-3 h-3 rounded-full ${idx === currentSlide ? 'bg-white' : 'bg-gray-400'} inline-block`}
+            />
+          ))}
         </div>
         <div className="relative z-10 h-full flex items-center justify-center text-white text-center">
           <div>

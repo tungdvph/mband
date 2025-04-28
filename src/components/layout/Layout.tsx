@@ -1,62 +1,33 @@
 'use client';
-import { useSession, signOut } from 'next-auth/react';
-import Link from 'next/link';
+// Bạn có thể xóa các import này nếu Navbar đã xử lý hoàn toàn logic session/auth
+// import { useSession, signOut } from 'next-auth/react';
+// import Link from 'next/link';
+
+// Import Navbar
+import Navbar from './Navbar'; // <- Đường dẫn đến Navbar (kiểm tra lại)
+
+// 1. Import component Footer
+//    Đảm bảo đường dẫn này chính xác đến file Footer.js của bạn
+import Footer from './Footer'; // <- Đường dẫn đến Footer (kiểm tra lại)
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-  const { data: session } = useSession();
-
-  const handleSignOut = async () => {
-    await signOut({ 
-      callbackUrl: '/',
-      redirect: true
-    });
-  };
+  // Logic session/signOut có thể nằm trong Navbar hoặc context
+  // ...
 
   return (
+    // Cấu trúc layout chính
     <div className="min-h-screen flex flex-col">
-      <header className="bg-black text-white">
-        <div className="container mx-auto px-4">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/" className="text-xl font-bold">
-              Band Name
-            </Link>
-            
-            <nav className="flex items-center space-x-4">
-              <Link href="/member" className="hover:text-gray-300">Thành viên</Link>
-              <Link href="/schedule" className="hover:text-gray-300">Lịch trình</Link>
-              <Link href="/music" className="hover:text-gray-300">Âm nhạc</Link>
-              <Link href="/news" className="hover:text-gray-300">Tin tức</Link>
-              <Link href="/booking" className="hover:text-gray-300">Đặt lịch</Link>
-              <Link href="/contact" className="hover:text-gray-300">Liên hệ</Link>
-              
-              {session?.user ? (
-                <div className="flex items-center space-x-4">
-                  <span className="text-white">{session.user.username}</span>
-                  <button
-                    onClick={handleSignOut}
-                    className="text-red-500 hover:text-red-400"
-                  >
-                    Đăng xuất
-                  </button>
-                </div>
-              ) : (
-                <div className="flex items-center space-x-4">
-                  <Link href="/login" className="hover:text-gray-300">
-                    Đăng nhập
-                  </Link>
-                  <Link href="/register" className="hover:text-gray-300">
-                    Đăng ký
-                  </Link>
-                </div>
-              )}
-            </nav>
-          </div>
-        </div>
-      </header>
+      {/* Sử dụng Navbar */}
+      <Navbar />
 
+      {/* Phần nội dung chính của trang */}
+      {/* flex-grow đảm bảo main chiếm không gian còn lại, đẩy footer xuống dưới */}
       <main className="flex-grow">
         {children}
       </main>
+
+      {/* 2. Sử dụng component Footer ở đây */}
+      <Footer />
     </div>
   );
 }
