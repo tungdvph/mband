@@ -6,7 +6,7 @@ import Link from 'next/link';
 import Layout from '@/components/layout/Layout'; // Import Layout của bạn
 import { Schedule } from '@/types/schedule'; // Import interface Schedule
 
-// Hàm format ngày giờ (ví dụ)
+// Hàm format ngày giờ gốc của bạn
 const formatDate = (dateString: string | Date | undefined | null): string => {
   if (!dateString) return 'N/A';
   try {
@@ -28,14 +28,12 @@ export default function ScheduleListPage() {
       setLoading(true);
       setError(null);
       try {
-        // Fetch từ API GET /api/schedule (API này bạn đã có)
         const response = await fetch('/api/schedule');
         if (!response.ok) {
           throw new Error('Failed to fetch schedules');
         }
         const data: Schedule[] = await response.json();
-        // Có thể lọc bớt lịch trình đã qua hoặc cancelled nếu muốn
-        // const upcomingSchedules = data.filter(s => new Date(s.date) >= new Date() && s.status !== 'cancelled');
+        // KHÔNG thay đổi logic fetch hay filter/sort ở đây
         setSchedules(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An unknown error occurred');
@@ -50,61 +48,78 @@ export default function ScheduleListPage() {
 
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-16">
-        <h1 className="text-4xl font-bold mb-8 text-center">Lịch Trình Sắp Tới</h1>
+      {/* Thêm nền xám nhẹ cho toàn bộ khu vực nội dung trang */}
+      <div className="bg-gray-50 py-16">
+        <div className="container mx-auto px-4">
+          <h1 className="text-4xl font-bold mb-10 text-center text-gray-800">Lịch Trình Sắp Tới</h1>
 
-        {loading && <p className="text-center">Đang tải lịch trình...</p>}
-        {error && <p className="text-center text-red-500">Lỗi: {error}</p>}
+          {loading && <p className="text-center text-lg text-gray-600">Đang tải lịch trình...</p>}
+          {/* Cải thiện hiển thị lỗi một chút */}
+          {error && <p className="text-center text-red-600 bg-red-100 p-3 rounded-md max-w-md mx-auto">Lỗi: {error}</p>}
 
-        {!loading && !error && schedules.length === 0 && (
-          <p className="text-center text-gray-600">Hiện chưa có lịch trình nào được công bố.</p>
-        )}
+          {!loading && !error && schedules.length === 0 && (
+            <p className="text-center text-gray-500 text-lg mt-8">Hiện chưa có lịch trình nào được công bố.</p>
+          )}
 
-        {!loading && !error && schedules.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {schedules.map((schedule) => (
-              <div key={schedule._id} className="border rounded-lg p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 bg-white flex flex-col justify-between">
-                <div>
-                  <h2 className="text-2xl font-semibold mb-2 text-blue-700">{schedule.eventName}</h2>
-                  <p className="text-gray-600 mb-1">
-                    <span className="font-medium">Ngày:</span> {formatDate(schedule.date)}
-                  </p>
-                  <p className="text-gray-600 mb-1">
-                    <span className="font-medium">Thời gian:</span> {schedule.startTime} {schedule.endTime ? `- ${schedule.endTime}` : ''}
-                  </p>
-                  <p className="text-gray-600 mb-1">
-                    <span className="font-medium">Địa điểm:</span> {schedule.venue.name}, {schedule.venue.city}
-                  </p>
-                  <p className="text-gray-500 text-sm mt-2 mb-4 line-clamp-2" title={schedule.description}> {/* Mô tả ngắn */}
-                    {schedule.description}
-                  </p>
-                </div>
-                <div className="mt-4 flex space-x-3">
-                  {/* --- Nút Xem Chi Tiết --- */}
-                  <Link
-                    href={`/schedule/${schedule._id}`} // Link tới trang chi tiết động
-                    className="flex-1 text-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors duration-200 text-sm font-medium"
-                  >
-                    Xem chi tiết
-                  </Link>
+          {!loading && !error && schedules.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {schedules.map((schedule) => (
+                // --- Card Item Styling ---
+                <div
+                  key={schedule._id}
+                  // Giữ nguyên cấu trúc flex-col, tinh chỉnh style
+                  className="bg-white border border-gray-200 rounded-lg p-5 shadow-md hover:shadow-lg transition-shadow duration-300 flex flex-col justify-between min-h-[300px]" // Thêm min-height để cân đối
+                >
+                  {/* Phần nội dung chính của card */}
+                  <div>
+                    {/* Tiêu đề sự kiện */}
+                    <h2 className="text-xl font-semibold mb-3 text-indigo-700">{schedule.eventName}</h2>
+                    {/* Thông tin chi tiết */}
+                    <div className="space-y-1.5 text-sm text-gray-600 mb-3"> {/* Tăng nhẹ space-y, giảm mb */}
+                      <p>
+                        <span className="font-medium text-gray-800">Ngày:</span> {formatDate(schedule.date)}
+                      </p>
+                      <p>
+                        <span className="font-medium text-gray-800">Thời gian:</span> {schedule.startTime} {schedule.endTime ? `- ${schedule.endTime}` : ''}
+                      </p>
+                      <p>
+                        <span className="font-medium text-gray-800">Địa điểm:</span> {schedule.venue.name}{schedule.venue.city ? `, ${schedule.venue.city}` : ''}
+                      </p>
+                    </div>
+                    {/* Mô tả ngắn - Giữ nguyên line-clamp */}
+                    <p className="text-gray-500 text-sm mt-2 mb-4 line-clamp-3" title={schedule.description}>
+                      {schedule.description || 'Không có mô tả.'}
+                    </p>
+                  </div>
 
-                  {/* --- Nút Đặt Vé --- */}
-                  {/* Chỉ hiển thị nút đặt vé nếu sự kiện là concert và chưa bị hủy? (Ví dụ điều kiện) */}
-                  {schedule.type === 'concert' && schedule.status !== 'cancelled' && (
+                  {/* Phần nút - Đẩy xuống dưới cùng và căn phải */}
+                  <div className="mt-auto pt-4 border-t border-gray-100 flex justify-end space-x-3"> {/* Thêm mt-auto, border-t, justify-end */}
+
+                    {/* --- Nút Xem Chi Tiết (Style mới, không dùng flex-1) --- */}
                     <Link
-                      href={`/booking/ticket/${schedule._id}`}
-                      className="flex-1 text-center px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors duration-200 text-sm font-medium"
+                      href={`/schedule/${schedule._id}`}
+                      // Style nút nhất quán, nhỏ gọn hơn
+                      className="px-4 py-2 bg-indigo-600 text-white text-xs font-medium rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition ease-in-out duration-150"
                     >
-                      Đặt vé
+                      Xem chi tiết
                     </Link>
-                  )}
-                  {/* Có thể thêm điều kiện khác để hiển thị nút Đặt vé */}
 
+                    {/* --- Nút Đặt Vé (Style mới, không dùng flex-1, giữ nguyên logic điều kiện) --- */}
+                    {schedule.type === 'concert' && schedule.status !== 'cancelled' && (
+                      <Link
+                        href={`/booking/ticket/${schedule._id}`} // Giữ nguyên link gốc
+                        // Style tương tự nút Xem chi tiết, màu xanh lá
+                        className="px-4 py-2 bg-green-600 text-white text-xs font-medium rounded-md shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition ease-in-out duration-150"
+                      >
+                        Đặt vé
+                      </Link>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </Layout>
   );
