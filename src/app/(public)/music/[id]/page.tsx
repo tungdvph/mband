@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useState, FormEvent } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useSession } from "next-auth/react";
 import Link from 'next/link';
 import Layout from '@/components/layout/Layout'; // Điều chỉnh đường dẫn nếu cần
@@ -332,6 +332,7 @@ function CommentSection({ musicId }: { musicId: string }) {
 
 export default function MusicDetailPage() {
     const params = useParams();
+    const router = useRouter(); // Thêm dòng này để sử dụng router
     const id = params?.id as string | undefined;
     const [music, setMusic] = useState<MusicDetail | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -396,6 +397,14 @@ export default function MusicDetailPage() {
         return (
             <Layout>
                 <div className="container mx-auto px-4 py-8">
+                    <div className="mb-6">
+                        <button
+                            onClick={() => router.push('/music')}
+                            className="text-red-600 hover:text-red-700 cursor-pointer"
+                        >
+                            ← Quay lại
+                        </button>
+                    </div>
                     <div className="mb-8">
                         <h1 className="text-3xl font-bold mb-2">{music.title}</h1>
                         <p className="text-lg text-gray-600 mb-4">{music.artist}</p>
