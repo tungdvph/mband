@@ -44,7 +44,7 @@ export default function MemberPage() {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-16">
-        <h1 className="text-4xl font-bold mb-8">Our Members</h1>
+        <h1 className="text-4xl font-bold mb-8">Thành Viên Nhóm Nhạc</h1>
         {loading ? (
           <div className="text-center">Loading...</div>
         ) : (

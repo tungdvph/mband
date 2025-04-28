@@ -4,6 +4,8 @@ import Layout from '@/components/layout/Layout';
 import MusicPlayer from '@/components/ui/MusicPlayer';
 import NewsCard from '@/components/ui/NewsCard';
 import EventCard from '@/components/ui/EventCard';
+import MemberCard from '@/components/ui/MemberCard';
+import { Member } from '@/types/member';
 
 interface HomeData {
   news: Array<{
@@ -35,6 +37,11 @@ interface HomeData {
 export default function Home() {
   const [data, setData] = useState<HomeData>({ news: [], events: [], featuredMusic: [] });
   const [loading, setLoading] = useState(true);
+
+  // Thêm state cho thành viên
+  const [members, setMembers] = useState<Member[]>([]);
+  const [loadingMembers, setLoadingMembers] = useState(true);
+  const [errorMembers, setErrorMembers] = useState<string | null>(null);
 
   // Thêm state cho slideshow
   const bannerImages = [
@@ -78,10 +85,30 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [bannerImages.length]);
 
-  if (loading) {
+  // Fetch thành viên
+  useEffect(() => {
+    const fetchMembers = async () => {
+      try {
+        const response = await fetch('/api/member');
+        if (!response.ok) {
+          throw new Error('Không thể tải danh sách thành viên');
+        }
+        const data = await response.json();
+        const activeMembers = data.filter((member: Member) => member.isActive);
+        setMembers(activeMembers);
+      } catch (error) {
+        setErrorMembers('Không thể tải danh sách thành viên');
+      } finally {
+        setLoadingMembers(false);
+      }
+    };
+    fetchMembers();
+  }, []);
+
+  if (loading || loadingMembers) {
     return (
       <Layout>
-        <div className="text-center py-16">Loading...</div>
+        <div className="text-center py-16">Đang tải...</div>
       </Layout>
     );
   }
@@ -146,30 +173,52 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Latest News Section */}
+      {/* Thành viên ban nhạc */}
+      <section className="py-16 bg-gray-50">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-bold mb-8">Thành viên ban nhạc</h2>
+          {errorMembers ? (
+            <div className="text-center text-red-600">{errorMembers}</div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {members.map((member) => (
+                <MemberCard
+                  key={member._id.toString()}
+                  _id={member._id.toString()}
+                  name={member.name}
+                  role={member.role}
+                  image={member.image || '/default-member.png'}
+                  description={member.description}
+                  socialLinks={member.socialLinks || {}}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Bài hát nổi bật */}
       <section className="py-16">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold mb-8">Latest News</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {data.news.map((item) => (
-              <NewsCard
-                key={item._id}
-                _id={item._id}
-                title={item.title}
-                content={item.content}
-                image={item.image || '/default-news.png'}
-                date={new Date(item.createdAt)}
-                author={item.author}
+          <h2 className="text-3xl font-bold mb-8">Bài hát nổi bật</h2>
+          <div className="space-y-4">
+            {data.featuredMusic.map((track) => (
+              <MusicPlayer
+                key={track._id}
+                title={track.title}
+                artist={track.artist}
+                image={track.image}
+                audio={track.audio}
               />
             ))}
           </div>
         </div>
       </section>
 
-      {/* Upcoming Events Section */}
+      {/* Sự kiện sắp tới */}
       <section className="py-16 bg-gray-100">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold mb-8">Upcoming Events</h2>
+          <h2 className="text-3xl font-bold mb-8">Sự kiện sắp tới</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {data.events.map((event) => (
               <EventCard
@@ -186,18 +235,20 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Featured Music Section */}
+      {/* Tin tức mới nhất */}
       <section className="py-16">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold mb-8">Featured Music</h2>
-          <div className="space-y-4">
-            {data.featuredMusic.map((track) => (
-              <MusicPlayer
-                key={track._id}
-                title={track.title}
-                artist={track.artist}
-                image={track.image}
-                audio={track.audio}
+          <h2 className="text-3xl font-bold mb-8">Tin tức mới nhất</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {data.news.map((item) => (
+              <NewsCard
+                key={item._id}
+                _id={item._id}
+                title={item.title}
+                content={item.content}
+                image={item.image || '/default-news.png'}
+                date={new Date(item.createdAt)}
+                author={item.author}
               />
             ))}
           </div>

@@ -32,7 +32,7 @@ export default function MusicPage() {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-16">
-        <h1 className="text-4xl font-bold mb-8 text-center md:text-left">Our Music</h1>
+        <h1 className="text-4xl font-bold mb-8 text-center md:text-left">Danh Sách Bài Hát</h1>
         {loading ? (
           <div className="text-center text-xl">Loading music...</div>
         ) : (

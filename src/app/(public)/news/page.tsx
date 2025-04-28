@@ -37,7 +37,7 @@ export default function NewsPage() {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-16">
-        <h1 className="text-4xl font-bold mb-8">Latest News</h1>
+        <h1 className="text-4xl font-bold mb-8">Tin Tức</h1>
         {loading ? (
           <div className="text-center">Loading...</div>
         ) : (
