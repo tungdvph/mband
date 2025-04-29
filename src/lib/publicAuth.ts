@@ -2,105 +2,95 @@ import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import UserModel from "@/lib/models/User"; // Đảm bảo đường dẫn đúng
-import connectDB from "@/lib/db";         // Đảm bảo đường dẫn đúng
-// Bỏ type User nếu không dùng: import type { User } from "@/types/user";
+import connectDB from "@/lib/db";          // Đảm bảo đường dẫn đúng
 
-// *** Đặt tên cookie cho public (dùng tên mặc định hoặc khác admin - phiên bản localhost) ***
-const publicCookieNameBase = 'next-auth-public'; // Thay đổi tên cơ sở
+// Đặt tên cookie cho public
+const publicCookieNameBase = 'next-auth-public';
+// Xác định môi trường production
+const isProduction = process.env.NODE_ENV === 'production';
 
 export const publicAuthOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
-      id: 'user-credentials', // ID này phải khớp với lời gọi signIn trong UserLoginForm
+      id: 'user-credentials',
       name: "User credentials",
       credentials: {
         username: { label: "Username", type: "text" },
         password: { label: "Password", type: "password" }
       },
-      // --- Logic authorize của bạn (giữ nguyên) ---
       async authorize(credentials) {
         try {
-          console.log('[PublicAuth] Starting user authorization');
+          console.log('[PublicAuth] Authorizing...');
           await connectDB();
 
           if (!credentials) {
-            console.log('[PublicAuth] No credentials provided');
+            console.log('[PublicAuth] No credentials.');
             return null;
           }
 
           console.log('[PublicAuth] Finding user:', credentials.username);
-          // Tìm user có role 'user' (hoặc có thể bỏ điều kiện role nếu form này cho mọi loại user trừ admin?)
           const user = await UserModel.findOne({
             username: credentials.username,
-            // role: 'user' // Chỉ cho phép role 'user' đăng nhập ở đây
-          }).select('+password'); // Lấy cả password
+          }).select('+password +isActive +role +fullName +email'); // Lấy đủ các trường cần thiết
 
           if (!user || !user.password) {
-            console.log('[PublicAuth] User not found or no password');
+            console.log('[PublicAuth] User not found or no password.');
             return null;
           }
 
-          // Phân biệt với Admin: Chỉ user có role 'user' mới được đăng nhập qua đây
-          // (Nếu admin cố đăng nhập ở form public -> lỗi)
+          // Chỉ cho phép role 'user' đăng nhập ở đây
           if (user.role !== 'user') {
-            console.log(`[PublicAuth] User found but has incorrect role: ${user.role}. Denying.`);
-            return null; // Không cho phép role khác 'user' đăng nhập ở đây
-          }
-
-          // Kiểm tra user có bị khóa không
-          if (!user.isActive) {
-            console.log('[PublicAuth] User is not active');
-            // throw new Error('Tài khoản của bạn đã bị khóa.');
+            console.log(`[PublicAuth] Incorrect role: ${user.role}. Denying.`);
             return null;
           }
 
-          console.log('[PublicAuth] Checking password');
+          if (!user.isActive) {
+            console.log('[PublicAuth] User is inactive.');
+            // throw new Error('Tài khoản đã bị khóa'); // Ném lỗi sẽ hiển thị trên trang error
+            return null;
+          }
+
+          console.log('[PublicAuth] Checking password...');
           const isValid = await bcrypt.compare(credentials.password, user.password);
 
           if (!isValid) {
-            console.log('[PublicAuth] Invalid password');
+            console.log('[PublicAuth] Invalid password.');
             return null;
           }
 
-          console.log('[PublicAuth] User authorization successful');
-          // Trả về object user (không bao gồm password)
+          console.log('[PublicAuth] Authorization successful.');
+          // Trả về object khớp với interface User mở rộng (trừ password)
           return {
             id: user._id.toString(),
-            _id: user._id.toString(),
-            email: user.email,
+            _id: user._id.toString(), // Có thể giữ lại _id
             username: user.username,
+            email: user.email,
             fullName: user.fullName,
-            role: user.role, // Vẫn trả về role 'user'
-            isActive: user.isActive, // Trả về trạng thái active
-            // Không bao gồm password
+            role: user.role,
+            isActive: user.isActive,
           };
         } catch (error) {
           console.error('[PublicAuth] Authorize error:', error);
-          return null;
+          return null; // Lỗi thì trả về null
         }
       }
     })
-    // Có thể thêm các providers khác (Google, etc.) ở đây
+    // Thêm providers khác nếu có
   ],
-  // --- Cấu hình pages của bạn (giữ nguyên) ---
   pages: {
-    signIn: '/login',             // Trang đăng nhập public
-    error: '/login?error=true', // Trang lỗi, có thể thêm tham số để hiển thị thông báo
-    // signOut: '/',
-    // verifyRequest: '/auth/verify-request',
-    // newUser: '/register'
+    signIn: '/login',
+    error: '/login', // Gửi lỗi về trang login, có thể thêm query param ?error=...
   },
 
-  // *** Thêm cấu hình cookies riêng cho public (dùng tên mặc định - khác admin) ***
+  // Cấu hình cookies
   cookies: {
     sessionToken: {
-      // Tên mặc định của NextAuth, không có suffix -admin
       name: `${publicCookieNameBase}.session-token`,
       options: {
         httpOnly: true,
         sameSite: 'lax',
         path: '/',
-        secure: false, // false cho HTTP localhost
+        secure: isProduction, // true khi production
       },
     },
     callbackUrl: {
@@ -109,75 +99,94 @@ export const publicAuthOptions: NextAuthOptions = {
         httpOnly: true,
         sameSite: 'lax',
         path: '/',
-        secure: false, // false cho HTTP localhost
+        secure: isProduction,
       },
     },
     csrfToken: {
-      name: `${publicCookieNameBase}.csrf-token`,
+      name: `${isProduction ? '__Host-' : ''}${publicCookieNameBase}.csrf-token`,
       options: {
         httpOnly: true,
         sameSite: 'lax',
         path: '/',
-        secure: false, // false cho HTTP localhost
+        secure: isProduction,
       },
     },
   },
 
-  // --- Cấu hình session của bạn (giữ nguyên) ---
+  // Chiến lược session
   session: {
     strategy: "jwt",
-    maxAge: 7 * 24 * 60 * 60 // 7 days (hoặc tùy chỉnh)
+    maxAge: 7 * 24 * 60 * 60 // 7 ngày
   },
 
-  // --- Callbacks của bạn (giữ nguyên và bổ sung type) ---
+  // Callbacks
   callbacks: {
-    // Callback này chạy sau authorize, có thể kiểm tra thêm
-    async signIn({ user, account, profile, email, credentials }) {
-      console.log('[PublicAuth] SignIn callback - User data:', user);
-      const isActive = (user as any)?.isActive;
-
-      if (isActive) {
-        console.log('[PublicAuth] SignIn callback - User is active. Allowing sign in.');
-        return true;
-      } else {
-        console.log('[PublicAuth] SignIn callback - User is not active. Denying sign in.');
-        // return '/login?error=AccountLocked'; // Redirect đến trang lỗi cụ thể
-        return false;
+    async signIn({ user }) {
+      // Kiểm tra user có tồn tại và isActive không
+      const canSignIn = !!user && (user as any).isActive; // user từ authorize đã có isActive
+      console.log(`[PublicAuth] SignIn callback - User active check: ${canSignIn}`);
+      if (!canSignIn) {
+        // Ngăn chặn đăng nhập nếu không active
+        // throw new Error('Tài khoản bị khóa!'); // Ném lỗi sẽ tốt hơn return false
+        return false; // Hoặc return false
       }
+      return true; // Cho phép đăng nhập
     },
-    // Thêm thông tin vào JWT
+
+    // Chỉ lưu ID vào token JWT
     async jwt({ token, user }) {
-      // console.log('[PublicAuth] JWT callback - Initial token:', token);
       if (user) {
-        console.log('[PublicAuth] JWT callback - User object present, adding to token:', user);
-        token.id = user.id;
-        token.username = (user as any).username;
-        token.fullName = (user as any).fullName;
-        token.role = (user as any).role; // Role sẽ là 'user'
-        token.isActive = (user as any).isActive; // Thêm trạng thái active
+        // user object từ authorize callback
+        token.sub = user.id; // Gán ID vào 'sub'
       }
-      // console.log('[PublicAuth] JWT callback - Final token:', token);
       return token;
     },
-    // Tạo session từ token
+
+    // Luôn fetch dữ liệu mới từ DB cho session
     async session({ session, token }) {
-      // console.log('[PublicAuth] Session callback - Initial session:', session);
-      // console.log('[PublicAuth] Session callback - Token received:', token);
-      if (token && session.user) {
-        console.log('[PublicAuth] Session callback - Adding token data to session.user');
-        (session.user as any).id = token.id;
-        (session.user as any).username = token.username;
-        (session.user as any).fullName = token.fullName;
-        (session.user as any).role = token.role; // Role sẽ là 'user'
-        (session.user as any).isActive = token.isActive; // Thêm trạng thái active
+      console.log('[PublicAuth] Session callback - Started. Token sub:', token?.sub);
+      if (token?.sub) { // Chỉ tiếp tục nếu có ID user trong token
+        try {
+          await connectDB();
+          console.log(`[PublicAuth] Session callback - Fetching user data for ID: ${token.sub}`);
+          const latestUser = await UserModel.findById(token.sub)
+            .select('-password') // Loại bỏ password
+            .lean();
+
+          if (latestUser) {
+            console.log('[PublicAuth] Session callback - Found user in DB. Updating session...');
+            // Cập nhật session.user với dữ liệu mới nhất và đúng kiểu
+            // Đảm bảo các trường khớp với interface User và Session trong .d.ts
+            session.user = {
+              ...session.user, // Giữ lại các trường mặc định như name, image nếu có
+              id: latestUser._id.toString(),
+              _id: latestUser._id.toString(), // Thêm _id nếu cần
+              username: latestUser.username,
+              email: latestUser.email,
+              fullName: latestUser.fullName,
+              role: latestUser.role,
+              isActive: latestUser.isActive,
+            };
+          } else {
+            // Không tìm thấy user trong DB -> coi như session không hợp lệ
+            console.log(`[PublicAuth] Session callback - User ID ${token.sub} not found. Setting session.user to null.`);
+            session.user = null; // <<< Gán null khi không tìm thấy user
+          }
+        } catch (error) {
+          console.error('[PublicAuth] Session callback - DB Error:', error);
+          // Lỗi DB -> coi như session không hợp lệ
+          session.user = null; // <<< Gán null khi có lỗi DB
+        }
+      } else {
+        console.log('[PublicAuth] Session callback - No user ID in token. Setting session.user to null.');
+        // Không có ID trong token -> session không hợp lệ
+        session.user = null; // <<< Gán null khi không có token.sub
       }
-      // console.log('[PublicAuth] Session callback - Final session:', session);
-      return session;
+      console.log('[PublicAuth] Session callback - Finished. Returning session:', session);
+      return session; // Trả về session (có thể user là null)
     }
   },
 
-  secret: process.env.NEXTAUTH_SECRET, // Quan trọng
-
-  // Bật debug logs khi ở môi trường development
-  debug: process.env.NODE_ENV === 'development',
+  secret: process.env.NEXTAUTH_SECRET,
+  debug: !isProduction, // Bật debug khi không phải production
 };
