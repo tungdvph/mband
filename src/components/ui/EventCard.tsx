@@ -10,16 +10,16 @@ interface EventCardProps {
   endTime?: string;
 }
 
-const EventCard = ({ 
-  title, 
-  date, 
-  location, 
-  image, 
-  price, 
+const EventCard = ({
+  title,
+  date,
+  location,
+  image,
+  price,
   availableTickets,
   description,
   startTime,
-  endTime 
+  endTime
 }: EventCardProps) => {
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden">
@@ -28,7 +28,7 @@ const EventCard = ({
         <h3 className="text-xl font-semibold">{title}</h3>
         {description && <p className="text-gray-600 mt-2">{description}</p>}
         <p className="text-gray-600 mt-2">
-          {date.toLocaleDateString('en-US', {
+          {date.toLocaleDateString('vi-VN', {
             weekday: 'long',
             year: 'numeric',
             month: 'long',
