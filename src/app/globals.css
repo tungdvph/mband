@@ -30,11 +30,12 @@ body {
     background-position: 200% center;
   }
 }
+
 .shine-btn {
   background: linear-gradient(90deg, #fbbf24, #ec4899, #3b82f6, #fbbf24);
   background-size: 200% auto;
   color: #fff;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   animation: shine 2s linear infinite;
   border: none;
   outline: none;
@@ -42,10 +43,56 @@ body {
   display: inline-block;
   transition: filter 0.2s;
 }
+
 .shine-btn:hover {
   filter: brightness(1.1);
 }
+
 .animate-shine {
   background-size: 200% auto;
   animation: shine 2s linear infinite;
+}
+
+/* Class tùy chỉnh để căn đều và căn giữa dòng cuối */
+.justify-center-last {
+  text-align: justify;
+  /* Căn đều các dòng trên */
+  -moz-text-align-last: center;
+  /* Hỗ trợ Firefox cũ */
+  text-align-last: center;
+  /* Căn giữa dòng cuối cùng */
+}
+
+/* 1. Định nghĩa Keyframes cho việc đổi màu */
+@keyframes text-color-cycle {
+
+  0%,
+  100% {
+    /* Bắt đầu và kết thúc bằng màu chữ mặc định */
+    color: hsl(var(--foreground));
+  }
+
+  25% {
+    /* Đổi sang màu vàng ở 1/4 thời gian */
+    color: #eab308;
+    /* Tailwind yellow-500 */
+  }
+
+  50% {
+    /* Đổi sang màu hồng ở giữa thời gian */
+    color: #ec4899;
+    /* Tailwind pink-500 */
+  }
+
+  75% {
+    /* Đổi sang màu xanh dương ở 3/4 thời gian */
+    color: #3b82f6;
+    /* Tailwind blue-500 */
+  }
+}
+
+/* 2. Class để áp dụng animation đổi màu */
+.text-color-cycle {
+  /* Áp dụng animation 'text-color-cycle', lặp vô hạn, mỗi chu kỳ 6 giây */
+  animation: text-color-cycle 6s linear infinite;
 }
