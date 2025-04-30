@@ -247,7 +247,7 @@ export default function Home() {
                 title={item.title}
                 content={item.content}
                 image={item.image || '/default-news.png'}
-                date={new Date(item.createdAt)}
+                createdAt={item.createdAt}
                 author={item.author}
               />
             ))}

@@ -64,7 +64,7 @@ export default function NewsPage() {
           {/* Tiêu đề trang */}
           <div className="text-center mb-12 md:mb-16">
             <h1 className="text-4xl md:text-5xl font-bold text-gray-800 tracking-tight">
-              Tin Tức & Sự Kiện
+              Tin Tức
             </h1>
             <p className="mt-3 text-lg text-gray-500 max-w-2xl mx-auto">
               Cập nhật những thông tin, hoạt động và chia sẻ mới nhất từ chúng tôi.
