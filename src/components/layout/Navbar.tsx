@@ -11,7 +11,7 @@ const Navbar = () => {
   return (
     <nav className="bg-black text-white">
       {/* Container chính: Sử dụng px-8 */}
-      <div className="flex items-center justify-between h-16 w-full px-70">
+      <div className="flex items-center justify-between h-16 w-full px-35">
 
         {/* Logo (Thay thế bằng Icon Nhà + Band Name) */}
         <div className="flex-shrink-0 flex items-center">

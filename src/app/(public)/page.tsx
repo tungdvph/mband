@@ -7,12 +7,13 @@ import NewsCard from '@/components/ui/NewsCard';
 import EventCard from '@/components/ui/EventCard';
 import MemberCard from '@/components/ui/MemberCard';
 import { Member } from '@/types/member';
+import { Music } from '@/types/music';
 
 // Interface cho dữ liệu trang Home
 interface HomeData {
   news: Array<{ _id: string; title: string; content: string; image: string; createdAt: string; author: string; }>;
   events: Array<{ _id: string; title: string; date: Date | string; location: string; image: string; price: number; availableTickets: number; }>;
-  featuredMusic: Array<{ _id: string; title: string; artist: string; image: string; audio: string; }>;
+  featuredMusic: Music[]; // <<< SỬA: Sử dụng kiểu Music đã import
 }
 
 export default function Home() {
@@ -33,18 +34,21 @@ export default function Home() {
         const [newsRes, eventsRes, musicRes] = await Promise.all([
           fetch('/api/news?limit=3'),
           fetch('/api/schedule?limit=3'),
-          fetch('/api/music?featured=true') // Lấy TẤT CẢ featured music để có thể quyết định hiển thị nút dựa trên tổng số
+          fetch('/api/music?featured=true') // Vẫn lấy tất cả featured music từ API
         ]);
 
         const news = newsRes.ok ? await newsRes.json() : [];
         const events = eventsRes.ok ? await eventsRes.json() : [];
-        const featuredMusic = musicRes.ok ? await musicRes.json() : [];
+        const allFeaturedMusic = musicRes.ok ? await musicRes.json() : [];
 
         if (!newsRes.ok) console.error('Failed to fetch news');
         if (!eventsRes.ok) console.error('Failed to fetch events');
         if (!musicRes.ok) console.error('Failed to fetch featured music');
 
-        setData({ news, events, featuredMusic });
+        // <<< THÊM: Lọc các bài hát đã được xuất bản (isPublished === true)
+        const publishedFeaturedMusic = allFeaturedMusic.filter((track: Music) => track.isPublished);
+
+        setData({ news, events, featuredMusic: publishedFeaturedMusic }); // <<< SỬA: Lưu danh sách đã lọc vào state
       } catch (error) { console.error('Error fetching home data:', error); }
       finally { setLoading(false); }
     };
@@ -55,11 +59,11 @@ export default function Home() {
     const fetchMembers = async () => {
       setLoadingMembers(true);
       try {
-        const response = await fetch('/api/member'); // Lấy TẤT CẢ members
+        const response = await fetch('/api/member');
         if (!response.ok) { throw new Error(`Không thể tải dữ liệu thành viên (${response.status})`); }
         const memberData = await response.json();
         const activeMembers = memberData.filter((member: Member) => member.isActive);
-        setMembers(activeMembers); // Lưu TẤT CẢ active members
+        setMembers(activeMembers);
         setErrorMembers(null);
       } catch (error: any) { console.error('Error fetching members:', error); setErrorMembers(error.message || 'Lỗi không xác định khi tải thành viên.'); }
       finally { setLoadingMembers(false); }
@@ -88,6 +92,7 @@ export default function Home() {
     <Layout>
       {/* Hero Section */}
       <div className="relative h-[600px] overflow-hidden bg-gray-900">
+        {/* Phần Hero Section giữ nguyên như cũ */}
         <div className="absolute inset-0 bg-black/50 z-10">{bannerImages.length > 0 && (<img src={bannerImages[currentSlide]} alt="Band Hero Background" className="w-full h-full object-cover transition-opacity duration-1000" style={{ objectFit: 'cover' }} key={currentSlide} />)}</div>
         {bannerImages.length > 1 && (<> <button aria-label="Previous Slide" className="absolute left-4 top-1/2 transform -translate-y-1/2 z-20 bg-black/40 text-white rounded-full p-2 hover:bg-black/60 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 transition-colors" onClick={() => setCurrentSlide((prev) => (prev - 1 + bannerImages.length) % bannerImages.length)}><svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg></button> <button aria-label="Next Slide" className="absolute right-4 top-1/2 transform -translate-y-1/2 z-20 bg-black/40 text-white rounded-full p-2 hover:bg-black/60 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 transition-colors" onClick={() => setCurrentSlide((prev) => (prev + 1) % bannerImages.length)}><svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg></button> </>)}
         {bannerImages.length > 1 && (<div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex space-x-2 z-20">{bannerImages.map((_, idx) => (<button key={idx} aria-label={`Go to slide ${idx + 1}`} onClick={() => setCurrentSlide(idx)} className={`w-3 h-3 rounded-full ${idx === currentSlide ? 'bg-white scale-110' : 'bg-gray-400/70 hover:bg-gray-300/90'} focus:outline-none focus:ring-1 focus:ring-white focus:ring-offset-1 focus:ring-offset-black/50 transition-all duration-300`} />))}</div>)}
@@ -118,7 +123,7 @@ export default function Home() {
                   />
                 ))}
               </div>
-              {/* **SỬA Ở ĐÂY:** Luôn hiển thị nút nếu members.length > 0 */}
+              {/* Nút xem tất cả hiển thị nếu có thành viên */}
               <ViewAllButton href="/member">Xem tất cả thành viên</ViewAllButton>
             </>
           ) : (<p className="text-center text-gray-600">Không tìm thấy thông tin thành viên.</p>)}
@@ -129,20 +134,28 @@ export default function Home() {
       <section className="py-20 bg-white">
         <div className="container mx-auto px-6 md:px-8 max-w-screen-xl">
           <SectionHeading title="Bài hát nổi bật" />
+          {/* <<< SỬA: Kiểm tra data.featuredMusic (đã lọc) */}
           {data.featuredMusic.length > 0 ? (
             <>
               <div className="space-y-8 max-w-4xl mx-auto">
-                {/* Chỉ hiển thị tối đa 3 */}
+                {/* Chỉ hiển thị tối đa 3 bài hát đã xuất bản */}
                 {data.featuredMusic.slice(0, 3).map((track) => (
                   <div key={track._id} className="rounded-xl shadow-lg overflow-hidden bg-white border border-gray-100 hover:shadow-xl transition-shadow duration-300">
-                    <MusicPlayer {...track} />
+                    {/* Truyền đầy đủ props từ track (đã có kiểu Music) */}
+                    <MusicPlayer
+                      title={track.title}
+                      artist={track.artist}
+                      image={track.image}
+                      audio={track.audio}
+                      description={track.description} // MusicPlayer cần prop này
+                    />
                   </div>
                 ))}
               </div>
-              {/* **SỬA Ở ĐÂY:** Luôn hiển thị nút nếu data.featuredMusic.length > 0 */}
+              {/* Nút xem tất cả hiển thị nếu có bài hát đã xuất bản */}
               <ViewAllButton href="/music">Xem tất cả bài hát</ViewAllButton>
             </>
-          ) : (<p className="text-center text-gray-600">Hiện chưa có bài hát nổi bật nào.</p>)}
+          ) : (<p className="text-center text-gray-600">Hiện chưa có bài hát nổi bật nào được phát hành.</p>)}
         </div>
       </section>
 
@@ -154,10 +167,12 @@ export default function Home() {
           {data.events.length > 0 ? (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-10">
-                {data.events.map((event) => (
+                {/* <<< SỬA (nhỏ): Thêm slice(0, 3) cho rõ ràng, dù API đã giới hạn */}
+                {data.events.slice(0, 3).map((event) => (
                   <EventCard
                     key={event._id}
                     title={event.title}
+                    // Chuyển đổi date nếu là string
                     date={typeof event.date === 'string' ? new Date(event.date) : event.date}
                     location={event.location}
                     image={event.image}
@@ -166,7 +181,7 @@ export default function Home() {
                   />
                 ))}
               </div>
-              {/* **SỬA Ở ĐÂY:** Luôn hiển thị nút nếu data.events.length > 0 (Đã đúng từ trước) */}
+              {/* Nút xem tất cả hiển thị nếu có sự kiện */}
               <ViewAllButton href="/schedule">Xem tất cả sự kiện</ViewAllButton>
             </>
           ) : (<p className="text-center text-gray-600">Hiện tại không có sự kiện nào sắp diễn ra.</p>)}
@@ -177,11 +192,12 @@ export default function Home() {
       <section className="py-20 bg-white">
         <div className="container mx-auto px-6 md:px-8 max-w-screen-xl">
           <SectionHeading title="Tin tức mới nhất" />
-          {/* API đã giới hạn 3, map trực tiếp */}
+          {/* API đã giới hạn 3 */}
           {data.news.length > 0 ? (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-10">
-                {data.news.map((item) => (
+                {/* <<< SỬA: Thêm .slice(0, 3) để chắc chắn chỉ hiển thị tối đa 3 tin */}
+                {data.news.slice(0, 3).map((item) => (
                   <NewsCard
                     key={item._id}
                     _id={item._id}
@@ -193,7 +209,7 @@ export default function Home() {
                   />
                 ))}
               </div>
-              {/* **SỬA Ở ĐÂY:** Luôn hiển thị nút nếu data.news.length > 0 (Đã đúng từ trước) */}
+              {/* Nút xem tất cả hiển thị nếu có tin tức */}
               <ViewAllButton href="/news">Xem tất cả tin tức</ViewAllButton>
             </>
           ) : (<p className="text-center text-gray-600">Chưa có tin tức nào.</p>)}
