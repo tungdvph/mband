@@ -1,8 +1,7 @@
 // /lib/models/TicketBooking.ts
-import mongoose, { Document, Schema, Types } from 'mongoose';
+import mongoose, { Document, Schema, Types, Model } from 'mongoose'; // Thêm Model
 
 // Interface định nghĩa cấu trúc Document cho TicketBooking trong DB
-// Chỉ chứa các kiểu dữ liệu cơ bản và ObjectId tham chiếu
 export interface ITicketBooking extends Document {
     scheduleId: Types.ObjectId; // Tham chiếu đến Schedule
     userId: Types.ObjectId;     // Tham chiếu đến User
@@ -10,7 +9,12 @@ export interface ITicketBooking extends Document {
     totalPrice: number;
     status: 'pending' | 'confirmed' | 'cancelled';
     seatInfo?: string;
-    // createdAt và updatedAt sẽ được Mongoose tự động quản lý qua timestamps: true
+
+    // *** THÊM: Khai báo rõ ràng các trường timestamps ***
+    // Mặc dù Mongoose quản lý chúng, khai báo ở đây giúp TypeScript nhận biết
+    // và tương thích với các kiểu dữ liệu khác (như PopulatedBooking)
+    createdAt: Date;
+    updatedAt: Date;
 }
 
 // Định nghĩa Mongoose Schema
@@ -18,13 +22,14 @@ const ticketBookingSchema = new Schema<ITicketBooking>({
     scheduleId: { type: Schema.Types.ObjectId, ref: 'Schedule', required: true },
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     ticketCount: { type: Number, required: true, min: 1 },
-    totalPrice: { type: Number, required: true, min: 0 },
+    totalPrice: { type: Number, required: true, min: 0 }, // Đảm bảo totalPrice được lưu khi tạo booking
     status: {
         type: String,
         enum: ['pending', 'confirmed', 'cancelled'],
         default: 'pending',
     },
     seatInfo: { type: String },
+    // Không cần khai báo createdAt, updatedAt ở đây vì đã có timestamps: true
 }, {
     timestamps: true, // Tự động thêm createdAt, updatedAt
     versionKey: '__v',
@@ -36,9 +41,9 @@ ticketBookingSchema.index({ userId: 1 });
 ticketBookingSchema.index({ status: 1 });
 
 // Export Mongoose model
-// Sử dụng cách kiểm tra models[modelName] để tương thích tốt hơn với HMR trong Next.js
 const modelName = 'TicketBooking';
-const TicketBooking = (mongoose.models[modelName] as mongoose.Model<ITicketBooking>) ||
+// Sử dụng assertion 'as Model<ITicketBooking>' để rõ ràng hơn
+const TicketBooking = (mongoose.models[modelName] as Model<ITicketBooking>) ||
     mongoose.model<ITicketBooking>(modelName, ticketBookingSchema);
 
 export default TicketBooking;
