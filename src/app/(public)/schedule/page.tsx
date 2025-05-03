@@ -314,23 +314,24 @@ export default function ScheduleListPage() {
           )}
         </div>
       </div>
-
-      {/* Khung Thông báo Yêu cầu Đăng nhập (giữ nguyên) */}
+      {/* Khung Thông báo Yêu cầu Đăng nhập (ĐÃ SỬA) */}
       {showLoginPrompt && (
-        <div className="fixed inset-0 z-50 flex justify-center items-center p-4 bg-black bg-opacity-50">
+        // Loại bỏ bg-black bg-opacity-50 khỏi dòng dưới
+        <div className="fixed inset-0 z-50 flex justify-center items-center p-4">
           <div
             className="max-w-md w-full bg-yellow-50 border border-yellow-300 p-8 rounded-lg shadow-lg text-center transform transition-all scale-95 opacity-0 animate-fade-in-scale"
             style={{ animationFillMode: 'forwards', animationDuration: '0.2s' }}
           >
+            {/* --- Nội dung thông báo giữ nguyên --- */}
             <style jsx>{`
-               @keyframes fade-in-scale {
-                 from { opacity: 0; transform: scale(0.95); }
-                 to { opacity: 1; transform: scale(1); }
-               }
-               .animate-fade-in-scale {
-                 animation-name: fade-in-scale;
-               }
-             `}</style>
+            @keyframes fade-in-scale {
+              from { opacity: 0; transform: scale(0.95); }
+              to { opacity: 1; transform: scale(1); }
+            }
+            .animate-fade-in-scale {
+              animation-name: fade-in-scale;
+            }
+           `}</style>
             <svg className="mx-auto mb-4 w-12 h-12 text-yellow-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0-10.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.75c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.57-.598-3.75h-.152c-3.196 0-6.1-1.25-8.25-3.286Zm0 13.036h.008v.008H12v-.008Z" />
             </svg>
@@ -349,6 +350,7 @@ export default function ScheduleListPage() {
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
+            {/* --- Kết thúc nội dung thông báo --- */}
           </div>
         </div>
       )}
