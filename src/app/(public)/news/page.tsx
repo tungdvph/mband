@@ -1,49 +1,47 @@
+// src/app/(public)/news/page.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
-import Layout from '@/components/layout/Layout';    // Đảm bảo đường dẫn đúng
-import NewsCard from '@/components/ui/NewsCard';    // Đảm bảo đường dẫn đúng
-import { useRouter } from 'next/navigation';      // Import nếu cần dùng router
+import { useEffect, useState, useMemo, ChangeEvent } from 'react';
+import Layout from '@/components/layout/Layout';
+import NewsCard from '@/components/ui/NewsCard';
+// *** Đảm bảo đường dẫn này đúng và file /types/news.ts đã được cập nhật ***
+import { News } from '@/types/news';
+// import { useRouter } from 'next/navigation'; // Bỏ comment nếu cần router
 
-// Interface cho một bản tin (giữ nguyên hoặc điều chỉnh nếu cần)
-interface News {
-  _id: string;
-  title: string;
-  content: string; // Hoặc có thể là excerpt/summary từ API
-  image?: string;  // Ảnh là tùy chọn
-  createdAt: string; // Giữ là string ISO date
-  author?: string; // Tác giả là tùy chọn
-}
+// Type cho các tùy chọn sắp xếp
+type SortOption = 'date_desc' | 'date_asc';
 
 export default function NewsPage() {
+  // *** State `news` giờ đây mong đợi News[] với createdAt là string ***
   const [news, setNews] = useState<News[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null); // Thêm state lỗi
-  // const router = useRouter(); // Khởi tạo nếu cần dùng
+  const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortOption, setSortOption] = useState<SortOption>('date_desc');
+  // const router = useRouter();
 
   const defaultImage = '/images/default-news.png'; // Ảnh mặc định
 
   useEffect(() => {
-    setLoading(true);
-    setError(null); // Reset lỗi
     const fetchNews = async () => {
+      setLoading(true);
+      setError(null);
       try {
-        const response = await fetch('/api/news'); // API lấy danh sách tin tức
+        const response = await fetch('/api/news');
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
           throw new Error(errorData.error || `Không thể tải tin tức (Lỗi ${response.status})`);
         }
+        // Dữ liệu nhận về từ JSON.parse sẽ có createdAt là string
         const data = await response.json();
-        // API có thể trả về { news: [...] } hoặc chỉ [...]
-        const newsData = data.news || data;
-        if (Array.isArray(newsData)) {
-          // Sắp xếp tin mới nhất lên đầu (thường backend làm việc này)
-          const sortedNews = newsData.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-          setNews(sortedNews);
-        } else {
+        const newsData: News[] = Array.isArray(data) ? data : (data.news || []);
+
+        if (!Array.isArray(newsData)) {
           console.error("Invalid news list data structure received:", data);
           throw new Error("Dữ liệu tin tức trả về không hợp lệ.");
         }
+        // Dữ liệu gán vào state đã có createdAt là string
+        setNews(newsData);
 
       } catch (error: any) {
         console.error('Error fetching news:', error);
@@ -54,11 +52,48 @@ export default function NewsPage() {
     };
 
     fetchNews();
-  }, []); // Fetch một lần khi component mount
+  }, []);
+
+  // Lọc và sắp xếp danh sách hiển thị
+  const displayedNews = useMemo(() => {
+    let filtered = news;
+
+    // 1. Lọc theo searchTerm (tìm kiếm theo tiêu đề - title)
+    if (searchTerm) {
+      filtered = filtered.filter(item =>
+        item.title.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // 2. Sắp xếp theo sortOption
+    const sorted = [...filtered];
+    // Mặc dù createdAt là string, new Date(string) vẫn hoạt động để so sánh
+    switch (sortOption) {
+      case 'date_desc': // Mới nhất -> Cũ nhất
+        sorted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        break;
+      case 'date_asc': // Cũ nhất -> Mới nhất
+        sorted.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+        break;
+      default:
+        sorted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        break;
+    }
+    return sorted;
+  }, [news, searchTerm, sortOption]);
+
+  // Handler cho input tìm kiếm
+  const handleSearchChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(event.target.value);
+  };
+
+  // Handler cho select sắp xếp
+  const handleSortChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    setSortOption(event.target.value as SortOption);
+  };
 
   return (
     <Layout>
-      {/* Container chính với nền và padding */}
       <div className="bg-gray-50 min-h-screen py-12 md:py-16">
         <div className="container mx-auto px-4">
           {/* Tiêu đề trang */}
@@ -70,6 +105,32 @@ export default function NewsPage() {
               Cập nhật những thông tin, hoạt động và chia sẻ mới nhất từ chúng tôi.
             </p>
           </div>
+
+          {/* === Phần Tìm kiếm và Sắp xếp === */}
+          <div className="mb-8 flex flex-col sm:flex-row gap-4 items-center justify-between p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
+            <div className="w-full sm:w-1/2">
+              <input
+                type="text"
+                placeholder="Tìm kiếm theo tiêu đề bài viết..."
+                value={searchTerm}
+                onChange={handleSearchChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
+            <div className="w-full sm:w-auto">
+              <label htmlFor="sort-select-news" className="sr-only">Sắp xếp theo</label>
+              <select
+                id="sort-select-news"
+                value={sortOption}
+                onChange={handleSortChange}
+                className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white"
+              >
+                <option value="date_desc">Mới nhất</option>
+                <option value="date_asc">Cũ nhất</option>
+              </select>
+            </div>
+          </div>
+          {/* === Kết thúc Phần Tìm kiếm và Sắp xếp === */}
 
           {/* Trạng thái Loading */}
           {loading && (
@@ -90,29 +151,32 @@ export default function NewsPage() {
           {/* Hiển thị lưới tin tức hoặc thông báo không có tin */}
           {!loading && !error && (
             <>
-              {news.length > 0 ? (
-                // Grid layout cho các thẻ tin tức
+              {displayedNews.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-                  {news.map((item) => (
+                  {displayedNews.map((item) => (
                     <NewsCard
                       key={item._id}
-                      _id={item._id} // ID để tạo link chi tiết trong NewsCard
+                      _id={item._id}
                       title={item.title}
-                      // Truyền content, NewsCard sẽ tự cắt ngắn nếu cần
                       content={item.content}
-                      image={item.image || defaultImage} // Ảnh hoặc ảnh mặc định
-                      createdAt={item.createdAt} // Truyền date string
+                      image={item.image || defaultImage}
+                      // *** Truyền thẳng chuỗi createdAt ***
+                      createdAt={item.createdAt}
                       author={item.author}
                     />
                   ))}
                 </div>
               ) : (
-                // Thông báo khi không có tin tức
                 <div className="text-center text-gray-500 py-16">
                   <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
                   </svg>
-                  <p className="text-lg">Hiện chưa có tin tức nào được đăng.</p>
+                  <p className="text-lg">
+                    {searchTerm
+                      ? `Không tìm thấy bài viết nào phù hợp với "${searchTerm}".`
+                      : 'Hiện chưa có tin tức nào được đăng.'
+                    }
+                  </p>
                 </div>
               )}
             </>

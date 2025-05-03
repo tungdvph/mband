@@ -5,6 +5,6 @@ export interface News {
   content: string;
   image?: string;
   isPublished: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
 }
