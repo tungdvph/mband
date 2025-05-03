@@ -43,7 +43,7 @@ const scheduleSchema: Schema<ISchedule> = new mongoose.Schema({ // Thêm kiểu 
   },
   status: {
     type: String,
-    enum: ['scheduled', 'completed', 'cancelled'],
+    enum: ['scheduled', 'completed', 'cancelled', 'postponed'],
     default: 'scheduled'
   },
   price: { // <<< ĐÃ THÊM
