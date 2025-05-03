@@ -48,7 +48,7 @@ const scheduleSchema: Schema<ISchedule> = new mongoose.Schema({ // Thêm kiểu 
   },
   price: { // <<< ĐÃ THÊM
     type: Number,
-    required: [true, 'Ticket price is required'],
+    required: false,
     min: [0, 'Price cannot be negative']
   }
 }, {

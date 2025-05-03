@@ -13,9 +13,9 @@ export interface Schedule {
   endTime?: string;
   venue: Venue;       // Sử dụng interface Venue ở trên
   description?: string;
-  type: 'concert' | 'rehearsal' | 'meeting' | 'interview' | 'other'; // Khớp với model
-  status: 'scheduled' | 'completed' | 'cancelled' | 'postponed';                  // Khớp với model
-  price: number;      // <<< THÊM trường price
-  createdAt: string;  // <-- Sửa thành string
-  updatedAt: string;  // <-- Sửa thành string
+  type: 'concert' | 'rehearsal' | 'meeting' | 'interview' | 'other';
+  status: 'scheduled' | 'completed' | 'cancelled' | 'postponed';
+  price?: number;
+  createdAt: string;
+  updatedAt: string;
 }

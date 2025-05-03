@@ -2,10 +2,12 @@
 'use client';
 
 import { useEffect, useState, useMemo, ChangeEvent } from 'react';
-import Layout from '@/components/layout/Layout';      // Đảm bảo đường dẫn đúng
+import Layout from '@/components/layout/Layout';       // Đảm bảo đường dẫn đúng
 import MusicPlayer from '@/components/ui/MusicPlayer'; // Đảm bảo đường dẫn đúng
-import { Music } from '@/types/music';                // Đường dẫn đến type Music bạn đã cung cấp
+import { Music } from '@/types/music';               // Đường dẫn đến type Music bạn đã cung cấp
 import { useRouter } from 'next/navigation';
+// Optional: Import icon nếu muốn thêm vào nút chi tiết mới
+// import { FiInfo } from 'react-icons/fi';
 
 // Chỉ còn lại các tùy chọn sắp xếp theo ngày vì không có trường 'price'
 type SortOption = 'date_desc' | 'date_asc';
@@ -162,16 +164,19 @@ export default function MusicPage() {
                       image={track.image}
                       audio={track.audio}
                       description={track.description}
-                    // Các props khác nếu MusicPlayer cần
+                    // Không truyền onDetailsClick vì nút đã xử lý ở ngoài
                     />
                   </div>
 
-                  {/* Phần nút "Xem chi tiết" */}
+                  {/* Phần nút "Xem chi tiết" - ĐÃ ÁP DỤNG STYLE OUTLINED */}
                   <div className="flex-shrink-0 mt-4 md:mt-0 w-full md:w-auto flex justify-center md:justify-end">
                     <button
-                      className="bg-indigo-600 text-white px-5 py-2 rounded-lg text-sm font-medium shadow hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition duration-150 ease-in-out whitespace-nowrap"
+                      // --- CLASSNAME ĐÃ ĐƯỢC THAY THẾ ---
+                      className="inline-flex items-center justify-center gap-1.5 px-5 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-full text-sm font-medium shadow hover:shadow-md hover:from-indigo-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition duration-150 ease-in-out whitespace-nowrap"
                       onClick={() => handleViewDetails(track._id)} // Sử dụng _id
                     >
+                      {/* Optional: Thêm icon nếu muốn */}
+                      {/* <FiInfo size={14} className="-ml-0.5 mr-0.5"/> */}
                       Xem chi tiết
                     </button>
                   </div>
