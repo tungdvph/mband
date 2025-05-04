@@ -1,40 +1,40 @@
 // /app/admin/comment/page.tsx
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react'; // Thêm useMemo
+import { format } from 'date-fns'; // Import date-fns để định dạng ngày
+import { vi } from 'date-fns/locale/vi'; // Import locale tiếng Việt
 
 // --- Interfaces ---
-// Interface cho item trong dropdown (nếu cần cập nhật form Thêm)
 interface ReferenceItem {
     _id: string;
     title: string;
-    type: 'Music' | 'News'; // Hiện tại chỉ dùng cho Music
+    type: 'Music' | 'News';
 }
 
-// Interface cho Comment khớp với dữ liệu từ API GET đã sửa
 interface Comment {
     _id: string;
-    musicId?: string; // ID bài nhạc (nếu có)
-    newsId?: string;  // ID bài viết (nếu có)
-    referenceTitle: string; // Tên bài nhạc HOẶC bài viết
-    referenceType: 'Music' | 'News' | 'Unknown'; // Loại nội dung
+    musicId?: string;
+    newsId?: string;
+    referenceTitle: string;
+    referenceType: 'Music' | 'News' | 'Unknown';
     userFullName: string;
     content: string;
-    createdAt: string; // Chuỗi ISO từ API
+    createdAt: string;
 }
 
-// Interface cho MusicTrack (chỉ dùng cho form Add hiện tại)
 interface MusicTrack {
     _id: string;
     title: string;
 }
 
 export default function AdminCommentPage() {
-    const [comments, setComments] = useState<Comment[]>([]); // Sử dụng interface Comment mới
-    const [musicTracks, setMusicTracks] = useState<MusicTrack[]>([]); // Giữ nguyên cho form Add hiện tại
+    const [comments, setComments] = useState<Comment[]>([]);
+    const [musicTracks, setMusicTracks] = useState<MusicTrack[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [editing, setEditing] = useState<Comment | null>(null); // Sử dụng interface Comment mới
+    const [editing, setEditing] = useState<Comment | null>(null);
     const [showAdd, setShowAdd] = useState(false);
+    const [searchTerm, setSearchTerm] = useState(''); // State tìm kiếm
 
     // State cho việc thêm/sửa
     const [newContent, setNewContent] = useState('');
@@ -42,10 +42,10 @@ export default function AdminCommentPage() {
     const [newMusicId, setNewMusicId] = useState<string>('');
     const [newUserFullName, setNewUserFullName] = useState<string>('');
 
-    // 1. Lấy danh sách bình luận (API đã được sửa)
+    // 1. Lấy danh sách bình luận
     useEffect(() => {
         setLoading(true);
-        fetch('/api/admin/comments')
+        fetch('/api/admin/comments') // API lấy comments đã bao gồm thông tin reference
             .then(async (res) => {
                 if (!res.ok) {
                     const errorData = await res.json().catch(() => ({ error: 'Lỗi không xác định khi tải' }));
@@ -53,7 +53,7 @@ export default function AdminCommentPage() {
                 }
                 return res.json();
             })
-            .then((data: Comment[]) => { // API trả về dữ liệu theo interface Comment mới
+            .then((data: Comment[]) => {
                 setComments(data);
                 setError(null);
             })
@@ -67,15 +67,19 @@ export default function AdminCommentPage() {
     // 2. Lấy danh sách bài nhạc cho dropdown (chỉ cho form Add hiện tại)
     useEffect(() => {
         if (showAdd) {
-            fetch('/api/admin/music') // Giả sử endpoint này chỉ trả về music
+            fetch('/api/admin/music') // Endpoint trả về music (chỉ cần _id và title)
                 .then(res => {
                     if (!res.ok) throw new Error('Không thể tải danh sách bài nhạc');
                     return res.json();
                 })
                 .then((data: MusicTrack[]) => {
                     setMusicTracks(data);
+                    // Chỉ set giá trị mặc định nếu chưa có giá trị và có danh sách trả về
                     if (data.length > 0 && !newMusicId) {
-                        setNewMusicId(data[0]._id); // Chọn bài đầu tiên mặc định
+                        setNewMusicId(data[0]._id);
+                    } else if (data.length === 0) {
+                        // Nếu không có bài nhạc nào, reset newMusicId
+                        setNewMusicId('');
                     }
                 })
                 .catch(err => {
@@ -83,9 +87,47 @@ export default function AdminCommentPage() {
                     setError('Lỗi tải danh sách bài nhạc để thêm bình luận.');
                 });
         }
-    }, [showAdd, newMusicId]); // Dependency giữ nguyên newMusicId
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [showAdd]); // Chỉ phụ thuộc showAdd để tránh gọi lại không cần thiết
 
-    // Hàm thêm bình luận (giữ nguyên logic chỉ thêm cho Music)
+    // === HÀM FORMAT ===
+    const formatReferenceType = (type: Comment['referenceType']): string => {
+        switch (type) {
+            case 'Music': return 'Nhạc';
+            case 'News': return 'Tin tức';
+            default: return 'Không rõ';
+        }
+    }
+
+    const formatDateTime = (dateString: string | Date | undefined | null): string => {
+        if (!dateString) return 'N/A';
+        try {
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) {
+                return 'Ngày không hợp lệ';
+            }
+            return format(date, 'dd/MM/yyyy HH:mm', { locale: vi });
+        } catch (e) {
+            console.error("Error formatting date:", e);
+            return 'Ngày không hợp lệ';
+        }
+    }
+
+    // === LOGIC TÌM KIẾM ===
+    const filteredComments = useMemo(() => {
+        if (!searchTerm) {
+            return comments;
+        }
+        const lowerCaseSearchTerm = searchTerm.toLowerCase();
+        return comments.filter(comment =>
+            comment.referenceTitle.toLowerCase().includes(lowerCaseSearchTerm) ||
+            formatReferenceType(comment.referenceType).toLowerCase().includes(lowerCaseSearchTerm) ||
+            comment.userFullName.toLowerCase().includes(lowerCaseSearchTerm) ||
+            comment.content.toLowerCase().includes(lowerCaseSearchTerm)
+        );
+    }, [comments, searchTerm]);
+
+    // === HÀM HANDLER (ADD, EDIT, DELETE) ===
     const handleAdd = async () => {
         if (!newMusicId || !newUserFullName.trim() || !newContent.trim()) {
             alert('Vui lòng chọn bài nhạc, nhập tên người dùng và nội dung.');
@@ -96,7 +138,7 @@ export default function AdminCommentPage() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    musicId: newMusicId, // Chỉ gửi musicId
+                    musicId: newMusicId,
                     userFullName: newUserFullName.trim(),
                     content: newContent.trim(),
                 }),
@@ -105,50 +147,53 @@ export default function AdminCommentPage() {
                 const errorData = await res.json().catch(() => ({ error: 'Không thể thêm bình luận' }));
                 throw new Error(errorData.error || `Lỗi HTTP! status: ${res.status}`);
             }
-            const newComment: Comment = await res.json(); // API trả về theo format mới
+            const newComment: Comment = await res.json();
             setComments([newComment, ...comments]); // Thêm vào đầu danh sách
-            // Reset form
+            // Reset form Add
+            setShowAdd(false);
             setNewContent('');
             setNewUserFullName('');
-            setNewMusicId(musicTracks.length > 0 ? musicTracks[0]._id : '');
-            setShowAdd(false);
+            setNewMusicId(''); // Reset luôn musicId
             setError(null);
+            alert('Thêm bình luận thành công!');
         } catch (err: any) {
             console.error("Lỗi thêm bình luận:", err);
             setError(`Lỗi khi thêm: ${err.message}`);
+            alert(`Lỗi khi thêm: ${err.message}`);
         }
     };
 
-    // Hàm sửa bình luận (chỉ sửa content)
     const handleEdit = async () => {
         if (!editing || !newContent.trim()) return;
         try {
             const res = await fetch(`/api/admin/comments/${editing._id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ content: newContent.trim() }),
+                body: JSON.stringify({ content: newContent.trim() }), // Chỉ gửi content
             });
             if (!res.ok) {
                 const errorData = await res.json().catch(() => ({ error: 'Không thể cập nhật bình luận' }));
                 throw new Error(errorData.error || `Lỗi HTTP! status: ${res.status}`);
             }
-            const updatedCommentData = await res.json(); // API trả về comment đã cập nhật (chỉ có content mới)
-            // Cập nhật state, giữ nguyên các trường khác từ editing
-            setComments(comments.map(c =>
+            const updatedCommentData = await res.json(); // API chỉ trả về phần đã update hoặc toàn bộ comment mới
+            // Cập nhật state hiệu quả hơn
+            setComments(prevComments => prevComments.map(c =>
                 c._id === editing._id
-                    ? { ...editing, content: updatedCommentData.content || newContent.trim() }
+                    ? { ...c, content: updatedCommentData.content ?? newContent.trim() } // Dùng ?? để fallback nếu API không trả content
                     : c
             ));
+            // Reset form Edit
             setEditing(null);
             setNewContent('');
             setError(null);
+            alert('Cập nhật bình luận thành công!');
         } catch (err: any) {
             console.error("Lỗi sửa bình luận:", err);
             setError(`Lỗi khi cập nhật: ${err.message}`);
+            alert(`Lỗi khi cập nhật: ${err.message}`);
         }
     };
 
-    // Hàm xóa bình luận (giữ nguyên)
     const handleDelete = async (id: string) => {
         if (!window.confirm('Bạn chắc chắn muốn xóa bình luận này?')) return;
         try {
@@ -157,44 +202,84 @@ export default function AdminCommentPage() {
                 const errorData = await res.json().catch(() => ({ error: 'Không thể xóa bình luận' }));
                 throw new Error(errorData.error || `Lỗi HTTP! status: ${res.status}`);
             }
-            setComments(comments.filter(c => c._id !== id));
+            setComments(prevComments => prevComments.filter(c => c._id !== id)); // Cập nhật state
             setError(null);
+            alert('Xóa bình luận thành công!');
         } catch (err: any) {
             console.error("Lỗi xóa bình luận:", err);
             setError(`Lỗi khi xóa: ${err.message}`);
+            alert(`Lỗi khi xóa: ${err.message}`);
         }
     };
 
-    // Render JSX
+    // === RENDER JSX ===
     return (
-        <div>
-            <h1 className="text-2xl font-bold mb-4">Quản lý Bình luận</h1>
+        <div className="p-6">
+            {/* Header: Tiêu đề, Tìm kiếm, Nút thêm */}
+            <div className="flex justify-between items-center mb-6 gap-4 flex-wrap">
+                <h1 className="text-2xl font-bold text-gray-800">Quản lý Bình luận</h1>
+                <div className="flex items-center space-x-4">
+                    {/* Ô tìm kiếm */}
+                    <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </div>
+                        <input
+                            type="text"
+                            placeholder="Tìm tên bài, người dùng, nội dung..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            disabled={loading} // Disable khi đang loading
+                            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition duration-150 ease-in-out disabled:bg-gray-100"
+                        />
+                    </div>
+                    {/* Nút thêm */}
+                    <button
+                        onClick={() => { setShowAdd(true); setEditing(null); setNewContent(''); setError(null); }}
+                        disabled={loading || !!editing || showAdd} // Disable khi loading hoặc đang sửa/thêm
+                        className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="-ml-1 mr-2 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                        </svg>
+                        Thêm BL (Nhạc)
+                    </button>
+                </div>
+            </div>
 
-            {/* Nút Thêm (Ghi rõ chỉ hỗ trợ Music) */}
-
-
+            {/* Thông báo lỗi tổng */}
             {error && !loading && <div className="mb-4 p-3 bg-red-100 text-red-700 border border-red-300 rounded">{error}</div>}
 
             {/* Form Thêm (Hiện chỉ hỗ trợ Music) */}
             {showAdd && (
                 <div className="mb-6 p-4 border rounded shadow-md bg-gray-50">
-                    <h2 className="text-xl font-semibold mb-3">Bình luận Mới (cho Bài nhạc)</h2>
+                    <div className="flex justify-between items-center mb-3">
+                        <h2 className="text-xl font-semibold">Bình luận Mới (cho Bài nhạc)</h2>
+                        <button onClick={() => setShowAdd(false)} className="text-gray-400 hover:text-gray-600" aria-label="Đóng form thêm">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                    {/* Nội dung form thêm... */}
                     <div className="mb-3">
                         <label htmlFor="musicSelect" className="block text-sm font-medium text-gray-700 mb-1">Bài nhạc:</label>
                         <select
                             id="musicSelect"
-                            className="w-full border rounded p-2 focus:ring-blue-500 focus:border-blue-500"
+                            className="w-full border rounded p-2 focus:ring-blue-500 focus:border-blue-500 bg-white disabled:bg-gray-100"
                             value={newMusicId}
                             onChange={e => setNewMusicId(e.target.value)}
                             required
+                            disabled={musicTracks.length === 0}
                         >
-                            <option value="" disabled>-- Chọn bài nhạc --</option>
+                            <option value="" disabled>-- {musicTracks.length > 0 ? 'Chọn bài nhạc' : 'Không có bài nhạc'} --</option>
                             {musicTracks.map(track => (
                                 <option key={track._id} value={track._id}>
                                     {track.title}
                                 </option>
                             ))}
-                            {musicTracks.length === 0 && <option disabled>Đang tải...</option>}
                         </select>
                     </div>
                     <div className="mb-3">
@@ -221,7 +306,7 @@ export default function AdminCommentPage() {
                             required
                         />
                     </div>
-                    <button className="mt-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700" onClick={handleAdd}>
+                    <button className="mt-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50" onClick={handleAdd} disabled={!newMusicId}>
                         Lưu
                     </button>
                     <button className="mt-2 ml-2 px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500" onClick={() => setShowAdd(false)}>
@@ -233,10 +318,16 @@ export default function AdminCommentPage() {
             {/* Form Sửa */}
             {editing && (
                 <div className="mb-6 p-4 border rounded shadow-md bg-gray-50">
-                    <h2 className="text-xl font-semibold mb-3">Sửa Bình luận</h2>
-                    {/* Hiển thị referenceTitle và referenceType */}
+                    <div className="flex justify-between items-center mb-3">
+                        <h2 className="text-xl font-semibold">Sửa Bình luận</h2>
+                        <button onClick={() => { setEditing(null); setNewContent(''); }} className="text-gray-400 hover:text-gray-600" aria-label="Đóng form sửa">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
                     <p className="text-sm text-gray-600 mb-1">
-                        Nơi bình luận ({editing.referenceType}): <span className="font-medium">{editing.referenceTitle}</span>
+                        Nơi bình luận ({formatReferenceType(editing.referenceType)}): <span className="font-medium">{editing.referenceTitle}</span>
                     </p>
                     <p className="text-sm text-gray-600 mb-3">Người dùng: <span className="font-medium">{editing.userFullName}</span></p>
                     <div className="mb-3">
@@ -262,71 +353,73 @@ export default function AdminCommentPage() {
 
             {/* Bảng hiển thị bình luận */}
             {loading ? (
-                <div className="text-center py-10">Đang tải bình luận...</div>
-            ) : comments.length === 0 && !error ? (
-                <div className="text-center py-10 text-gray-500">Không tìm thấy bình luận nào.</div>
-            ) : !error ? (
+                <div className="text-center py-10 text-gray-500">Đang tải bình luận...</div>
+            ) : !error ? ( // Chỉ hiển thị bảng nếu không loading và không có lỗi fetch ban đầu
                 <div className="bg-white rounded-lg shadow overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
                             <tr>
-                                {/* === ĐỔI TÊN CỘT ĐẦU TIÊN === */}
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Nơi bình luận
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Người dùng
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Nội dung
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Ngày tạo
-                                </th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Hành động
-                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nơi bình luận</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Người dùng</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/3">Nội dung</th> {/* Tăng chiều rộng cột nội dung */}
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày tạo</th>
+                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Hành động</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                            {comments.map(c => (
-                                <tr key={c._id} className="hover:bg-gray-50">
-                                    {/* === HIỂN THỊ referenceTitle === */}
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800" title={`Loại: ${c.referenceType} | MusicID: ${c.musicId || 'N/A'} | NewsID: ${c.newsId || 'N/A'}`}>
-                                        {c.referenceTitle || <span className="text-gray-400 italic">Không rõ</span>}
-                                        {/* Optional: Thêm tag nhỏ để phân biệt */}
-                                        {c.referenceType === 'Music' && <span className="ml-1 text-xs text-purple-600 bg-purple-100 px-1.5 py-0.5 rounded">Nhạc</span>}
-                                        {c.referenceType === 'News' && <span className="ml-1 text-xs text-green-600 bg-green-100 px-1.5 py-0.5 rounded">Tin tức</span>}
-                                        _                            </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
-                                        {c.userFullName}
-                                    </td>
-                                    <td className="px-6 py-4 text-sm text-gray-800 break-words max-w-xs">
-                                        {c.content}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {new Date(c.createdAt).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <button className="text-indigo-600 hover:text-indigo-900 mr-3 disabled:opacity-50 disabled:cursor-not-allowed"
-                                            onClick={() => { setEditing(c); setNewContent(c.content); setShowAdd(false); }}
-                                            disabled={!!editing || showAdd}
-                                        >
-                                            Sửa
-                                        </button>
-                                        <button className="text-red-600 hover:text-red-900 disabled:opacity-50 disabled:cursor-not-allowed"
-                                            onClick={() => handleDelete(c._id)}
-                                            disabled={!!editing || showAdd}
-                                        >
-                                            Xóa
-                                        </button>
+                            {/* Sử dụng filteredComments */}
+                            {filteredComments.length === 0 ? (
+                                <tr>
+                                    <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
+                                        {searchTerm ? 'Không tìm thấy bình luận nào phù hợp.' : 'Chưa có bình luận nào.'}
                                     </td>
                                 </tr>
-                            ))}
+                            ) : (
+                                filteredComments.map(c => (
+                                    <tr key={c._id} className="hover:bg-gray-50">
+                                        {/* Nơi bình luận */}
+                                        <td className="px-6 py-4 whitespace-nowrap" title={`Loại: ${c.referenceType} | MusicID: ${c.musicId || 'N/A'} | NewsID: ${c.newsId || 'N/A'}`}>
+                                            <div className="text-sm font-medium text-gray-900">{c.referenceTitle || <span className="text-gray-400 italic">Không rõ</span>}</div>
+                                            <div className={`text-xs font-semibold px-1.5 py-0.5 rounded inline-block ${c.referenceType === 'Music' ? 'text-purple-700 bg-purple-100' : c.referenceType === 'News' ? 'text-green-700 bg-green-100' : 'text-gray-700 bg-gray-100'}`}>
+                                                {formatReferenceType(c.referenceType)}
+                                            </div>
+                                        </td>
+                                        {/* Người dùng */}
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
+                                            {c.userFullName}
+                                        </td>
+                                        {/* Nội dung */}
+                                        <td className="px-6 py-4 text-sm text-gray-800 max-w-sm break-words"> {/* Giảm max-w và thêm break-words */}
+                                            {c.content}
+                                        </td>
+                                        {/* Ngày tạo */}
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            {formatDateTime(c.createdAt)}
+                                        </td>
+                                        {/* Hành động */}
+                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                            <button
+                                                className="text-indigo-600 hover:text-indigo-900 mr-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                onClick={() => { setEditing(c); setNewContent(c.content); setShowAdd(false); setError(null); }} // Reset error khi mở sửa
+                                                disabled={!!editing || showAdd} // Disable khi đang sửa hoặc thêm
+                                            >
+                                                Sửa
+                                            </button>
+                                            <button
+                                                className="text-red-600 hover:text-red-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                onClick={() => handleDelete(c._id)}
+                                                disabled={!!editing || showAdd} // Disable khi đang sửa hoặc thêm
+                                            >
+                                                Xóa
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
                         </tbody>
                     </table>
                 </div>
-            ) : null}
+            ) : null /* Trường hợp có lỗi fetch ban đầu thì không hiển thị bảng */}
         </div>
     );
 }
