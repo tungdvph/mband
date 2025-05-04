@@ -10,8 +10,8 @@ export default function MemberPage() {
   const [error, setError] = useState<string | null>(null);
 
   // Placeholder - Bạn cần thay thế bằng tên và địa điểm thực tế
-  const bandName = "KUBE"; // Thay bằng tên ban nhạc của bạn
-  const bandOrigin = "RIAU"; // Thay bằng địa điểm hoặc đặc điểm
+  const bandName = "Cyber Band"; // Thay bằng tên ban nhạc của bạn
+  const bandOrigin = "Hà Nội"; // Thay bằng địa điểm hoặc đặc điểm
 
   const introText = `Chào mừng đến với ngôi nhà chung của ${bandName}! Đây là nơi bạn có thể gặp gỡ và tìm hiểu sâu hơn về từng gương mặt tài năng đã cùng nhau tạo nên những giai điệu đầy cảm xúc mà bạn yêu thích. Mỗi thành viên, với cá tính và màu sắc riêng biệt, là một phần không thể thiếu trong hành trình âm nhạc của chúng tôi, góp phần tạo nên một tập thể độc đáo và gắn kết. Hãy cùng khám phá câu chuyện phía sau sân khấu, niềm đam mê mãnh liệt với âm nhạc, và vai trò đặc biệt của từng người trong ban nhạc. Chúng tôi tin rằng, qua trang này, bạn sẽ tìm thấy sự đồng điệu và càng thêm yêu mến những con người đứng sau các tác phẩm âm nhạc này.`;
 
@@ -53,7 +53,7 @@ export default function MemberPage() {
             CHÚNG TÔI LÀ <span className="text-red-600">{bandName.toUpperCase()}</span> {/* Tên band màu đỏ */}
           </h2>
           <h3 className="text-3xl font-serif font-medium text-gray-700 dark:text-gray-300 tracking-wide mb-8"> {/* Style giống ảnh */}
-            BAN NHẠC TỪ - {bandOrigin.toUpperCase()}
+            NHÓM NHẠC TỪ {bandOrigin.toUpperCase()}
           </h3>
           <p className="text-base md:text-lg text-gray-600 dark:text-gray-400 max-w-3xl mx-auto leading-relaxed justify-center-last"> {/* Giới hạn chiều rộng, canh đều */}
             {introText}

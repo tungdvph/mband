@@ -22,7 +22,7 @@ const Navbar = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l9-9 9 9M4 10v10a1 1 0 001 1h3m10-11v10a1 1 0 01-1 1h-3m-4 0h4" />
               </svg>
             </span>
-            Band Name
+            Cyber Band
           </Link>
           {/* <<< XÓA BỎ THẺ IMG VÀ LINK CŨ Ở ĐÂY */}
         </div>
