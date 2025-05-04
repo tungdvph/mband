@@ -236,6 +236,7 @@ export default function AdminCommentPage() {
                         />
                     </div>
                     {/* Nút thêm */}
+                    {/* 
                     <button
                         onClick={() => { setShowAdd(true); setEditing(null); setNewContent(''); setError(null); }}
                         disabled={loading || !!editing || showAdd} // Disable khi loading hoặc đang sửa/thêm
@@ -246,6 +247,7 @@ export default function AdminCommentPage() {
                         </svg>
                         Thêm BL (Nhạc)
                     </button>
+                    */}
                 </div>
             </div>
 
@@ -361,7 +363,7 @@ export default function AdminCommentPage() {
                             <tr>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nơi bình luận</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Người dùng</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/3">Nội dung</th> {/* Tăng chiều rộng cột nội dung */}
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/3">Nội dung</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày tạo</th>
                                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Hành động</th>
                             </tr>
@@ -377,38 +379,36 @@ export default function AdminCommentPage() {
                             ) : (
                                 filteredComments.map(c => (
                                     <tr key={c._id} className="hover:bg-gray-50">
-                                        {/* Nơi bình luận */}
-                                        <td className="px-6 py-4 whitespace-nowrap" title={`Loại: ${c.referenceType} | MusicID: ${c.musicId || 'N/A'} | NewsID: ${c.newsId || 'N/A'}`}>
-                                            <div className="text-sm font-medium text-gray-900">{c.referenceTitle || <span className="text-gray-400 italic">Không rõ</span>}</div>
-                                            <div className={`text-xs font-semibold px-1.5 py-0.5 rounded inline-block ${c.referenceType === 'Music' ? 'text-purple-700 bg-purple-100' : c.referenceType === 'News' ? 'text-green-700 bg-green-100' : 'text-gray-700 bg-gray-100'}`}>
-                                                {formatReferenceType(c.referenceType)}
-                                            </div>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="text-sm font-medium text-gray-900">{c.referenceTitle}</div>
+                                            <div className="text-xs text-gray-500">{formatReferenceType(c.referenceType)}</div>
                                         </td>
-                                        {/* Người dùng */}
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
-                                            {c.userFullName}
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="text-sm font-medium text-gray-900">{c.userFullName}</div>
                                         </td>
-                                        {/* Nội dung */}
-                                        <td className="px-6 py-4 text-sm text-gray-800 max-w-sm break-words"> {/* Giảm max-w và thêm break-words */}
-                                            {c.content}
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="text-sm text-gray-900 break-words">{c.content}</div>
                                         </td>
-                                        {/* Ngày tạo */}
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {formatDateTime(c.createdAt)}
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="text-sm text-gray-700">{formatDateTime(c.createdAt)}</div>
                                         </td>
-                                        {/* Hành động */}
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <button
-                                                className="text-indigo-600 hover:text-indigo-900 mr-3 disabled:opacity-50 disabled:cursor-not-allowed"
-                                                onClick={() => { setEditing(c); setNewContent(c.content); setShowAdd(false); setError(null); }} // Reset error khi mở sửa
-                                                disabled={!!editing || showAdd} // Disable khi đang sửa hoặc thêm
+                                                className="text-indigo-600 hover:text-indigo-900 mr-4"
+                                                onClick={() => {
+                                                    setEditing(c);
+                                                    setNewContent(c.content);
+                                                    setShowAdd(false);
+                                                    setError(null);
+                                                }}
+                                                aria-label={`Sửa bình luận của ${c.userFullName}`}
                                             >
                                                 Sửa
                                             </button>
                                             <button
-                                                className="text-red-600 hover:text-red-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="text-red-600 hover:text-red-900"
                                                 onClick={() => handleDelete(c._id)}
-                                                disabled={!!editing || showAdd} // Disable khi đang sửa hoặc thêm
+                                                aria-label={`Xóa bình luận của ${c.userFullName}`}
                                             >
                                                 Xóa
                                             </button>
