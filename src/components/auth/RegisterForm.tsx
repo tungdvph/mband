@@ -126,7 +126,7 @@ const RegisterForm = () => {
                 autoComplete="username"
                 required
                 className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition duration-150 ease-in-out"
-                placeholder="Chọn tên đăng nhập"
+                placeholder="Nhập tên đăng nhập"
                 value={formData.username}
                 onChange={handleChange}
                 disabled={isLoading}
@@ -217,8 +217,8 @@ const RegisterForm = () => {
               type="submit"
               disabled={isLoading || !!success} // Vô hiệu hóa cả khi thành công để chờ chuyển hướng
               className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${isLoading || success
-                  ? 'bg-indigo-400 cursor-not-allowed'
-                  : 'bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'
+                ? 'bg-indigo-400 cursor-not-allowed'
+                : 'bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'
                 } transition duration-150 ease-in-out`}
             >
               {isLoading && (
