@@ -200,7 +200,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Phần nội dung chính */}
-      {/* Thêm lg:ml-64 để nội dung không bị che bởi sidebar trên desktop */}
+      {/* */}
       <div className="flex-1 w-full flex flex-col transition-all duration-300 ease-in-out">
         <header className="bg-white shadow sticky top-0 z-10"> {/* Giảm z-index header */}
           <div className="flex justify-between items-center pl-1 pr-4 sm:pr-6 lg:pr-8 py-3"> {/* Giảm pl, giữ pr */}
