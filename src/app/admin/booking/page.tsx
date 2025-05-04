@@ -243,11 +243,10 @@ export default function BookingManagement() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Địa điểm</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Liên hệ</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th> {/* Căn phải */}
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {/* Sử dụng filteredBookings */}
               {filteredBookings.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-4 text-center text-sm text-gray-500">
@@ -257,7 +256,6 @@ export default function BookingManagement() {
               ) : (
                 filteredBookings.map((booking) => (
                   <tr key={booking._id} className="hover:bg-gray-50">
-                    {/* Sự kiện & Chi tiết */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">{booking.eventName}</div>
                       <div className="text-xs text-gray-500">
@@ -267,33 +265,27 @@ export default function BookingManagement() {
                         <div className="text-xs text-green-600">{formatCurrency(booking.budget)}</div>
                       )}
                     </td>
-                    {/* Loại */}
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                       {formatEventType(booking.eventType)}
                     </td>
-                    {/* Ngày & Giờ */}
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                       {formatFullDateTime(booking.eventDate)}
                     </td>
-                    {/* Địa điểm */}
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{booking.location}</td>
-                    {/* Liên hệ */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">{booking.contactName}</div>
                       <div className="text-sm text-gray-500">{booking.contactPhone}</div>
                       <div className="text-sm text-gray-500 truncate max-w-[150px]" title={booking.contactEmail}>{booking.contactEmail}</div>
                     </td>
-                    {/* Trạng thái */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 inline-flex text-xs leading-4 font-semibold rounded-full ${booking.status === 'confirmed' ? 'bg-green-100 text-green-800' :
                           booking.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                            'bg-yellow-100 text-yellow-800' // pending
+                            'bg-yellow-100 text-yellow-800'
                         }`}>
                         {formatBookingStatus(booking.status)}
                       </span>
                     </td>
-                    {/* Thao tác */}
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"> {/* Căn phải */}
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button
                         onClick={() => handleEditBooking(booking)}
                         className="text-indigo-600 hover:text-indigo-900 mr-4"

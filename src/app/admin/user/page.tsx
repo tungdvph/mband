@@ -104,7 +104,7 @@ export default function UserManagement() {
           hasFile = true;
         } else if (key === 'isActive') {
           // Đảm bảo giá trị boolean được gửi đúng dạng chuỗi 'true'/'false'
-          submitFormData.append(key, String(value === 'true' || value === true));
+          submitFormData.append(key, String(value === 'true'));
         } else if (key === 'password' && value === '') {
           // Không gửi trường password nếu nó rỗng (nghĩa là không muốn đổi pass)
         } else if (value !== null && value !== undefined && value !== '') {
