@@ -77,7 +77,7 @@ export default function MemberPage() {
 
 
   return (
-    <div className="container mx-auto px-4">
+    <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Quản lý Thành viên</h1>
         <button
@@ -128,8 +128,8 @@ export default function MemberPage() {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${member.isActive
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-red-100 text-red-800'
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-red-100 text-red-800'
                     }`}>
                     {member.isActive ? 'Đang hoạt động' : 'Ngừng hoạt động'}
                   </span>
