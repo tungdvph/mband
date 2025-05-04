@@ -80,20 +80,49 @@ export default function AdminDashboard() {
           const revenueDataJson = await revenueRes.json();
           const bookingData = await bookingRes.json();
 
-          setStats(statsData);
-          // Ensure revenueDataJson is an array before mapping
+          // --- BẮT ĐẦU SỬA ĐỔI XỬ LÝ DOANH THU ---
+          const allMonths = [
+            'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6',
+            'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'
+          ];
+
+          // Khởi tạo mảng dữ liệu cho 12 tháng với giá trị 0
+          let processedRevenueData = Array(12).fill(0);
+
+          // Kiểm tra và xử lý dữ liệu từ API
           if (Array.isArray(revenueDataJson)) {
-            setRevenueData({
-              labels: revenueDataJson.map((item: { month: string; }) => item.month),
-              data: revenueDataJson.map((item: { revenue: number; }) => item.revenue)
+            // Tạo một Map để tra cứu doanh thu theo tháng hiệu quả hơn
+            const revenueMap = new Map<string, number>();
+            revenueDataJson.forEach((item: { month: string; revenue: number }) => {
+              // Đảm bảo item và các thuộc tính cần thiết tồn tại và đúng kiểu
+              if (item && typeof item.month === 'string' && typeof item.revenue === 'number') {
+                revenueMap.set(item.month, item.revenue);
+              }
             });
+
+            // Duyệt qua mảng 12 tháng chuẩn, cập nhật doanh thu từ Map
+            allMonths.forEach((month, index) => {
+              if (revenueMap.has(month)) {
+                processedRevenueData[index] = revenueMap.get(month) || 0; // Lấy doanh thu, nếu không có thì vẫn là 0
+              }
+              // Nếu tháng không có trong revenueMap, giá trị vẫn là 0 (đã fill ở trên)
+            });
+
           } else {
-            console.error("Revenue data is not an array:", revenueDataJson);
-            setRevenueData({ labels: [], data: [] }); // Set default empty state
+            console.error("Dữ liệu doanh thu trả về không phải là mảng:", revenueDataJson);
+            // Nếu dữ liệu API không hợp lệ, processedRevenueData vẫn là mảng 12 số 0
           }
+
+          // Cập nhật state với đủ 12 tháng và dữ liệu tương ứng
+          setRevenueData({
+            labels: allMonths,           // Luôn dùng mảng 12 tháng chuẩn
+            data: processedRevenueData   // Dùng mảng dữ liệu đã xử lý (có thể chứa số 0)
+          });
+          // --- KẾT THÚC SỬA ĐỔI XỬ LÝ DOANH THU ---
+
+
           setBookingStatus({
             labels: ['Đã xác nhận', 'Chờ xác nhận', 'Đã hủy'],
-            // Ensure bookingData has the expected properties
             data: [
               bookingData?.confirmed ?? 0,
               bookingData?.pending ?? 0,
@@ -102,7 +131,10 @@ export default function AdminDashboard() {
           });
         } catch (error) {
           console.error('Error fetching dashboard data:', error);
-          // Optionally set an error state here to display to the user
+          // Reset các state về trạng thái rỗng/mặc định khi có lỗi
+          setStats({ users: 0, bookings: 0, songs: 0, contacts: 0 });
+          setRevenueData({ labels: [], data: [] });
+          setBookingStatus({ labels: ['Đã xác nhận', 'Chờ xác nhận', 'Đã hủy'], data: [0, 0, 0] });
         }
       };
 
