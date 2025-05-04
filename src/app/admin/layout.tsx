@@ -1,4 +1,4 @@
-// Giả sử file này nằm ở src/app/admin/layout.tsx hoặc vị trí tương tự
+// src/app/admin/layout.tsx
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -6,6 +6,24 @@ import { useSession, signOut } from 'next-auth/react';
 import { usePathname, useRouter } from 'next/navigation';
 import AdminSessionProvider from '@/components/providers/AdminSessionProvider'; // Đảm bảo import đúng
 import { AdminAuthProvider, useAdminAuth } from '@/contexts/AdminAuthContext'; // Đảm bảo import đúng
+
+// --- THÊM: Import Icons ---
+import {
+  FaTachometerAlt, // Dashboard
+  FaUsersCog,        // Quản lý Users (Admin)
+  FaCalendarAlt,   // Schedule
+  FaMusic,         // Music
+  FaBookmark,      // Booking (Đặt lịch sự kiện)
+  FaUsers,         // Member (Thành viên ban nhạc)
+  FaTicketAlt,     // Ticket Booking (Đặt vé)
+  FaAddressBook,   // Contact
+  FaNewspaper,     // News
+  FaComments,      // Comments
+  FaSignOutAlt,    // Logout
+  FaBars,          // Menu icon
+  FaTimes          // Close icon
+} from 'react-icons/fa';
+// -------------------------
 
 // Component cha cung cấp các Provider
 export default function AdminLayout({
@@ -22,6 +40,21 @@ export default function AdminLayout({
     </AdminSessionProvider>
   );
 }
+
+// --- THÊM: Định nghĩa các mục điều hướng với icon ---
+const navigationItems = [
+  { href: '/admin', label: 'Bảng điều khiển', icon: FaTachometerAlt },
+  { href: '/admin/user', label: 'Quản lý Users', icon: FaUsersCog },
+  { href: '/admin/member', label: 'Quản lý Thành viên', icon: FaUsers },
+  { href: '/admin/schedule', label: 'Quản lý Lịch trình', icon: FaCalendarAlt },
+  { href: '/admin/music', label: 'Quản lý Âm nhạc', icon: FaMusic },
+  { href: '/admin/booking', label: 'Quản lý Đặt lịch SK', icon: FaBookmark },
+  { href: '/admin/ticket-booking', label: 'Quản lý Đặt vé', icon: FaTicketAlt },
+  { href: '/admin/news', label: 'Quản lý Tin tức', icon: FaNewspaper },
+  { href: '/admin/contact', label: 'Quản lý Liên hệ', icon: FaAddressBook },
+  { href: '/admin/comment', label: 'Quản lý Bình luận', icon: FaComments },
+];
+// ----------------------------------------------------
 
 // Component con để chứa logic và giao diện chính của layout
 function AdminLayoutContent({ children }: { children: React.ReactNode }) {
@@ -48,7 +81,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
 
   // Hiển thị trạng thái đang tải
   if (isLoading) {
-    return <div className="flex justify-center items-center min-h-screen">Đang tải trang quản trị...</div>;
+    return <div className="flex justify-center items-center min-h-screen bg-gray-100 text-gray-700">Đang tải trang quản trị...</div>;
   }
 
   // Nếu đang ở trang đăng nhập, chỉ hiển thị nội dung của trang đó
@@ -66,7 +99,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     console.log("[NextAuth Signout] Bắt đầu quá trình đăng xuất admin...");
     try {
       await signOut({
-        callbackUrl: '/admin/login',
+        callbackUrl: '/admin/login', // Đảm bảo chuyển về trang login sau khi logout
         redirect: true
       });
       console.log("[NextAuth Signout] Yêu cầu đăng xuất admin đã được gửi và xử lý.");
@@ -79,84 +112,136 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
 
   // --- Giao diện Layout chính (Sidebar, Header, Main Content) ---
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex bg-gray-100"> {/* Thêm màu nền cho toàn bộ trang */}
       {/* Nút toggle menu cho mobile */}
       <button
-        className="lg:hidden fixed top-4 left-4 z-20 p-2 rounded-md bg-[#1a3547] text-white"
+        className="lg:hidden fixed top-4 left-4 z-30 p-2 rounded-md bg-gray-800 text-white shadow-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white" // Cập nhật style nút
         onClick={() => setIsOpen(!isOpen)}
+        aria-label="Toggle menu" // Thêm aria-label
       >
-        {/* SVG Icon */}
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" >
-          {isOpen ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />}
-        </svg>
+        {/* Sử dụng icon từ react-icons */}
+        {isOpen ? <FaTimes className="w-6 h-6" /> : <FaBars className="w-6 h-6" />}
       </button>
 
-      {/* Sidebar responsive */}
+      {/* --- SIDEBAR ĐÃ SỬA ĐỔI --- */}
       <div className={`
-        bg-[#1a3547] text-white w-64 min-h-screen fixed lg:relative inset-y-0 left-0 z-10
+        flex flex-col h-screen w-64 bg-gradient-to-b from-gray-800 to-gray-900 text-gray-100 shadow-lg
+        fixed lg:relative inset-y-0 left-0 z-20  /* Tăng z-index */
         transition-transform duration-300 ease-in-out
         ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
-        <div className="p-4">
-          <h1 className="text-xl font-bold">Trang Quản Trị</h1>
+        {/* Logo hoặc Tên trang Admin */}
+        <div className="p-5 text-center border-b border-gray-700 flex-shrink-0">
+          <Link href="/admin" className="text-2xl font-semibold text-white hover:text-indigo-300 transition-colors">
+            CyberPanel
+          </Link>
         </div>
-        <nav className="mt-4">
-          {/* Các Link điều hướng (đóng menu khi click trên mobile) */}
-          <Link href="/admin" className="block px-4 py-2 hover:bg-[#234156]" onClick={() => setIsOpen(false)}>Trang chủ</Link>
-          <Link href="/admin/member" className="block px-4 py-2 hover:bg-[#234156]" onClick={() => setIsOpen(false)}>Quản Lý Thành Viên</Link>
-          <Link href="/admin/booking" className="block px-4 py-2 hover:bg-[#234156]" onClick={() => setIsOpen(false)}>Quản lý Đặt lịch</Link>
-          <Link href="/admin/schedule" className="block px-4 py-2 hover:bg-[#234156]" onClick={() => setIsOpen(false)}>Quản lý Lịch trình</Link>
 
-          {/* --- LINK QUẢN LÝ ĐẶT VÉ ĐÃ THÊM --- */}
-          <Link href="/admin/ticket-booking" className="block px-4 py-2 hover:bg-[#234156]" onClick={() => setIsOpen(false)}>Quản lý Đặt vé</Link>
-          {/* --- KẾT THÚC LINK QUẢN LÝ ĐẶT VÉ --- */}
+        {/* Danh sách điều hướng */}
+        <nav className="flex-grow p-3 space-y-1.5 overflow-y-auto"> {/* Giảm space-y và padding */}
+          {navigationItems.map((item) => {
+            // Kiểm tra active state: chính xác hoặc bắt đầu bằng href (cho các route con)
+            // loại trừ trường hợp href='/admin' mà pathname='/admin/somepage'
+            const isActive = item.href === '/admin'
+              ? pathname === item.href
+              : pathname.startsWith(item.href);
 
-          <Link href="/admin/music" className="block px-4 py-2 hover:bg-[#234156]" onClick={() => setIsOpen(false)}>Quản lý Bài Hát</Link>
-          <Link href="/admin/news" className="block px-4 py-2 hover:bg-[#234156]" onClick={() => setIsOpen(false)}>Quản lý Tin Tức</Link>
-          <Link href="/admin/contact" className="block px-4 py-2 hover:bg-[#234156]" onClick={() => setIsOpen(false)}>Quản lý Liên Hệ</Link>
+            const IconComponent = item.icon; // Lấy component icon
 
-          {/* --- LINK QUẢN LÝ BÌNH LUẬN MỚI --- */}
-          <Link href="/admin/comment" className="block px-4 py-2 hover:bg-[#234156]" onClick={() => setIsOpen(false)}>Quản lý Bình luận</Link>
-          {/* --- KẾT THÚC LINK QUẢN LÝ BÌNH LUẬN --- */}
-          <Link href="/admin/user" className="block px-4 py-2 hover:bg-[#234156]" onClick={() => setIsOpen(false)}>Quản lý Người Dùng</Link>
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setIsOpen(false)} // Đóng menu khi click trên mobile
+                className={`
+                  flex items-center px-3 py-2 rounded-md text-sm font-medium group
+                  transition-all duration-150 ease-in-out transform hover:translate-x-1
+                  ${isActive
+                    ? 'bg-indigo-700 text-white shadow-md' // Kiểu khi active
+                    : 'text-gray-300 hover:bg-gray-700 hover:text-white' // Kiểu mặc định và hover
+                  }
+                `}
+              >
+                <IconComponent
+                  aria-hidden="true" // Icon trang trí
+                  className={`
+                    mr-3 flex-shrink-0 h-5 w-5 transition-colors duration-150
+                    ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-gray-300'}
+                    `}
+                />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
         </nav>
+
+        {/* Phần dưới cùng (ví dụ: nút logout) */}
+        <div className="p-3 border-t border-gray-700 mt-auto flex-shrink-0">
+          {/* Có thể thêm thông tin user ở đây nếu muốn */}
+          <button
+            onClick={handleSignOut}
+            className="flex items-center w-full px-3 py-2 rounded-md text-sm font-medium text-red-400 hover:bg-red-900/50 hover:text-red-300 group transition-colors duration-150 ease-in-out"
+          >
+            <FaSignOutAlt aria-hidden="true" className="mr-3 h-5 w-5 text-red-500 group-hover:text-red-400 transition-colors" />
+            <span>Đăng xuất</span>
+          </button>
+        </div>
       </div>
+      {/* --- KẾT THÚC SIDEBAR ĐÃ SỬA ĐỔI --- */}
+
 
       {/* Overlay cho mobile khi menu mở */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 lg:hidden z-0"
+          aria-hidden="true" // Overlay chỉ có tác dụng UI
+          className="fixed inset-0 bg-black bg-opacity-60 lg:hidden z-10" // Giảm z-index so với sidebar
           onClick={() => setIsOpen(false)}
         />
       )}
 
       {/* Phần nội dung chính */}
-      <div className="flex-1 transition-all duration-300 ease-in-out lg:ml-0">
-        <header className="bg-white shadow sticky top-0 z-5">
-          <div className="flex justify-between items-center px-4 py-3">
-            <h2 className="text-xl font-semibold ml-10 lg:ml-0">Admin Dashboard</h2>
+      {/* Thêm lg:ml-64 để nội dung không bị che bởi sidebar trên desktop */}
+      <div className="flex-1 w-full flex flex-col transition-all duration-300 ease-in-out">
+        <header className="bg-white shadow sticky top-0 z-10"> {/* Giảm z-index header */}
+          <div className="flex justify-between items-center pl-1 pr-4 sm:pr-6 lg:pr-8 py-3"> {/* Giảm pl, giữ pr */}
+            {/* Placeholder để đẩy nội dung header sang phải khi sidebar ẩn trên mobile */}
+            <div className="lg:hidden w-10"></div>
+            {/* Có thể thêm Breadcrumbs hoặc tiêu đề trang động ở đây */}
+            <div className="text-xl font-semibold text-gray-700">
+              {/* Tìm label tương ứng với pathname hiện tại */}
+              {navigationItems.find(item => item.href === pathname)?.label || 'Admin'}
+            </div>
             {/* Hiển thị thông tin người dùng và nút đăng xuất */}
             {(session?.user || user) && (
               <div className="flex items-center space-x-4">
-                {/* Ưu tiên hiển thị từ session hoặc từ context nếu session không có */}
-                <span>{session?.user?.username ?? user?.username ?? 'Admin'}</span>
-                {/* Nút đăng xuất gọi hàm handleSignOut mới */}
+                {/* Có thể thêm avatar user */}
+                <span className="text-sm font-medium text-gray-600 hidden sm:inline">
+                  Chào, {session?.user?.username ?? user?.username ?? 'Admin'}
+                </span>
+                {/* Thêm dấu | ngăn cách (tùy chọn) */}
+                <span className="text-gray-300 hidden sm:inline">|</span>
+                {/* Nút đăng xuất trong header */}
                 <button
-                  onClick={handleSignOut}
-                  className="text-red-600 hover:text-red-800 transition-colors"
+                  onClick={handleSignOut} // Gọi hàm đăng xuất
+                  className="text-sm font-medium text-red-600 hover:text-red-800 transition-colors duration-150 ease-in-out focus:outline-none focus:underline" // Thêm focus style
+                  title="Đăng xuất khỏi tài khoản admin" // Thêm title cho tooltip
                 >
                   Đăng xuất
                 </button>
+                {/* --- KẾT THÚC SỬA ĐỔI --- */}
               </div>
             )}
           </div>
         </header>
-
         {/* Nơi hiển thị nội dung của từng trang admin con */}
-        <main className="p-6">
+        <main className="flex-grow px-1 sm:px-4 lg:px-6 pt-4 pb-6">
           {children}
         </main>
+
+        {/* Footer (Tùy chọn) */}
+        <footer className="p-4 bg-white border-t text-center text-sm text-gray-500">
+          © {new Date().getFullYear()} CyberBand Admin Panel.
+        </footer>
       </div>
     </div>
   );
