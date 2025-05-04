@@ -65,72 +65,101 @@ export default function AdminDashboard() {
     if (status === 'authenticated' && session?.user?.role === 'admin') {
       const fetchData = async () => {
         try {
+          // <-- THÊM LOG Ở ĐÂY (Bắt đầu fetch) -->
+          console.log('[Client] Bắt đầu gọi fetchData...');
+
           const [statsRes, revenueRes, bookingRes] = await Promise.all([
             fetch('/api/stats'),
             fetch('/api/stats/revenue'),
             fetch('/api/stats/booking-status')
           ]);
 
+          // <-- THÊM LOG Ở ĐÂY (Sau khi nhận response, trước khi check .ok) -->
+          console.log('[Client] Đã nhận responses. Status của statsRes:', statsRes.status);
+          console.log('[Client] Status của revenueRes:', revenueRes.status);
+          console.log('[Client] Status của bookingRes:', bookingRes.status);
+
+
           // Check if responses are ok before parsing JSON
           if (!statsRes.ok || !revenueRes.ok || !bookingRes.ok) {
+            // <-- THÊM LOG Ở ĐÂY (Khi có lỗi fetch) -->
+            console.error('[Client] Fetch thất bại! Stats OK:', statsRes.ok, 'Revenue OK:', revenueRes.ok, 'Booking OK:', bookingRes.ok);
             throw new Error('Failed to fetch dashboard data');
           }
 
+          // Parse JSON
           const statsData = await statsRes.json();
+          // <-- THÊM LOG Ở ĐÂY (Sau khi parse statsData) - QUAN TRỌNG -->
+          console.log('[Client] Dữ liệu stats đã parse:', statsData);
+
           const revenueDataJson = await revenueRes.json();
+          // <-- THÊM LOG Ở ĐÂY (Sau khi parse revenueDataJson) -->
+          console.log('[Client] Dữ liệu revenue đã parse:', revenueDataJson);
+
           const bookingData = await bookingRes.json();
+          // <-- THÊM LOG Ở ĐÂY (Sau khi parse bookingData) -->
+          console.log('[Client] Dữ liệu booking status đã parse:', bookingData);
+
+
+          // --- BẮT ĐẦU XỬ LÝ STATS ---
+          // <-- THÊM LOG Ở ĐÂY (Trước khi gọi setStats) - QUAN TRỌNG -->
+          console.log('[Client] Chuẩn bị gọi setStats với dữ liệu:', statsData);
+          setStats(statsData); // Cập nhật state stats
+          // --- KẾT THÚC XỬ LÝ STATS ---
+
 
           // --- BẮT ĐẦU SỬA ĐỔI XỬ LÝ DOANH THU ---
           const allMonths = [
             'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6',
             'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'
           ];
-
-          // Khởi tạo mảng dữ liệu cho 12 tháng với giá trị 0
           let processedRevenueData = Array(12).fill(0);
-
-          // Kiểm tra và xử lý dữ liệu từ API
           if (Array.isArray(revenueDataJson)) {
-            // Tạo một Map để tra cứu doanh thu theo tháng hiệu quả hơn
             const revenueMap = new Map<string, number>();
             revenueDataJson.forEach((item: { month: string; revenue: number }) => {
-              // Đảm bảo item và các thuộc tính cần thiết tồn tại và đúng kiểu
               if (item && typeof item.month === 'string' && typeof item.revenue === 'number') {
                 revenueMap.set(item.month, item.revenue);
               }
             });
-
-            // Duyệt qua mảng 12 tháng chuẩn, cập nhật doanh thu từ Map
             allMonths.forEach((month, index) => {
               if (revenueMap.has(month)) {
-                processedRevenueData[index] = revenueMap.get(month) || 0; // Lấy doanh thu, nếu không có thì vẫn là 0
+                processedRevenueData[index] = revenueMap.get(month) || 0;
               }
-              // Nếu tháng không có trong revenueMap, giá trị vẫn là 0 (đã fill ở trên)
             });
-
           } else {
-            console.error("Dữ liệu doanh thu trả về không phải là mảng:", revenueDataJson);
-            // Nếu dữ liệu API không hợp lệ, processedRevenueData vẫn là mảng 12 số 0
+            console.error("[Client] Dữ liệu doanh thu trả về không phải là mảng:", revenueDataJson);
           }
 
-          // Cập nhật state với đủ 12 tháng và dữ liệu tương ứng
+          // <-- THÊM LOG Ở ĐÂY (Trước khi gọi setRevenueData) -->
+          console.log('[Client] Chuẩn bị gọi setRevenueData với labels:', allMonths, 'và data:', processedRevenueData);
           setRevenueData({
-            labels: allMonths,           // Luôn dùng mảng 12 tháng chuẩn
-            data: processedRevenueData   // Dùng mảng dữ liệu đã xử lý (có thể chứa số 0)
+            labels: allMonths,
+            data: processedRevenueData
           });
           // --- KẾT THÚC SỬA ĐỔI XỬ LÝ DOANH THU ---
 
 
+          // --- BẮT ĐẦU XỬ LÝ BOOKING STATUS ---
+          // <-- THÊM LOG Ở ĐÂY (Trước khi gọi setBookingStatus) -->
+          const bookingStatusUpdateData = [
+            bookingData?.confirmed ?? 0,
+            bookingData?.pending ?? 0,
+            bookingData?.cancelled ?? 0
+          ];
+          console.log('[Client] Chuẩn bị gọi setBookingStatus với dữ liệu:', bookingStatusUpdateData);
           setBookingStatus({
             labels: ['Đã xác nhận', 'Chờ xác nhận', 'Đã hủy'],
-            data: [
-              bookingData?.confirmed ?? 0,
-              bookingData?.pending ?? 0,
-              bookingData?.cancelled ?? 0
-            ]
+            data: bookingStatusUpdateData
           });
+          // --- KẾT THÚC XỬ LÝ BOOKING STATUS ---
+
+          // <-- THÊM LOG Ở ĐÂY (Khi fetch thành công) -->
+          console.log('[Client] Hoàn thành fetchData thành công.');
+
         } catch (error) {
-          console.error('Error fetching dashboard data:', error);
+          // <-- THÊM LOG Ở ĐÂY (Khi có lỗi trong khối try...catch) -->
+          console.error('[Client] Lỗi trong quá trình fetchData:', error);
+
           // Reset các state về trạng thái rỗng/mặc định khi có lỗi
           setStats({ users: 0, bookings: 0, songs: 0, contacts: 0 });
           setRevenueData({ labels: [], data: [] });
