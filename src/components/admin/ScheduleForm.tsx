@@ -184,7 +184,7 @@ const ScheduleForm = ({ schedule, onSubmit, onCancel }: ScheduleFormProps) => {
           onChange={handleChange} // <<< SỬA onChange
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
           min="0" // Ngăn giá trị âm
-          step="1000" // Bước nhảy (tùy chọn)
+          step="1" // Bước nhảy (tùy chọn)
           placeholder='Ví dụ: 50000'
         />
       </div>

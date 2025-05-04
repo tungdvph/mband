@@ -29,14 +29,14 @@ const Footer = () => {
           <div>
             <h3 className="text-2xl font-bold mb-4">Liên hệ</h3>
             <ul className="space-y-2 text-gray-300">
-              <li>Email: contact@bandname.com</li>
-              <li>Điện thoại: (123) 456-7890</li>
-              <li>Địa chỉ: Thành phố của bạn, Quốc gia</li>
+              <li>Email: cyberband@gmail.com</li>
+              <li>Điện thoại: 038 753-2890</li>
+              <li>Địa chỉ: Thành phố Hà Nội, Việt Nam</li>
             </ul>
           </div>
         </div>
         <div className="mt-8 border-t border-gray-800 pt-8 text-center">
-          <p className="text-gray-300">&copy; {new Date().getFullYear()} Tên Ban Nhạc. Đã đăng ký bản quyền.</p>
+          <p className="text-gray-300">&copy; {new Date().getFullYear()} Cyber Band. Đã đăng ký bản quyền.</p>
         </div>
       </div>
     </footer>
