@@ -7,6 +7,7 @@ interface ContactFormProps {
   contact?: Contact; // contact có thể là undefined khi thêm mới
   onSubmit: (data: Omit<FormData, 'createdAt'> & { _id?: string }) => void; // Gửi dữ liệu không bao gồm createdAt (thường do DB quản lý)
   onCancel: () => void;
+  isDetailView?: boolean; // Thêm dòng này để nhận prop isDetailView
 }
 
 // Interface cho state của form
@@ -21,7 +22,7 @@ interface FormData {
   createdAt: string; // Chỉ dùng để hiển thị, không gửi đi
 }
 
-const ContactForm = ({ contact, onSubmit, onCancel }: ContactFormProps) => {
+const ContactForm = ({ contact, onSubmit, onCancel, isDetailView }: ContactFormProps) => {
   // Khởi tạo state cho form
   const [formData, setFormData] = useState<FormData>({
     name: '',
