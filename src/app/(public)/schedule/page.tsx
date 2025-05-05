@@ -6,8 +6,17 @@ import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import Layout from '@/components/layout/Layout';
 import { Schedule } from '@/types/schedule'; // Đảm bảo type này có trường 'price?: number'
-// Import thêm icon cho giá vé nếu muốn, ví dụ FaDollarSign
-import { FaCalendarAlt, FaClock, FaMapMarkerAlt, FaSearch, FaSortAmountDown, FaSortAmountUp, FaDollarSign } from 'react-icons/fa';
+// Import thêm icon cho giá vé và giỏ hàng
+import {
+  FaCalendarAlt,
+  FaClock,
+  FaMapMarkerAlt,
+  FaSearch,
+  FaSortAmountDown,
+  FaSortAmountUp,
+  FaDollarSign,
+  FaShoppingCart // *** MỚI: Import icon giỏ hàng ***
+} from 'react-icons/fa';
 
 // Hàm format ngày giờ (giữ nguyên)
 const formatDate = (dateString: string | undefined | null): string => {
@@ -27,21 +36,18 @@ const formatDate = (dateString: string | undefined | null): string => {
   }
 }
 
-// *** MỚI: Hàm format giá vé ***
+// Hàm format giá vé (giữ nguyên)
 const formatPrice = (price: number | undefined | null): string => {
   if (price === undefined || price === null) {
-    // return 'Liên hệ'; // Hoặc để trống, hoặc 'N/A' tùy ý
     return 'Chưa có giá';
   }
   if (price === 0) {
     return 'Miễn phí';
   }
-  // Định dạng tiền tệ Việt Nam
   return price.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' });
 };
 
-
-// *** SỬA: Type cho các tùy chọn sắp xếp ***
+// Type cho các tùy chọn sắp xếp (giữ nguyên)
 type SortOption = 'date_desc' | 'date_asc' | 'price_asc' | 'price_desc';
 
 export default function ScheduleListPage() {
@@ -50,7 +56,6 @@ export default function ScheduleListPage() {
   const [error, setError] = useState<string | null>(null);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  // *** SỬA: Giữ nguyên mặc định hoặc thay đổi nếu muốn ***
   const [sortOption, setSortOption] = useState<SortOption>('date_desc');
 
   const { data: session, status } = useSession();
@@ -62,7 +67,6 @@ export default function ScheduleListPage() {
       setLoading(true);
       setError(null);
       try {
-        // API GET /api/schedule (cần đảm bảo API trả về trường price)
         const response = await fetch('/api/schedule');
         if (!response.ok) {
           throw new Error(`Không thể tải lịch trình (${response.status})`);
@@ -80,11 +84,10 @@ export default function ScheduleListPage() {
     fetchSchedules();
   }, []);
 
-  // Lọc và sắp xếp danh sách hiển thị
+  // Lọc và sắp xếp danh sách hiển thị (giữ nguyên)
   const displayedSchedules = useMemo(() => {
     let filtered = schedules;
 
-    // 1. Lọc theo searchTerm (giữ nguyên)
     if (searchTerm) {
       const lowerCaseSearchTerm = searchTerm.toLowerCase();
       filtered = filtered.filter(schedule =>
@@ -94,31 +97,28 @@ export default function ScheduleListPage() {
       );
     }
 
-    // *** SỬA: 2. Sắp xếp theo sortOption (thêm case cho price) ***
     const sorted = [...filtered];
     switch (sortOption) {
-      case 'date_desc': // Mới nhất -> Cũ nhất
+      case 'date_desc':
         sorted.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         break;
-      case 'date_asc': // Cũ nhất -> Mới nhất
+      case 'date_asc':
         sorted.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
         break;
-      case 'price_asc': // Giá: Thấp -> Cao
-        // Lịch trình không có giá (undefined/null) hoặc giá 0 sẽ ở đầu
+      case 'price_asc':
         sorted.sort((a, b) => (a.price ?? 0) - (b.price ?? 0));
         break;
-      case 'price_desc': // Giá: Cao -> Thấp
-        // Lịch trình không có giá (undefined/null) hoặc giá 0 sẽ ở cuối
+      case 'price_desc':
         sorted.sort((a, b) => (b.price ?? 0) - (a.price ?? 0));
         break;
-      default: // Mặc định về date_desc nếu có lỗi
+      default:
         sorted.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         break;
     }
     return sorted;
   }, [schedules, searchTerm, sortOption]);
 
-  // Handlers (giữ nguyên)
+  // Handlers (giữ nguyên handleSearchChange, handleSortChange)
   const handleSearchChange = (event: ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(event.target.value);
   };
@@ -127,6 +127,21 @@ export default function ScheduleListPage() {
     setSortOption(event.target.value as SortOption);
   };
 
+  // *** MỚI: Handler cho nút Thêm vào giỏ hàng (Placeholder) ***
+  const handleAddToCart = (scheduleId: string) => {
+    console.log("Thêm vào giỏ hàng:", scheduleId);
+    if (status === 'loading') return;
+    if (status !== 'authenticated') {
+      setShowLoginPrompt(true); // Yêu cầu đăng nhập
+      return;
+    }
+    // --- Logic thêm vào giỏ hàng thực tế của bạn ở đây ---
+    // Ví dụ: Gọi API, cập nhật state,...
+    alert(`Đã thêm lịch trình ${scheduleId} vào giỏ (chức năng demo)`);
+    // Có thể thêm thông báo thành công (toast)
+  };
+
+  // Handler Đặt vé (giữ nguyên)
   const handleBookTicketClick = (scheduleId: string) => {
     if (status === 'loading') return;
     if (status === 'authenticated') {
@@ -136,6 +151,7 @@ export default function ScheduleListPage() {
     }
   };
 
+  // Handler Xem chi tiết (giữ nguyên)
   const handleViewDetailsClick = (scheduleId: string) => {
     if (status === 'loading') return;
     if (status === 'authenticated') {
@@ -145,6 +161,7 @@ export default function ScheduleListPage() {
     }
   };
 
+  // Handlers cho popup đăng nhập (giữ nguyên)
   const closeLoginPrompt = () => setShowLoginPrompt(false);
   const handleGoHome = () => { router.push('/'); closeLoginPrompt(); };
   const handleGoLogin = () => { router.push('/login'); closeLoginPrompt(); };
@@ -158,9 +175,8 @@ export default function ScheduleListPage() {
             Lịch Trình Sự Kiện
           </h1>
 
-          {/* === Phần Tìm kiếm và Sắp xếp === */}
+          {/* === Phần Tìm kiếm và Sắp xếp (giữ nguyên) === */}
           <div className="mb-10 p-4 bg-white rounded-lg shadow-md border border-gray-200 flex flex-col sm:flex-row gap-4 items-center justify-between">
-            {/* Input tìm kiếm (giữ nguyên) */}
             <div className="relative w-full sm:w-2/3">
               <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
                 <FaSearch />
@@ -173,10 +189,8 @@ export default function ScheduleListPage() {
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               />
             </div>
-            {/* *** SỬA: Select sắp xếp (thêm options giá) *** */}
             <div className="relative w-full sm:w-auto">
               <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-                {/* Icon thay đổi dựa trên chiều sắp xếp (asc/desc) */}
                 {sortOption.endsWith('_desc') ? <FaSortAmountDown /> : <FaSortAmountUp />}
               </span>
               <label htmlFor="sort-select-schedule" className="sr-only">Sắp xếp theo</label>
@@ -184,7 +198,7 @@ export default function ScheduleListPage() {
                 id="sort-select-schedule"
                 value={sortOption}
                 onChange={handleSortChange}
-                className="w-full sm:w-auto pl-10 pr-8 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white appearance-none" // Thêm pr-8 để không bị che bởi mũi tên
+                className="w-full sm:w-auto pl-10 pr-8 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white appearance-none"
               >
                 <option value="date_desc">Ngày: Mới nhất</option>
                 <option value="date_asc">Ngày: Cũ nhất</option>
@@ -192,7 +206,7 @@ export default function ScheduleListPage() {
                 <option value="price_desc">Giá: Cao đến Thấp</option>
               </select>
               <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">
-                ▼ {/* Mũi tên dropdown */}
+                ▼
               </span>
             </div>
           </div>
@@ -224,7 +238,7 @@ export default function ScheduleListPage() {
             </div>
           )}
 
-          {/* *** SỬA: Hiển thị danh sách lịch trình (thêm hiển thị giá) *** */}
+          {/* Hiển thị danh sách lịch trình */}
           {!loading && !error && displayedSchedules.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
               {displayedSchedules.map((schedule) => (
@@ -248,7 +262,7 @@ export default function ScheduleListPage() {
                     )}
                   </div>
 
-                  {/* *** SỬA: Phần Body Card (thêm giá vé) *** */}
+                  {/* Phần Body Card (giữ nguyên hiển thị thông tin, bao gồm cả giá) */}
                   <div className="p-5 flex-grow space-y-3 text-sm">
                     <div className="flex items-start text-gray-700">
                       <FaCalendarAlt className="mr-2 mt-0.5 text-indigo-500 flex-shrink-0" aria-hidden="true" />
@@ -265,18 +279,10 @@ export default function ScheduleListPage() {
                         {schedule.venue.city ? `, ${schedule.venue.city}` : ''}
                       </span>
                     </div>
-
-                    {/* *** MỚI: Hiển thị Giá vé *** */}
-                    {/* Có thể chỉ hiển thị giá cho type 'concert' hoặc hiển thị cho tất cả nếu phù hợp */}
-                    {/* {schedule.type === 'concert' && ( // Bỏ comment nếu chỉ muốn hiện giá cho concert */}
                     <div className="flex items-start text-gray-700">
                       <FaDollarSign className="mr-2 mt-0.5 text-indigo-500 flex-shrink-0" aria-hidden="true" />
                       <span><strong className="font-medium text-gray-800">Giá vé:</strong> {formatPrice(schedule.price)}</span>
                     </div>
-                    {/* )} */}
-
-
-                    {/* Mô tả (giữ nguyên) */}
                     {schedule.description && (
                       <p className="text-gray-600 pt-2 text-xs line-clamp-3 border-t border-gray-100 mt-3" title={schedule.description}>
                         {schedule.description}
@@ -284,60 +290,89 @@ export default function ScheduleListPage() {
                     )}
                   </div>
 
-                  {/* Phần Footer Card (Nút actions - giữ nguyên) */}
-                  <div className="px-5 pb-5 pt-3 mt-auto border-t border-gray-100 flex justify-end space-x-3">
-                    <button
-                      onClick={() => handleViewDetailsClick(schedule._id)}
-                      disabled={status === 'loading'}
-                      className={`px-4 py-1.5 text-xs font-medium rounded-md shadow-sm transition ease-in-out duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${status === 'loading' ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-blue-100 text-blue-700 hover:bg-blue-200'}`}
-                      title="Xem thông tin chi tiết lịch trình"
-                    >
-                      Chi tiết
-                    </button>
-                    {schedule.type === 'concert' && schedule.status !== 'cancelled' && (
+                  {/* === SỬA: Phần Footer Card (Thêm nút Giỏ hàng bên trái) === */}
+                  <div className="px-5 pb-5 pt-3 mt-auto border-t border-gray-100 flex justify-between items-center">
+                    {/* Nút Thêm vào giỏ hàng (Bên trái) */}
+                    {/* Chỉ hiển thị nút này cho các sự kiện có thể thêm vào giỏ (ví dụ: concert và chưa bị hủy) */}
+                    {(schedule.type === 'concert' && schedule.status !== 'cancelled') ? (
                       <button
-                        onClick={() => handleBookTicketClick(schedule._id)}
+                        onClick={() => handleAddToCart(schedule._id)}
                         disabled={status === 'loading'}
-                        className={`px-4 py-1.5 text-white text-xs font-medium rounded-md shadow-sm transition ease-in-out duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 ${status === 'loading'
-                          ? 'bg-gray-400 cursor-not-allowed'
-                          : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 focus:ring-green-500'
+                        className={`px-4 py-1.5 text-xs font-medium rounded-md shadow-sm transition ease-in-out duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 ${status === 'loading'
+                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            // Màu cam cho nút Thêm vào giỏ
+                            : 'bg-orange-500 text-white hover:bg-orange-600 focus:ring-orange-500'
                           }`}
-                        title="Đặt vé cho sự kiện này"
+                        title="Thêm sự kiện vào giỏ hàng"
                       >
-                        Đặt vé
+                        <FaShoppingCart className="inline mr-1" aria-hidden="true" /> {/* Thêm icon */}
+                        Thêm vào giỏ
                       </button>
+                    ) : (
+                      <div /> // Render div trống nếu không hiển thị nút để giữ layout
                     )}
+
+                    {/* Nhóm nút Chi tiết và Đặt vé (Bên phải) */}
+                    <div className="flex items-center space-x-3">
+                      <button
+                        onClick={() => handleViewDetailsClick(schedule._id)}
+                        disabled={status === 'loading'}
+                        className={`px-4 py-1.5 text-xs font-medium rounded-md shadow-sm transition ease-in-out duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${status === 'loading'
+                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                          }`}
+                        title="Xem thông tin chi tiết lịch trình"
+                      >
+                        Chi tiết
+                      </button>
+                      {/* Nút Đặt vé giữ nguyên điều kiện hiển thị */}
+                      {schedule.type === 'concert' && schedule.status !== 'cancelled' && (
+                        <button
+                          onClick={() => handleBookTicketClick(schedule._id)}
+                          disabled={status === 'loading'}
+                          className={`px-4 py-1.5 text-white text-xs font-medium rounded-md shadow-sm transition ease-in-out duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 ${status === 'loading'
+                              ? 'bg-gray-400 cursor-not-allowed'
+                              : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 focus:ring-green-500'
+                            }`}
+                          title="Đặt vé cho sự kiện này"
+                        >
+                          Đặt vé
+                        </button>
+                      )}
+                    </div>
                   </div>
+                  {/* === Kết thúc sửa Phần Footer Card === */}
                 </div>
               ))}
             </div>
           )}
         </div>
       </div>
-      {/* Khung Thông báo Yêu cầu Đăng nhập (ĐÃ SỬA) */}
+
+      {/* Khung Thông báo Yêu cầu Đăng nhập (giữ nguyên) */}
       {showLoginPrompt && (
-        // Loại bỏ bg-black bg-opacity-50 khỏi dòng dưới
         <div className="fixed inset-0 z-50 flex justify-center items-center p-4">
+          <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" onClick={closeLoginPrompt}></div> {/* Lớp nền mờ */}
           <div
-            className="max-w-md w-full bg-yellow-50 border border-yellow-300 p-8 rounded-lg shadow-lg text-center transform transition-all scale-95 opacity-0 animate-fade-in-scale"
+            className="relative max-w-md w-full bg-yellow-50 border border-yellow-300 p-8 rounded-lg shadow-lg text-center transform transition-all scale-95 opacity-0 animate-fade-in-scale z-10" // Thêm z-10
             style={{ animationFillMode: 'forwards', animationDuration: '0.2s' }}
           >
-            {/* --- Nội dung thông báo giữ nguyên --- */}
+            {/* Nội dung thông báo */}
             <style jsx>{`
-            @keyframes fade-in-scale {
-              from { opacity: 0; transform: scale(0.95); }
-              to { opacity: 1; transform: scale(1); }
-            }
-            .animate-fade-in-scale {
-              animation-name: fade-in-scale;
-            }
-           `}</style>
+                        @keyframes fade-in-scale {
+                          from { opacity: 0; transform: scale(0.95); }
+                          to { opacity: 1; transform: scale(1); }
+                        }
+                        .animate-fade-in-scale {
+                          animation-name: fade-in-scale;
+                        }
+                        `}</style>
             <svg className="mx-auto mb-4 w-12 h-12 text-yellow-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0-10.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.75c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.57-.598-3.75h-.152c-3.196 0-6.1-1.25-8.25-3.286Zm0 13.036h.008v.008H12v-.008Z" />
             </svg>
             <h2 className="text-2xl font-semibold text-yellow-800 mb-4">Yêu cầu Đăng nhập</h2>
             <p className="text-gray-700 mb-6">
-              Bạn cần đăng nhập để xem chi tiết hoặc đặt vé.
+              Bạn cần đăng nhập để thực hiện hành động này.
             </p>
             <div className="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
               <button onClick={handleGoLogin} className="px-6 py-2 bg-blue-600 text-white rounded-md shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-150 ease-in-out w-full sm:w-auto">
@@ -346,11 +381,10 @@ export default function ScheduleListPage() {
               <button onClick={handleGoHome} className="px-6 py-2 bg-gray-200 text-gray-800 rounded-md shadow hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50 transition duration-150 ease-in-out w-full sm:w-auto">
                 Về trang chủ
               </button>
-              <button onClick={closeLoginPrompt} className="absolute top-3 right-3 text-gray-500 hover:text-gray-700" title="Đóng">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-              </button>
             </div>
-            {/* --- Kết thúc nội dung thông báo --- */}
+            <button onClick={closeLoginPrompt} className="absolute top-3 right-3 text-gray-500 hover:text-gray-700" title="Đóng">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
           </div>
         </div>
       )}
