@@ -26,18 +26,18 @@ export async function sendPasswordResetEmail(to: string, name: string, resetUrl:
 
     // --- Định nghĩa nội dung Email ---
     // Lấy địa chỉ "From" từ biến môi trường, nếu không có thì dùng EMAIL_USERNAME
-    const fromAddress = `"Tên Website Của Bạn" <${process.env.EMAIL_FROM || process.env.EMAIL_USERNAME}>`;
+    const fromAddress = `"Cyber Band" <${process.env.EMAIL_FROM || process.env.EMAIL_USERNAME}>`;
 
     const mailOptions = {
         from: fromAddress, // Địa chỉ người gửi (hiển thị trong email client)
         to: to, // Địa chỉ người nhận (email của user)
         subject: 'Yêu cầu đặt lại mật khẩu cho tài khoản của bạn', // Chủ đề email
-        text: `Chào ${name || 'bạn'},\n\nBạn (hoặc ai đó) đã yêu cầu đặt lại mật khẩu cho tài khoản của bạn tại [Tên Website Của Bạn].\nVui lòng nhấn vào liên kết sau hoặc dán vào trình duyệt để hoàn tất quá trình (liên kết này sẽ hết hạn sau 1 giờ):\n\n${resetUrl}\n\nNếu bạn không yêu cầu điều này, vui lòng bỏ qua email này và mật khẩu của bạn sẽ không thay đổi.\n\nTrân trọng,\nĐội ngũ [Tên Website Của Bạn]`, // Nội dung dạng text thuần
+        text: `Chào ${name || 'bạn'},\n\nBạn (hoặc ai đó) đã yêu cầu đặt lại mật khẩu cho tài khoản của bạn tại [Cyber Band].\nVui lòng nhấn vào liên kết sau hoặc dán vào trình duyệt để hoàn tất quá trình (liên kết này sẽ hết hạn sau 1 giờ):\n\n${resetUrl}\n\nNếu bạn không yêu cầu điều này, vui lòng bỏ qua email này và mật khẩu của bạn sẽ không thay đổi.\n\nTrân trọng,\nĐội ngũ [Cyber Band]`, // Nội dung dạng text thuần
         html: `
       <div style="font-family: Arial, sans-serif; line-height: 1.6;">
         <h2 style="color: #333;">Yêu cầu Đặt Lại Mật Khẩu</h2>
         <p>Chào ${name || 'bạn'},</p>
-        <p>Bạn (hoặc ai đó) đã yêu cầu đặt lại mật khẩu cho tài khoản của bạn tại <strong>[Tên Website Của Bạn]</strong>.</p>
+        <p>Bạn (hoặc ai đó) đã yêu cầu đặt lại mật khẩu cho tài khoản của bạn tại <strong>[Cyber Band]</strong>.</p>
         <p>Vui lòng nhấn vào nút bên dưới để tạo mật khẩu mới. Liên kết này sẽ hết hạn sau <strong>1 giờ</strong>.</p>
         <p style="text-align: center; margin: 25px 0;">
           <a href="${resetUrl}" style="display: inline-block; padding: 12px 25px; font-size: 16px; color: #ffffff; background-color: #007bff; text-decoration: none; border-radius: 5px;">
@@ -49,7 +49,7 @@ export async function sendPasswordResetEmail(to: string, name: string, resetUrl:
         <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
         <p>Nếu bạn không thực hiện yêu cầu này, bạn có thể bỏ qua email này một cách an toàn. Mật khẩu của bạn sẽ không bị thay đổi.</p>
         <p>Trân trọng,</p>
-        <p>Đội ngũ <strong>[Tên Website Của Bạn]</strong></p>
+        <p>Đội ngũ <strong>[Cyber Band]</strong></p>
       </div>
     `, // Nội dung dạng HTML (thân thiện hơn)
     };

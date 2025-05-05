@@ -25,7 +25,7 @@ export async function POST(req: Request) {
             // 2. Mã hóa nhẹ token trước khi lưu vào DB (tùy chọn, tăng bảo mật nếu DB bị lộ)
             // const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
 
-            // 3. Lưu token và thời gian hết hạn (ví dụ: 1 giờ)
+            // 3. Lưu token và thời gian hết hạn ( 1 giờ)
             user.resetPasswordToken = resetToken; // Lưu token gốc hoặc hashedToken
             user.resetPasswordExpires = new Date(Date.now() + 3600000); // 1 giờ = 3600000ms
             await user.save();
