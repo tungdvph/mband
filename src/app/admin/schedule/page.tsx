@@ -252,9 +252,10 @@ export default function ScheduleManagement() {
                       <div className="text-sm text-gray-900">{formatDate(schedule.date)}</div> {/* Gọi hàm format */}
                       <div className="text-sm text-gray-500">{schedule.startTime} {schedule.endTime ? `- ${schedule.endTime}` : ''}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{schedule.venue.name}</div>
-                      <div className="text-sm text-gray-500">{schedule.venue.address}, {schedule.venue.city}</div>
+                    <td className="px-6 py-4 max-w-sm">
+                      <div className="text-sm text-gray-900 break-words">{schedule.venue.name}</div>
+                      <div className="text-sm text-gray-500 break-words">{schedule.venue.address}, {schedule.venue.city}</div>
+
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="text-sm text-gray-900">{formatPrice(schedule.price)}</span> {/* Gọi hàm format */}
