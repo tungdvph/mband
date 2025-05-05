@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
-import Link from 'next/link'; // Import Link để tạo liên kết Đăng ký
+import Link from 'next/link'; // Đảm bảo đã import Link
 
 const UserLoginForm = () => {
   const router = useRouter();
@@ -13,6 +13,7 @@ const UserLoginForm = () => {
   const [error, setError] = useState('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setError(''); // Xóa lỗi khi người dùng bắt đầu nhập lại
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
@@ -21,16 +22,11 @@ const UserLoginForm = () => {
     setError(''); // Reset lỗi
     setIsLoading(true); // Bắt đầu loading
 
-    // Thêm một chút delay để người dùng thấy trạng thái loading (tùy chọn)
-    // await new Promise(resolve => setTimeout(resolve, 500));
-
     try {
       const result = await signIn('user-credentials', {
         username: formData.username.trim(), // Trim khoảng trắng thừa
         password: formData.password,
         redirect: false, // Quan trọng: tự xử lý redirect sau khi check kết quả
-        // callbackUrl: '/', // callbackUrl có thể không cần thiết khi redirect: false
-        // basePath: '/api/auth' // Thường không cần nếu dùng đúng prefix mặc định /api/auth
       });
 
       if (!result) {
@@ -38,23 +34,22 @@ const UserLoginForm = () => {
       }
 
       if (result.error) {
-        // Phân tích lỗi cụ thể hơn nếu có thể (ví dụ từ API trả về)
         console.error('SignIn Error:', result.error);
-        setError('Tên đăng nhập hoặc mật khẩu không chính xác.');
-        // Có thể thêm các mã lỗi khác ở đây
-        // if (result.error === 'CredentialsSignin') {
-        //   setError('Tên đăng nhập hoặc mật khẩu không chính xác.');
-        // } else {
-        //   setError('Đã xảy ra lỗi không mong muốn.');
-        // }
+        // Kiểm tra lỗi cụ thể từ next-auth hoặc API của bạn
+        if (result.error === 'CredentialsSignin') {
+          setError('Tên đăng nhập hoặc mật khẩu không chính xác.');
+        } else {
+          // Hiển thị lỗi chung hoặc lỗi cụ thể từ result.error nếu có
+          setError(result.error || 'Đăng nhập thất bại. Vui lòng thử lại.');
+        }
         setIsLoading(false); // Dừng loading khi có lỗi
         return;
       }
 
-      if (result.ok && result.url) {
+      if (result.ok) {
         // Đăng nhập thành công, chuyển hướng về trang chủ hoặc trang trước đó
-        // router.replace(result.url); // Sử dụng url từ callback nếu có và đáng tin cậy
-        router.replace('/'); // Hoặc luôn chuyển về trang chủ
+        // Bạn có thể dùng result.url nếu đã cấu hình callbackUrl đúng
+        router.replace('/'); // Chuyển về trang chủ
         // Không cần setIsLoading(false) vì trang sẽ chuyển hướng
       } else {
         // Trường hợp không mong muốn khác
@@ -139,8 +134,8 @@ const UserLoginForm = () => {
               type="submit"
               disabled={isLoading} // Vô hiệu hóa khi đang gửi
               className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${isLoading
-                  ? 'bg-indigo-400 cursor-not-allowed'
-                  : 'bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'
+                ? 'bg-indigo-400 cursor-not-allowed'
+                : 'bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'
                 } transition duration-150 ease-in-out`}
             >
               {/* Icon loading */}
@@ -153,17 +148,27 @@ const UserLoginForm = () => {
               {isLoading ? 'Đang xử lý...' : 'Đăng nhập'}
             </button>
           </div>
+        </form> {/* Kết thúc form ở đây */}
 
-          {/* Liên kết Đăng ký */}
-          <div className="text-sm text-center">
+        {/* ----- PHẦN THÊM MỚI ----- */}
+        {/* Liên kết Quên mật khẩu và Đăng ký */}
+        <div className="text-sm text-center space-y-2 mt-4"> {/* Thêm khoảng cách trên nếu cần */}
+          <div>
+            <Link href="/forgot-password" className="font-medium text-indigo-600 hover:text-indigo-500">
+              Quên mật khẩu?
+            </Link>
+          </div>
+          <div>
             <span className="text-gray-600">Chưa có tài khoản? </span>
             <Link href="/register" className="font-medium text-indigo-600 hover:text-indigo-500">
               Đăng ký ngay
             </Link>
           </div>
-        </form>
-      </div>
-    </div>
+        </div>
+        {/* ----- KẾT THÚC PHẦN THÊM MỚI ----- */}
+
+      </div> {/* Kết thúc thẻ (Card) chứa form */}
+    </div> // Kết thúc container bao ngoài
   );
 };
 
