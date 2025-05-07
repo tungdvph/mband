@@ -51,7 +51,7 @@ const navigationItems = [
   { href: '/admin/booking', label: 'Quản lý Đặt lịch SK', icon: FaBookmark },
   { href: '/admin/ticket-booking', label: 'Quản lý Đặt vé', icon: FaTicketAlt },
   { href: '/admin/news', label: 'Quản lý Tin tức', icon: FaNewspaper },
-  { href: '/admin/contact', label: 'Quản lý Liên hệ', icon: FaAddressBook },
+  // { href: '/admin/contact', label: 'Quản lý Liên hệ', icon: FaAddressBook },
   { href: '/admin/comment', label: 'Quản lý Bình luận', icon: FaComments },
 ];
 // ----------------------------------------------------

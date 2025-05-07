@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb'; // Đảm bảo đường dẫn này đúng
-import User from '@/lib/models/User';             // Đảm bảo đường dẫn này đúng
+import User from '@/lib/models/User';           // Đảm bảo đường dẫn này đúng
 import Booking from '@/lib/models/Booking';       // Đảm bảo đường dẫn này đúng
-import Song from '@/lib/models/Music';           // Lưu ý: Import Model 'Music' nhưng đặt tên là 'Song'
-import Contact from '@/lib/models/Contact';       // Đảm bảo đường dẫn này đúng
+import Song from '@/lib/models/Music';          // Lưu ý: Import Model 'Music' nhưng đặt tên là 'Song'
+
 
 export async function GET() {
     try {
@@ -15,24 +15,27 @@ export async function GET() {
 
         // Log ngay trước khi thực hiện các lệnh đếm
         console.log('[API /api/stats] Đang thực thi Promise.all cho các lệnh countDocuments...');
-        const [userCount, bookingCount, songCount, contactCount] = await Promise.all([
+        // <<--- BỎ contactCount KHỎI DESTRUCTURING VÀ Contact.countDocuments() KHỎI PROMISE.ALL ---
+        const [userCount, bookingCount, songCount] = await Promise.all([
             User.countDocuments(),
             Booking.countDocuments(),
             // Nhớ rằng: Biến 'Song' ở đây là Model 'Music', sẽ đếm collection 'musics'
             Song.countDocuments(),
-            Contact.countDocuments()
+            // Contact.countDocuments() // <<--- BỎ DÒNG NÀY
         ]);
 
         // !!! Log quan trọng: In ra các giá trị đếm nhận được từ database !!!
-        console.log(`[API /api/stats] Kết quả đếm nhận được - Users: ${userCount}, Bookings: ${bookingCount}, Songs (collection 'musics'): ${songCount}, Contacts: ${contactCount}`);
+        // <<--- BỎ contactCount KHỎI LOG ---
+        console.log(`[API /api/stats] Kết quả đếm nhận được - Users: ${userCount}, Bookings: ${bookingCount}, Songs (collection 'musics'): ${songCount}`);
 
         // Chuẩn bị đối tượng JSON để trả về
+        // <<--- BỎ contacts: contactCount KHỎI OBJECT stats ---
         const stats = {
             users: userCount,
             bookings: bookingCount,
             // Frontend đang mong đợi key là 'songs', nên ta dùng giá trị songCount (từ collection 'musics') ở đây
             songs: songCount,
-            contacts: contactCount
+            // contacts: contactCount // <<--- BỎ DÒNG NÀY
         };
 
         // Log đối tượng chuẩn bị trả về cho client
