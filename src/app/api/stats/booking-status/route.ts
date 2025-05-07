@@ -1,24 +1,33 @@
+// File: /app/api/stats/booking-status/route.ts
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
-import Booking from '@/lib/models/Booking';
+import TicketBooking from '@/lib/models/TicketBooking';
 
 export async function GET() {
     try {
         await connectToDatabase();
-        
-        const [confirmed, pending, cancelled] = await Promise.all([
-            Booking.countDocuments({ status: 'confirmed' }),
-            Booking.countDocuments({ status: 'pending' }),
-            Booking.countDocuments({ status: 'cancelled' })
+
+        // Đếm số lượng cho mỗi trạng thái từ TicketBooking model
+        const [confirmed, pending, cancelled, delivered] = await Promise.all([
+            TicketBooking.countDocuments({ status: 'confirmed' }),
+            TicketBooking.countDocuments({ status: 'pending' }),
+            TicketBooking.countDocuments({ status: 'cancelled' }),
+            TicketBooking.countDocuments({ status: 'delivered' }) // Đếm thêm trạng thái 'delivered'
         ]);
 
+        // Trả về dữ liệu bao gồm cả trạng thái 'delivered'
         return NextResponse.json({
             confirmed,
             pending,
-            cancelled
+            cancelled,
+            delivered // Thêm delivered vào response
         });
+
     } catch (error) {
-        console.error('Booking status stats error:', error);
-        return NextResponse.json({ error: 'Lỗi khi lấy thống kê trạng thái đặt lịch' }, { status: 500 });
+        console.error('Error fetching ticket booking status stats:', error);
+        return NextResponse.json(
+            { error: 'Lỗi khi lấy thống kê trạng thái đặt vé' },
+            { status: 500 }
+        );
     }
 }
