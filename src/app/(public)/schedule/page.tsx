@@ -4,10 +4,10 @@
 import { useState, useEffect, useMemo, ChangeEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import Layout from '@/components/layout/Layout';
+import Layout from '@/components/layout/Layout'; // Đảm bảo đường dẫn Layout đúng
 import { useCart } from '@/contexts/CartContext';
 import { Schedule } from '@/types/schedule';
-// Import thêm icon cho giá vé và giỏ hàng
+import { toast } from 'react-toastify'; // *** THÊM IMPORT NÀY ***
 import {
   FaCalendarAlt,
   FaClock,
@@ -16,28 +16,28 @@ import {
   FaSortAmountDown,
   FaSortAmountUp,
   FaDollarSign,
-  FaShoppingCart // *** MỚI: Import icon giỏ hàng ***
+  FaShoppingCart
 } from 'react-icons/fa';
 
-// Hàm format ngày giờ (giữ nguyên)
+// Hàm format ngày giờ
 const formatDate = (dateString: string | undefined | null): string => {
   if (!dateString) return 'N/A';
   try {
     const date = new Date(dateString);
     if (isNaN(date.getTime())) {
-      console.warn("Invalid date string passed to formatDate:", dateString);
+      console.warn("Chuỗi ngày không hợp lệ được truyền cho formatDate:", dateString);
       return 'Ngày không hợp lệ';
     }
     return date.toLocaleDateString('vi-VN', {
       year: 'numeric', month: 'long', day: 'numeric'
     });
   } catch (e) {
-    console.error("Error formatting date:", dateString, e);
+    console.error("Lỗi khi định dạng ngày:", dateString, e);
     return 'Lỗi định dạng ngày';
   }
 }
 
-// Hàm format giá vé (giữ nguyên)
+// Hàm format giá vé
 const formatPrice = (price: number | undefined | null): string => {
   if (price === undefined || price === null) {
     return 'Chưa có giá';
@@ -48,7 +48,7 @@ const formatPrice = (price: number | undefined | null): string => {
   return price.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' });
 };
 
-// Type cho các tùy chọn sắp xếp (giữ nguyên)
+// Type cho các tùy chọn sắp xếp
 type SortOption = 'date_desc' | 'date_asc' | 'price_asc' | 'price_desc';
 
 export default function ScheduleListPage() {
@@ -62,13 +62,14 @@ export default function ScheduleListPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { addToCart } = useCart();
-  // Effect fetch dữ liệu (giữ nguyên)
+
+  // Effect fetch dữ liệu
   useEffect(() => {
     const fetchSchedules = async () => {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch('/api/schedule');
+        const response = await fetch('/api/schedule'); // Điều chỉnh API endpoint nếu cần
         if (!response.ok) {
           throw new Error(`Không thể tải lịch trình (${response.status})`);
         }
@@ -77,7 +78,7 @@ export default function ScheduleListPage() {
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Đã xảy ra lỗi không xác định';
         setError(errorMessage);
-        console.error("Error fetching schedules:", err);
+        console.error("Lỗi khi fetch lịch trình:", err);
       } finally {
         setLoading(false);
       }
@@ -85,7 +86,7 @@ export default function ScheduleListPage() {
     fetchSchedules();
   }, []);
 
-  // Lọc và sắp xếp danh sách hiển thị (giữ nguyên)
+  // Lọc và sắp xếp danh sách hiển thị
   const displayedSchedules = useMemo(() => {
     let filtered = schedules;
 
@@ -113,13 +114,13 @@ export default function ScheduleListPage() {
         sorted.sort((a, b) => (b.price ?? 0) - (a.price ?? 0));
         break;
       default:
+        // Mặc định sắp xếp theo ngày mới nhất
         sorted.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         break;
     }
     return sorted;
   }, [schedules, searchTerm, sortOption]);
 
-  // Handlers (giữ nguyên handleSearchChange, handleSortChange)
   const handleSearchChange = (event: ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(event.target.value);
   };
@@ -128,14 +129,23 @@ export default function ScheduleListPage() {
     setSortOption(event.target.value as SortOption);
   };
 
-  // *** MỚI: Handler cho nút Thêm vào giỏ hàng (Placeholder) ***
-  const handleAddToCart = (schedule: Schedule) => { // Nhận toàn bộ object schedule
-    console.log("Attempting to add to cart:", schedule._id);
-    // Không cần kiểm tra đăng nhập ở đây nữa nếu CartContext không yêu cầu
-    // Việc kiểm tra đăng nhập sẽ thực hiện ở trang Checkout
-    addToCart(schedule); // Gọi hàm từ context
+  const handleAddToCart = (schedule: Schedule) => {
+    // console.log("Đang cố thêm vào giỏ hàng:", schedule._id);
+    addToCart(schedule); // Gọi hàm từ context (đã bỏ alert trong context)
+
+    // *** HIỂN THỊ TOAST THAY VÌ ALERT ***
+    toast.success(`Đã thêm "${schedule.eventName}" vào giỏ hàng!`, {
+      position: "bottom-right", // Bạn có thể tùy chỉnh vị trí nếu muốn
+      autoClose: 3000,       // Tự động đóng sau 3 giây
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+      theme: "light",         // Hoặc "dark", "colored"
+    });
   };
-  // Handler Đặt vé (giữ nguyên)
+
   const handleBookTicketClick = (scheduleId: string) => {
     if (status === 'loading') return;
     if (status === 'authenticated') {
@@ -145,22 +155,23 @@ export default function ScheduleListPage() {
     }
   };
 
-  // Handler Xem chi tiết (giữ nguyên)
   const handleViewDetailsClick = (scheduleId: string) => {
     if (status === 'loading') return;
-    if (status === 'authenticated') {
-      router.push(`/schedule/${scheduleId}`);
-    } else {
-      setShowLoginPrompt(true);
-    }
+    // Cho phép xem chi tiết ngay cả khi chưa đăng nhập,
+    // việc yêu cầu đăng nhập có thể xảy ra ở trang chi tiết nếu cần thiết cho hành động cụ thể
+    router.push(`/schedule/${scheduleId}`);
+    // Nếu muốn yêu cầu đăng nhập ngay:
+    // if (status === 'authenticated') {
+    //   router.push(`/schedule/${scheduleId}`);
+    // } else {
+    //   setShowLoginPrompt(true);
+    // }
   };
 
-  // Handlers cho popup đăng nhập (giữ nguyên)
   const closeLoginPrompt = () => setShowLoginPrompt(false);
   const handleGoHome = () => { router.push('/'); closeLoginPrompt(); };
   const handleGoLogin = () => { router.push('/login'); closeLoginPrompt(); };
 
-  // --- Render Component ---
   return (
     <Layout>
       <div className="bg-gradient-to-b from-gray-100 to-gray-200 py-16 min-h-screen">
@@ -169,7 +180,7 @@ export default function ScheduleListPage() {
             Lịch Trình Sự Kiện
           </h1>
 
-          {/* === Phần Tìm kiếm và Sắp xếp (giữ nguyên) === */}
+          {/* Phần Tìm kiếm và Sắp xếp */}
           <div className="mb-10 p-4 bg-white rounded-lg shadow-md border border-gray-200 flex flex-col sm:flex-row gap-4 items-center justify-between">
             <div className="relative w-full sm:w-2/3">
               <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
@@ -204,9 +215,8 @@ export default function ScheduleListPage() {
               </span>
             </div>
           </div>
-          {/* === Kết thúc Phần Tìm kiếm và Sắp xếp === */}
 
-          {/* Loading, Error, No Data messages (giữ nguyên) */}
+          {/* Loading, Error, No Data messages */}
           {loading && (
             <div className="text-center py-20">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
@@ -240,7 +250,6 @@ export default function ScheduleListPage() {
                   key={schedule._id}
                   className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden flex flex-col border border-gray-200 h-full group"
                 >
-                  {/* Phần Header Card (giữ nguyên) */}
                   <div className="p-5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-t-xl">
                     <h2 className="text-xl font-bold truncate group-hover:text-yellow-300 transition-colors" title={schedule.eventName}>
                       {schedule.eventName}
@@ -256,7 +265,6 @@ export default function ScheduleListPage() {
                     )}
                   </div>
 
-                  {/* Phần Body Card (giữ nguyên hiển thị thông tin, bao gồm cả giá) */}
                   <div className="p-5 flex-grow space-y-3 text-sm">
                     <div className="flex items-start text-gray-700">
                       <FaCalendarAlt className="mr-2 mt-0.5 text-indigo-500 flex-shrink-0" aria-hidden="true" />
@@ -284,31 +292,25 @@ export default function ScheduleListPage() {
                     )}
                   </div>
 
-                  {/* === SỬA: Phần Footer Card (Thêm nút Giỏ hàng bên trái) === */}
                   <div className="px-5 pb-5 pt-3 mt-auto border-t border-gray-100 flex justify-between items-center">
-                    {/* Nút Thêm vào giỏ hàng (Bên trái) */}
-                    {/* Chỉ hiển thị nút này cho các sự kiện có thể thêm vào giỏ (ví dụ: concert và chưa bị hủy) */}
                     {(schedule.type === 'concert' && schedule.status !== 'cancelled') ? (
                       <button
-                        // onClick={() => handleAddToCart(schedule._id)} // CŨ
-                        onClick={() => handleAddToCart(schedule)} // *** MỚI: Truyền cả object schedule ***
-                        // disabled={status === 'loading'} // Có thể bỏ disable theo status auth nếu không cần login để thêm vào giỏ
-                        className={`px-4 py-1.5 text-xs font-medium rounded-md shadow-sm ...`} // Giữ lại các class khác
+                        onClick={() => handleAddToCart(schedule)}
+                        className="px-4 py-2 text-sm font-medium rounded-md shadow-sm bg-sky-600 text-white hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 transition ease-in-out duration-150 flex items-center"
                         title="Thêm sự kiện vào giỏ hàng"
                       >
-                        <FaShoppingCart className="inline mr-1" aria-hidden="true" />
+                        <FaShoppingCart className="inline mr-2" aria-hidden="true" />
                         Thêm vào giỏ
                       </button>
                     ) : (
                       <div /> // Render div trống nếu không hiển thị nút để giữ layout
                     )}
 
-                    {/* Nhóm nút Chi tiết và Đặt vé (Bên phải) */}
                     <div className="flex items-center space-x-3">
                       <button
                         onClick={() => handleViewDetailsClick(schedule._id)}
-                        disabled={status === 'loading'}
-                        className={`px-4 py-1.5 text-xs font-medium rounded-md shadow-sm transition ease-in-out duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${status === 'loading'
+                        // disabled={status === 'loading'} // Có thể bỏ disabled nếu xem chi tiết không cần login
+                        className={`px-4 py-2 text-sm font-medium rounded-md shadow-sm transition ease-in-out duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${status === 'loading' && false // Tạm thời vô hiệu hóa điều kiện loading ở đây
                           ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                           : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
                           }`}
@@ -316,12 +318,11 @@ export default function ScheduleListPage() {
                       >
                         Chi tiết
                       </button>
-                      {/* Nút Đặt vé giữ nguyên điều kiện hiển thị */}
                       {schedule.type === 'concert' && schedule.status !== 'cancelled' && (
                         <button
                           onClick={() => handleBookTicketClick(schedule._id)}
                           disabled={status === 'loading'}
-                          className={`px-4 py-1.5 text-white text-xs font-medium rounded-md shadow-sm transition ease-in-out duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 ${status === 'loading'
+                          className={`px-4 py-2 text-white text-sm font-medium rounded-md shadow-sm transition ease-in-out duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 ${status === 'loading'
                             ? 'bg-gray-400 cursor-not-allowed'
                             : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 focus:ring-green-500'
                             }`}
@@ -332,7 +333,6 @@ export default function ScheduleListPage() {
                       )}
                     </div>
                   </div>
-                  {/* === Kết thúc sửa Phần Footer Card === */}
                 </div>
               ))}
             </div>
@@ -340,24 +340,23 @@ export default function ScheduleListPage() {
         </div>
       </div>
 
-      {/* Khung Thông báo Yêu cầu Đăng nhập (giữ nguyên) */}
+      {/* Khung Thông báo Yêu cầu Đăng nhập */}
       {showLoginPrompt && (
         <div className="fixed inset-0 z-50 flex justify-center items-center p-4">
-          <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" onClick={closeLoginPrompt}></div> {/* Lớp nền mờ */}
+          <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" onClick={closeLoginPrompt}></div>
           <div
-            className="relative max-w-md w-full bg-yellow-50 border border-yellow-300 p-8 rounded-lg shadow-lg text-center transform transition-all scale-95 opacity-0 animate-fade-in-scale z-10" // Thêm z-10
+            className="relative max-w-md w-full bg-yellow-50 border border-yellow-300 p-8 rounded-lg shadow-lg text-center transform transition-all scale-95 opacity-0 animate-fade-in-scale z-10"
             style={{ animationFillMode: 'forwards', animationDuration: '0.2s' }}
           >
-            {/* Nội dung thông báo */}
             <style jsx>{`
-                        @keyframes fade-in-scale {
-                          from { opacity: 0; transform: scale(0.95); }
-                          to { opacity: 1; transform: scale(1); }
-                        }
-                        .animate-fade-in-scale {
-                          animation-name: fade-in-scale;
-                        }
-                        `}</style>
+              @keyframes fade-in-scale {
+                from { opacity: 0; transform: scale(0.95); }
+                to { opacity: 1; transform: scale(1); }
+              }
+              .animate-fade-in-scale {
+                animation-name: fade-in-scale;
+              }
+            `}</style>
             <svg className="mx-auto mb-4 w-12 h-12 text-yellow-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0-10.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.75c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.57-.598-3.75h-.152c-3.196 0-6.1-1.25-8.25-3.286Zm0 13.036h.008v.008H12v-.008Z" />
             </svg>

@@ -66,11 +66,10 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
                     ...updatedItems[existingItemIndex],
                     quantity: updatedItems[existingItemIndex].quantity + 1,
                 };
-                // Cân nhắc sử dụng thư viện thông báo (toast) thay vì alert
-                alert(`Đã cập nhật số lượng cho "${scheduleToAdd.eventName}" trong giỏ hàng!`);
+                // console.log(`Đã cập nhật số lượng cho "${scheduleToAdd.eventName}" trong giỏ hàng!`); // Đã xóa alert
                 return updatedItems;
             } else {
-                alert(`Đã thêm "${scheduleToAdd.eventName}" vào giỏ hàng!`);
+                // console.log(`Đã thêm "${scheduleToAdd.eventName}" vào giỏ hàng!`); // Đã xóa alert
                 return [...prevItems, { ...scheduleToAdd, quantity: 1 }];
             }
         });
@@ -79,16 +78,17 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     const removeFromCart = useCallback((itemId: string) => {
         setCartItems((prevItems) => prevItems.filter((item) => item._id !== itemId));
         setSelectedItemIdsForCheckout(prevSelected => prevSelected.filter(id => id !== itemId));
-        alert('Đã xóa sự kiện khỏi giỏ hàng.');
+        // console.log('Đã xóa sự kiện khỏi giỏ hàng.'); // Đã xóa alert
     }, []);
 
     const updateItemQuantity = useCallback((itemId: string, newQuantity: number) => {
         setCartItems((prevItems) => {
             if (newQuantity <= 0) {
-                alert('Sự kiện đã được xóa khỏi giỏ hàng do số lượng bằng 0.');
+                // console.log('Sự kiện đã được xóa khỏi giỏ hàng do số lượng bằng 0.'); // Đã xóa alert
                 setSelectedItemIdsForCheckout(prevSelected => prevSelected.filter(id => id !== itemId));
                 return prevItems.filter(item => item._id !== itemId);
             }
+            // console.log(`Đã cập nhật số lượng cho item ID: ${itemId} thành ${newQuantity}`);
             return prevItems.map(item =>
                 item._id === itemId ? { ...item, quantity: newQuantity } : item
             );
@@ -114,7 +114,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     const clearCart = useCallback(() => {
         setCartItems([]);
         setSelectedItemIdsForCheckout([]);
-        alert('Giỏ hàng đã được làm trống.');
+        // console.log('Giỏ hàng đã được làm trống.'); // Đã xóa alert
     }, []);
 
     const getCartItemCount = useCallback((): number => {
