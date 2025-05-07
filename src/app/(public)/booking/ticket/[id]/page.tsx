@@ -80,33 +80,40 @@ export default function TicketBookingPage() {
 
 
         try {
-            const response = await fetch('/api/ticket-booking', { // API này cần được tạo hoặc cập nhật
+            const response = await fetch('/api/ticket-booking', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    scheduleId: schedule._id,
-                    ticketCount,
-                    totalPrice: totalPrice, // Gửi thêm tổng giá lên API
-                    paymentMethod, // Sẽ là 'cod' hoặc 'online'
-                    // Không cần gửi cardNumber, expiryDate, cvv nữa trừ khi backend cần
-                    // cardNumber,
-                    // expiryDate,
-                    // cvv,
-                    fullName,
-                    email,
-                    phoneNumber,
-                    address: paymentMethod === 'cod' ? address : undefined // Chỉ gửi địa chỉ nếu là COD
+                    bookingType: "single",
+                    customerDetails: {
+                        fullName,
+                        email,
+                        phoneNumber,
+                        address: paymentMethod === 'cod' ? address : undefined
+                    },
+                    bookedItems: [
+                        {
+                            scheduleId: schedule._id,
+                            eventName: schedule.eventName,
+                            date: schedule.date,
+                            ticketCount,
+                            price: schedule.price ?? 0
+                        }
+                    ],
+                    totalPrice: totalPrice,
+                    paymentMethod
                 }),
             });
 
             if (!response.ok) {
+                // Sửa đoạn này để hiển thị lỗi chi tiết từ backend
                 const errorData = await response.json().catch(() => ({ error: 'Failed to book ticket and cannot parse error' }));
-                throw new Error(errorData.error || 'Failed to book ticket');
+                alert(errorData.error || errorData.message || 'Failed to book ticket');
+                return;
             }
 
-            // const data = await response.json(); // Dữ liệu trả về từ API đặt vé (nếu có)
             setBookingSuccess(true);
         } catch (err) {
             console.error('Booking error:', err);

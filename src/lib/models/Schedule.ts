@@ -1,71 +1,70 @@
-// /lib/models/Schedule.ts 
+// /lib/models/Schedule.ts
+import mongoose, { Document, Schema, Model, Types } from 'mongoose';
 
-import mongoose, { Document, Schema, Model } from 'mongoose';
-
-// Interface cho địa điểm (giữ nguyên)
-interface IVenue {
+// Interface cho địa điểm
+export interface IVenue { // Đảm bảo được export
   name: string;
   address: string;
   city: string;
 }
 
-// Interface cho Schedule (đã thêm price)
+// Interface cho Schedule
 export interface ISchedule extends Document {
+  _id: Types.ObjectId; // Định nghĩa _id tường minh
   eventName: string;
-  date: Date;
+  date: Date; // Ngày tháng được lưu trữ dưới dạng Date trong MongoDB
   startTime: string;
   endTime?: string;
-  venue: IVenue;
+  venue: IVenue; // Sử dụng interface IVenue ở trên
   description?: string;
   type: 'concert' | 'rehearsal' | 'meeting' | 'interview' | 'other';
-  // *** SỬA Ở ĐÂY: Thêm 'postponed' vào kiểu dữ liệu status ***
   status: 'scheduled' | 'completed' | 'cancelled' | 'postponed';
-  price?: number; // Sửa lại thành optional (?) để khớp với schema (required: false)
-  createdAt: Date;
-  updatedAt: Date;
+  price?: number;
+  createdAt: Date; // Định nghĩa tường minh createdAt
+  updatedAt: Date; // Định nghĩa tường minh updatedAt
 }
 
-// Schema cho Schedule (đã thêm price)
+// Schema cho Schedule
 const scheduleSchema: Schema<ISchedule> = new mongoose.Schema({
-  eventName: { type: String, required: true },
+  eventName: { type: String, required: true, trim: true },
   date: { type: Date, required: true },
   startTime: { type: String, required: true },
   endTime: { type: String },
-  venue: {
-    name: { type: String, required: true },
-    address: { type: String, required: true },
-    city: { type: String, required: true }
+  venue: { // Sub-document nhúng
+    name: { type: String, required: true, trim: true },
+    address: { type: String, required: true, trim: true },
+    city: { type: String, required: true, trim: true }
   },
-  description: { type: String },
+  description: { type: String, trim: true },
   type: {
     type: String,
     enum: ['concert', 'rehearsal', 'meeting', 'interview', 'other'],
     required: true
   },
-  status: { // Enum trong schema đã đúng (có 'postponed')
+  status: {
     type: String,
     enum: ['scheduled', 'completed', 'cancelled', 'postponed'],
     default: 'scheduled',
-    required: true // Thêm required: true nếu status luôn phải có giá trị
+    required: true
   },
-  price: { // price là optional trong schema
+  price: {
     type: Number,
-    required: false, // Không bắt buộc
-    min: [0, 'Price cannot be negative'],
-    default: null // Hoặc 0 nếu muốn giá mặc định là 0
+    required: false,
+    min: [0, 'Giá không thể âm'],
+    default: null // Hoặc 0 nếu muốn giá mặc định là 0 khi không cung cấp
   }
 }, {
-  // versionKey: '__v', // Có thể bỏ nếu không dùng version key
-  versionKey: false,
-  timestamps: true // Tự động thêm createdAt và updatedAt
+  versionKey: false, // Bỏ versionKey (__v) nếu không cần thiết
+  timestamps: true   // Tự động thêm createdAt và updatedAt (kiểu Date)
 });
 
-// Sử dụng cách export HMR-friendly được khuyến nghị hơn
+// Index để tối ưu truy vấn (tùy chọn)
+scheduleSchema.index({ date: 1, status: 1 });
+scheduleSchema.index({ eventName: 'text', 'venue.name': 'text' }); // Text index cho tìm kiếm
+
 const modelName = 'Schedule';
-const Schedule: Model<ISchedule> = (mongoose.models[modelName] as Model<ISchedule>) ||
+// Đảm bảo model được định nghĩa đúng cách, HMR-friendly
+const Schedule: Model<ISchedule> = mongoose.models[modelName] ||
   mongoose.model<ISchedule>(modelName, scheduleSchema);
 
 export default Schedule;
-
-// Export thêm interface nếu bạn muốn dùng nó ở nơi khác
-// export type { IVenue }; // Chỉ export IVenue nếu cần

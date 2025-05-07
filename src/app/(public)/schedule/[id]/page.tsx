@@ -6,6 +6,9 @@ import { useParams } from 'next/navigation'; // Hook để lấy params từ URL
 import Link from 'next/link';
 import Layout from '@/components/layout/Layout';
 import { Schedule } from '@/types/schedule';
+import { useCart } from '@/contexts/CartContext'; // << THÊM IMPORT
+import { toast } from 'react-toastify'; // << THÊM IMPORT
+import { FaShoppingCart } from 'react-icons/fa'; // << THÊM IMPORT (cho icon)
 
 // Hàm format ngày giờ chi tiết (ví dụ)
 const formatDateTime = (dateString: string | Date | undefined | null): string => {
@@ -13,7 +16,7 @@ const formatDateTime = (dateString: string | Date | undefined | null): string =>
     try {
         return new Date(dateString).toLocaleString('vi-VN', {
             year: 'numeric', month: 'long', day: 'numeric',
-            hour: '2-digit', minute: '2-digit', hour12: false // Hoặc true nếu muốn AM/PM
+            hour: '2-digit', minute: '2-digit', hour12: false
         });
     } catch (e) {
         return 'Ngày giờ không hợp lệ';
@@ -21,21 +24,21 @@ const formatDateTime = (dateString: string | Date | undefined | null): string =>
 }
 
 export default function ScheduleDetailPage() {
-    const params = useParams(); // Lấy object params
-    const id = params?.id as string; // Lấy id từ params, ép kiểu string
+    const params = useParams();
+    const id = params?.id as string;
 
     const [schedule, setSchedule] = useState<Schedule | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    const { addToCart } = useCart(); // << SỬ DỤNG HOOK useCart
+
     useEffect(() => {
-        // Chỉ fetch khi có id
         if (id) {
             const fetchScheduleDetail = async () => {
                 setLoading(true);
                 setError(null);
                 try {
-                    // Fetch từ API GET /api/schedule/[id] (sẽ tạo ở bước 3)
                     const response = await fetch(`/api/schedule/${id}`);
                     if (response.status === 404) {
                         throw new Error('Schedule not found');
@@ -54,11 +57,27 @@ export default function ScheduleDetailPage() {
             };
             fetchScheduleDetail();
         } else {
-            // Xử lý trường hợp không có ID (ít xảy ra nếu routing đúng)
             setError("Schedule ID is missing.");
             setLoading(false);
         }
-    }, [id]); // Fetch lại nếu id thay đổi
+    }, [id]);
+
+    // Hàm xử lý khi nhấn nút "Thêm vào giỏ hàng"
+    const handleAddToCartDetail = () => {
+        if (schedule) {
+            addToCart(schedule);
+            toast.success(`Đã thêm "${schedule.eventName}" vào giỏ hàng!`, {
+                position: "bottom-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                theme: "light",
+            });
+        }
+    };
 
     return (
         <Layout>
@@ -89,10 +108,12 @@ export default function ScheduleDetailPage() {
                             }</p>
                             <p><strong>Trạng thái:</strong> <span className={`font-semibold ${schedule.status === 'scheduled' ? 'text-green-600' :
                                 schedule.status === 'completed' ? 'text-blue-600' :
-                                    'text-red-600' // cancelled
+                                    'text-red-600' // cancelled or other statuses like postponed
                                 }`}>
                                 {schedule.status === 'scheduled' ? 'Đã lên lịch' :
-                                    schedule.status === 'completed' ? 'Đã hoàn thành' : 'Đã hủy'}
+                                    schedule.status === 'completed' ? 'Đã hoàn thành' :
+                                        schedule.status === 'cancelled' ? 'Đã hủy' :
+                                            schedule.status === 'postponed' ? 'Tạm hoãn' : schedule.status}
                             </span>
                             </p>
                         </div>
@@ -107,20 +128,21 @@ export default function ScheduleDetailPage() {
                         {schedule.description && (
                             <div className="mb-6 border-t pt-6">
                                 <h2 className="text-2xl font-semibold mb-3 text-gray-800">Mô tả chi tiết</h2>
-                                {/* Sử dụng whitespace-pre-wrap để giữ định dạng xuống dòng */}
                                 <p className="text-gray-700 whitespace-pre-wrap">{schedule.description}</p>
                             </div>
                         )}
 
-                        {/* Nút Đặt vé ở trang chi tiết */}
+                        {/* Nút "Thêm vào giỏ hàng" thay thế nút "Đặt vé ngay" */}
                         <div className="mt-8 border-t pt-8 text-center">
-                            {schedule.type === 'concert' && schedule.status === 'scheduled' && ( // Chỉ hiển thị nếu là concert và chưa hủy/hoàn thành
-                                <Link
-                                    href={`/booking/ticket/${schedule._id}`}
-                                    className="inline-block px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 text-lg font-semibold"
+                            {schedule.type === 'concert' && schedule.status === 'scheduled' && (
+                                <button
+                                    onClick={handleAddToCartDetail}
+                                    className="inline-flex items-center px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 text-lg font-semibold"
+                                    title="Thêm sự kiện vào giỏ hàng"
                                 >
-                                    Đặt vé ngay
-                                </Link>
+                                    <FaShoppingCart className="mr-2" />
+                                    Thêm vào giỏ hàng
+                                </button>
                             )}
                             <Link href="/schedule" className="block text-blue-600 hover:underline mt-6">
                                 &larr; Quay lại danh sách lịch trình

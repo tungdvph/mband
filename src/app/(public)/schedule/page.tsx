@@ -7,7 +7,7 @@ import { useSession } from 'next-auth/react';
 import Layout from '@/components/layout/Layout'; // Đảm bảo đường dẫn Layout đúng
 import { useCart } from '@/contexts/CartContext';
 import { Schedule } from '@/types/schedule';
-import { toast } from 'react-toastify'; // *** THÊM IMPORT NÀY ***
+import { toast } from 'react-toastify';
 import {
   FaCalendarAlt,
   FaClock,
@@ -130,42 +130,31 @@ export default function ScheduleListPage() {
   };
 
   const handleAddToCart = (schedule: Schedule) => {
-    // console.log("Đang cố thêm vào giỏ hàng:", schedule._id);
-    addToCart(schedule); // Gọi hàm từ context (đã bỏ alert trong context)
-
-    // *** HIỂN THỊ TOAST THAY VÌ ALERT ***
+    addToCart(schedule);
     toast.success(`Đã thêm "${schedule.eventName}" vào giỏ hàng!`, {
-      position: "bottom-right", // Bạn có thể tùy chỉnh vị trí nếu muốn
-      autoClose: 3000,       // Tự động đóng sau 3 giây
+      position: "bottom-right",
+      autoClose: 3000,
       hideProgressBar: false,
       closeOnClick: true,
       pauseOnHover: true,
       draggable: true,
       progress: undefined,
-      theme: "light",         // Hoặc "dark", "colored"
+      theme: "light",
     });
   };
 
-  const handleBookTicketClick = (scheduleId: string) => {
-    if (status === 'loading') return;
-    if (status === 'authenticated') {
-      router.push(`/booking/ticket/${scheduleId}`);
-    } else {
-      setShowLoginPrompt(true);
-    }
-  };
+  // const handleBookTicketClick = (scheduleId: string) => { // Hàm này không còn được sử dụng trực tiếp nếu nút đã bị bỏ
+  //   if (status === 'loading') return;
+  //   if (status === 'authenticated') {
+  //     router.push(`/booking/ticket/${scheduleId}`);
+  //   } else {
+  //     setShowLoginPrompt(true);
+  //   }
+  // };
 
   const handleViewDetailsClick = (scheduleId: string) => {
     if (status === 'loading') return;
-    // Cho phép xem chi tiết ngay cả khi chưa đăng nhập,
-    // việc yêu cầu đăng nhập có thể xảy ra ở trang chi tiết nếu cần thiết cho hành động cụ thể
     router.push(`/schedule/${scheduleId}`);
-    // Nếu muốn yêu cầu đăng nhập ngay:
-    // if (status === 'authenticated') {
-    //   router.push(`/schedule/${scheduleId}`);
-    // } else {
-    //   setShowLoginPrompt(true);
-    // }
   };
 
   const closeLoginPrompt = () => setShowLoginPrompt(false);
@@ -309,8 +298,7 @@ export default function ScheduleListPage() {
                     <div className="flex items-center space-x-3">
                       <button
                         onClick={() => handleViewDetailsClick(schedule._id)}
-                        // disabled={status === 'loading'} // Có thể bỏ disabled nếu xem chi tiết không cần login
-                        className={`px-4 py-2 text-sm font-medium rounded-md shadow-sm transition ease-in-out duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${status === 'loading' && false // Tạm thời vô hiệu hóa điều kiện loading ở đây
+                        className={`px-4 py-2 text-sm font-medium rounded-md shadow-sm transition ease-in-out duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${status === 'loading' && false
                           ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                           : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
                           }`}
@@ -318,19 +306,21 @@ export default function ScheduleListPage() {
                       >
                         Chi tiết
                       </button>
+                      {/*
                       {schedule.type === 'concert' && schedule.status !== 'cancelled' && (
                         <button
-                          onClick={() => handleBookTicketClick(schedule._id)}
+                          onClick={() => handleBookTicketClick(schedule._id)} // handleBookTicketClick có thể comment lại hoặc xóa nếu không dùng nữa
                           disabled={status === 'loading'}
                           className={`px-4 py-2 text-white text-sm font-medium rounded-md shadow-sm transition ease-in-out duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 ${status === 'loading'
-                            ? 'bg-gray-400 cursor-not-allowed'
-                            : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 focus:ring-green-500'
+                              ? 'bg-gray-400 cursor-not-allowed'
+                              : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 focus:ring-green-500'
                             }`}
                           title="Đặt vé cho sự kiện này"
                         >
                           Đặt vé
                         </button>
                       )}
+                      */}
                     </div>
                   </div>
                 </div>

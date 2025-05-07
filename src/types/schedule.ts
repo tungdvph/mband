@@ -1,21 +1,24 @@
+// /types/schedule.ts
+
+// Interface cho địa điểm phía Client
 export interface Venue {
   name: string;
-  address: string; // Giả sử address là bắt buộc dựa trên model
-  city: string;    // Giả sử city là bắt buộc dựa trên model
+  address: string;
+  city: string;
 }
 
 // Interface chính cho Schedule phía Client
 export interface Schedule {
-  _id: string;
+  _id: string; // _id thường là string ở client
   eventName: string;
-  date: string;       // <-- Sửa thành string
+  date: string;      // Ngày tháng là string sau khi serialize từ API
   startTime: string;
   endTime?: string;
-  venue: Venue;       // Sử dụng interface Venue ở trên
+  venue: Venue;      // Sử dụng interface Venue ở trên
   description?: string;
   type: 'concert' | 'rehearsal' | 'meeting' | 'interview' | 'other';
   status: 'scheduled' | 'completed' | 'cancelled' | 'postponed';
   price?: number;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: string; // Ngày tháng là string sau khi serialize từ API
+  updatedAt: string; // Ngày tháng là string sau khi serialize từ API
 }
