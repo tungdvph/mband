@@ -21,18 +21,17 @@ export async function GET() {
         }
 
         await connectToDatabase();
-        console.log("Fetching revenue data from TicketBooking...");
+        console.log("Fetching revenue data from TicketBooking (status: 'delivered')...");
 
         const currentYear = new Date().getFullYear();
         const startDate = new Date(currentYear, 0, 1); // Ngày 1 tháng 1 năm nay
 
-        console.log("Calculating revenue for year:", currentYear, "from:", startDate);
+        console.log("Calculating revenue for year:", currentYear, "from:", startDate, "for 'delivered' bookings.");
 
-        // Pipeline aggregate
         const revenueData: MonthlyRevenueResult[] = await TicketBooking.aggregate([
             {
                 $match: {
-                    status: 'confirmed',
+                    status: 'delivered', // Chỉ lấy các đơn hàng đã giao
                     createdAt: { $gte: startDate }, // Chỉ lấy trong năm hiện tại
                     totalPrice: { $exists: true, $type: 'number' }
                 }
@@ -40,16 +39,18 @@ export async function GET() {
             {
                 $group: {
                     _id: {
-                        year: { $year: '$createdAt' }, // Vẫn group theo năm và tháng
-                        month: { $month: '$createdAt' }
+                        // year: { $year: '$createdAt' }, // Không cần thiết cho output cuối cùng nếu chỉ hiển thị tháng
+                        month: { $month: '$createdAt' } // Group theo số tháng (1-12)
                     },
                     revenue: { $sum: '$totalPrice' }
                 }
             },
             {
-                // --- THAY ĐỔI Ở ĐÂY ---
+                $sort: { '_id.month': 1 } // Sắp xếp theo số tháng (1 = Tháng 1, 12 = Tháng 12)
+            },
+            {
                 $project: {
-                    _id: 0, // Bỏ _id
+                    _id: 0, // Loại bỏ trường _id không cần thiết
                     month: { // Chuyển đổi số tháng thành chuỗi "Tháng X"
                         $switch: {
                             branches: [
@@ -66,38 +67,20 @@ export async function GET() {
                                 { case: { $eq: ['$_id.month', 11] }, then: 'Tháng 11' },
                                 { case: { $eq: ['$_id.month', 12] }, then: 'Tháng 12' },
                             ],
-                            default: 'Không xác định' // Trường hợp dự phòng nếu tháng không hợp lệ
+                            default: 'Không xác định' // Trường hợp dự phòng (không nên xảy ra)
                         }
                     },
                     revenue: 1 // Giữ lại trường revenue
                 }
-                // -----------------------
-            },
-            {
-                // Sắp xếp theo tháng (dựa trên số tháng gốc trước khi chuyển thành chuỗi)
-                // Chúng ta cần thêm lại trường tháng số để sort đúng
-                $addFields: {
-                    monthNumber: '$_id.month' // Tạm thời thêm lại số tháng để sort
-                }
-            },
-            {
-                // Bây giờ sort theo số tháng
-                $sort: { 'monthNumber': 1 }
-            },
-            {
-                // Bỏ trường monthNumber không cần thiết sau khi sort
-                $project: {
-                    monthNumber: 0
-                }
             }
         ]);
 
-        console.log("Revenue data fetched (formatted):", revenueData);
+        console.log("Revenue data fetched and formatted (status: 'delivered', optimal sort):", revenueData);
 
         return NextResponse.json(revenueData ?? []);
 
     } catch (error: any) {
-        console.error('Error fetching revenue stats from TicketBooking:', error);
+        console.error("Error fetching revenue stats from TicketBooking (status: 'delivered'):", error);
         if (error instanceof mongoose.Error.MissingSchemaError) {
             console.error("--- SCHEMA ERROR ---: Model '" + error.message.split('"')[1] + "' might not be registered correctly. Ensure it's imported in this API route file.");
         }
