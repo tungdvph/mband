@@ -3,7 +3,7 @@
 
 import React, { useState, FormEvent } from 'react';
 import { CartItem, PromotionRule } from '@/types/cart'; // Đảm bảo đường dẫn đúng
-import { FaTimes, FaUser, FaEnvelope, FaPhone, FaStickyNote, FaCalendarCheck, FaTicketAlt } from 'react-icons/fa';
+import { FaTimes, FaUser, FaEnvelope, FaPhone, FaStickyNote, FaCalendarCheck } from 'react-icons/fa'; // Bỏ FaTicketAlt nếu không dùng
 
 interface ComboBookingModalProps {
     isOpen: boolean;
@@ -49,12 +49,10 @@ const ComboBookingModal: React.FC<ComboBookingModalProps> = ({
             setError('Vui lòng điền đầy đủ các trường bắt buộc (Họ tên, Email, Số điện thoại).');
             return;
         }
-        // Basic email validation
         if (!/\S+@\S+\.\S+/.test(email)) {
             setError('Định dạng email không hợp lệ.');
             return;
         }
-        // Basic phone validation (simple check for digits, can be improved)
         if (!/^\d{10,}$/.test(phoneNumber.replace(/\s+/g, ''))) {
             setError('Số điện thoại không hợp lệ (cần ít nhất 10 chữ số).');
             return;
@@ -63,7 +61,7 @@ const ComboBookingModal: React.FC<ComboBookingModalProps> = ({
         setIsSubmitting(true);
         try {
             await onSubmitBooking({ fullName, email, phoneNumber, notes });
-            // onClose(); // Đóng modal sau khi submit thành công (có thể do component cha xử lý)
+            // onClose(); // Component cha sẽ xử lý việc đóng modal sau khi submit thành công
         } catch (submissionError: any) {
             setError(submissionError.message || 'Đã xảy ra lỗi khi đặt vé. Vui lòng thử lại.');
         } finally {
@@ -72,11 +70,15 @@ const ComboBookingModal: React.FC<ComboBookingModalProps> = ({
     };
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4 overflow-y-auto">
-            <div className="bg-white p-6 sm:p-8 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+        // Lớp phủ ngoài cùng với nền gradient và căn giữa nội dung
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto bg-gradient-to-br from-indigo-50 via-white to-cyan-50 transition-opacity">
+            {/* Nội dung Modal */}
+            <div className="relative bg-white p-6 sm:p-8 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col transform transition-all">
                 {/* Header Modal */}
                 <div className="flex justify-between items-center mb-6 border-b pb-4">
-                    <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">Xác nhận Đặt Vé Combo</h2>
+                    <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">
+                        Xác nhận Đặt Vé {/* <--- THAY ĐỔI TIÊU ĐỀ */}
+                    </h2>
                     <button
                         onClick={onClose}
                         className="text-gray-500 hover:text-gray-700 transition-colors p-1 rounded-full hover:bg-gray-200"
@@ -86,7 +88,7 @@ const ComboBookingModal: React.FC<ComboBookingModalProps> = ({
                     </button>
                 </div>
 
-                {/* Nội dung Modal */}
+                {/* Nội dung có thể cuộn */}
                 <div className="overflow-y-auto pr-2 flex-grow">
                     {/* Thông tin các sự kiện đã chọn */}
                     <div className="mb-6">
@@ -187,15 +189,15 @@ const ComboBookingModal: React.FC<ComboBookingModalProps> = ({
                                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                             />
                         </div>
-                        {error && <p className="text-red-500 text-sm">{error}</p>}
+                        {error && <p className="text-red-500 text-sm text-center">{error}</p>}
                     </form>
                 </div>
 
                 {/* Footer Modal - Nút Submit */}
-                <div className="mt-8 pt-6 border-t border-gray-200">
+                <div className="mt-auto pt-6 border-t border-gray-200"> {/* Thêm mt-auto để đẩy footer xuống */}
                     <button
-                        type="submit"
-                        onClick={handleSubmit} // Gắn handleSubmit vào đây để form có thể submit bằng nút này
+                        type="submit" // Vẫn giữ type="submit" để liên kết với form
+                        onClick={handleSubmit} // onClick để trigger validation và submit
                         disabled={isSubmitting}
                         className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:from-green-600 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition duration-150 ease-in-out disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
                     >
@@ -209,7 +211,7 @@ const ComboBookingModal: React.FC<ComboBookingModalProps> = ({
                             </>
                         ) : (
                             <>
-                                <FaCalendarCheck className="mr-2" /> Xác nhận Đặt Combo
+                                <FaCalendarCheck className="mr-2" /> Xác nhận Đặt Vé {/* <--- THAY ĐỔI CHỮ TRÊN NÚT */}
                             </>
                         )}
                     </button>
