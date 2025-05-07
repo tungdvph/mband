@@ -1,7 +1,7 @@
 // src/app/(public)/cart/page.tsx
 'use client';
 
-import React, { useState, useMemo } from 'react'; // Thêm useState
+import React, { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Layout from '@/components/layout/Layout';
@@ -9,8 +9,9 @@ import { useCart } from '@/contexts/CartContext';
 import { CartItem, PromotionRule } from '@/types/cart';
 import { FaTrashAlt, FaCheckCircle, FaRegCircle, FaPlus, FaMinus, FaGift } from 'react-icons/fa';
 import { PROMOTION_RULES } from '@/config/promotions';
-import ComboBookingModal, { CustomerDetails } from '@/components/booking/ComboBookingModal'; // *** THÊM IMPORT MODAL ***
-import { toast } from 'react-toastify'; // *** THÊM IMPORT TOAST ***
+import ComboBookingModal, { CustomerDetails } from '@/components/booking/ComboBookingModal';
+import { toast } from 'react-toastify';
+import { useSession } from 'next-auth/react';
 
 export default function CartPage() {
     const {
@@ -23,14 +24,16 @@ export default function CartPage() {
         getCartItemCount,
         selectAllItemsForCheckout,
         deselectAllItemsForCheckout,
-        clearCart, // Hoặc một hàm mới để xóa các item cụ thể
+        clearCart,
     } = useCart();
     const router = useRouter();
 
-    const [showComboBookingModal, setShowComboBookingModal] = useState(false); // *** STATE CHO MODAL ***
+    const [showComboBookingModal, setShowComboBookingModal] = useState(false);
+    const { data: session, status: authStatus } = useSession();
+    const [showLoginPrompt, setShowLoginPrompt] = useState(false);
 
     const currentAppliedPromotion = getPromotionForSelectedItems();
-    const totalUniqueItemsInCart = getCartItemCount();
+    // const totalUniqueItemsInCart = getCartItemCount(); // Biến này có vẻ không được sử dụng, có thể bỏ
 
     const selectedItems: CartItem[] = useMemo(() =>
         cartItems.filter(item => selectedItemIdsForCheckout.includes(item._id)),
@@ -53,12 +56,20 @@ export default function CartPage() {
         return { discountAmount: discount, finalSelectedItemsTotal: finalTotal };
     }, [selectedItemsSubtotal, currentAppliedPromotion, selectedItems.length]);
 
-
     const handleOpenComboBookingModal = () => {
-        if (selectedItemIdsForCheckout.length > 0) {
-            setShowComboBookingModal(true);
+        if (authStatus === 'loading') {
+            toast.info("Đang kiểm tra trạng thái đăng nhập...");
+            return;
+        }
+
+        if (authStatus === 'authenticated') {
+            if (selectedItemIdsForCheckout.length > 0) {
+                setShowComboBookingModal(true);
+            } else {
+                toast.warn("Vui lòng chọn ít nhất một sự kiện để tiến hành đặt vé.");
+            }
         } else {
-            toast.warn("Vui lòng chọn ít nhất một sự kiện để tiến hành đặt vé.");
+            setShowLoginPrompt(true);
         }
     };
 
@@ -66,7 +77,6 @@ export default function CartPage() {
         setShowComboBookingModal(false);
     };
 
-    // *** HÀM XỬ LÝ SUBMIT ĐẶT VÉ COMBO ***
     const handleComboBookingSubmit = async (customerDetails: CustomerDetails) => {
         if (selectedItems.length === 0) {
             toast.error("Không có sự kiện nào được chọn để đặt.");
@@ -77,13 +87,13 @@ export default function CartPage() {
             customerDetails,
             bookedItems: selectedItems.map(item => ({
                 scheduleId: item._id,
-                eventName: item.eventName, // Gửi kèm để lưu vào bookedItems
-                date: item.date,           // Gửi kèm để lưu vào bookedItems
+                eventName: item.eventName,
+                date: item.date,
                 ticketCount: item.quantity,
-                priceAtBooking: item.price ?? 0, // Giá gốc của từng vé tại thời điểm đặt
+                priceAtBooking: item.price ?? 0,
             })),
-            totalPrice: finalSelectedItemsTotal, // Tổng tiền cuối cùng sau khuyến mãi
-            ticketCount: selectedItems.reduce((sum, item) => sum + item.quantity, 0), // Tổng số vé
+            totalPrice: finalSelectedItemsTotal,
+            ticketCount: selectedItems.reduce((sum, item) => sum + item.quantity, 0),
             status: 'pending',
             bookingType: 'combo',
             appliedPromotion: currentAppliedPromotion ? {
@@ -93,7 +103,6 @@ export default function CartPage() {
         };
 
         try {
-            // Gọi API endpoint mới (sẽ tạo ở Giai đoạn 2)
             const response = await fetch('/api/ticket-booking/combo', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -108,24 +117,18 @@ export default function CartPage() {
             const newBooking = await response.json();
             toast.success(`Đặt combo thành công! Mã đặt vé của bạn: ${newBooking?._id || 'N/A'}`);
 
-            // Xóa các mục đã đặt khỏi giỏ hàng và khỏi danh sách chọn
-            // Cần một hàm trong CartContext để xóa nhiều mục, ví dụ: removeItemsByIds(ids: string[])
-            // Tạm thời dùng clearCart, bạn cần cập nhật CartContext sau
             const idsToRemove = selectedItems.map(item => item._id);
-            idsToRemove.forEach(id => removeFromCart(id)); // Hoặc hàm removeItemsByIds
-            // deselectAllItemsForCheckout(); // Bỏ chọn tất cả sau khi đặt
+            idsToRemove.forEach(id => removeFromCart(id));
 
             setShowComboBookingModal(false);
-            router.push('/booking/history'); // Chuyển đến trang lịch sử đặt vé
+            router.push('/booking/history');
 
         } catch (error: any) {
             console.error("Lỗi khi đặt vé combo:", error);
             toast.error(error.message || "Đã xảy ra lỗi khi đặt vé combo. Vui lòng thử lại.");
-            // Ném lỗi lại để ComboBookingModal có thể bắt và hiển thị trong modal
             throw error;
         }
     };
-
 
     const isAllSelected = cartItems.length > 0 && selectedItemIdsForCheckout.length === cartItems.length;
 
@@ -141,6 +144,12 @@ export default function CartPage() {
         [...PROMOTION_RULES].sort((a, b) => a.minItems - b.minItems),
         []
     );
+
+    const closeLoginPrompt = () => setShowLoginPrompt(false);
+    const handleGoLogin = () => {
+        router.push('/login');
+        closeLoginPrompt();
+    };
 
     return (
         <Layout>
@@ -248,6 +257,7 @@ export default function CartPage() {
                                         Tổng kết {selectedItems.length} sự kiện đã chọn:
                                     </h3>
                                     <div className="space-y-2 text-gray-700">
+                                        {/* ... các chi tiết tổng kết ... */}
                                         <p className="flex justify-between">
                                             <span>Số loại sự kiện đã chọn:</span>
                                             <span className="font-medium">{selectedUniqueItemsCount}</span>
@@ -290,11 +300,11 @@ export default function CartPage() {
                             )}
                             <div className="mt-8 text-center">
                                 <button
-                                    onClick={handleOpenComboBookingModal} // *** SỬA: GỌI HÀM MỞ MODAL ***
-                                    disabled={selectedItems.length === 0}
+                                    onClick={handleOpenComboBookingModal}
+                                    disabled={selectedItems.length === 0 || authStatus === 'loading'}
                                     className="w-full md:w-auto px-10 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-lg shadow-md hover:from-green-600 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition duration-150 ease-in-out disabled:opacity-60 disabled:cursor-not-allowed"
                                 >
-                                    Tiến hành đặt vé ({selectedItems.length} sự kiện đã chọn)
+                                    {authStatus === 'loading' ? 'Đang kiểm tra...' : `Tiến hành đặt vé (${selectedItems.length} sự kiện đã chọn)`}
                                 </button>
                                 {selectedItems.length === 0 && cartItems.length > 0 && (
                                     <p className='text-sm text-red-500 mt-3'>Bạn chưa chọn sự kiện nào để đặt vé.</p>
@@ -308,6 +318,7 @@ export default function CartPage() {
                                     <FaGift className="mr-2 text-yellow-500" /> Các Ưu Đãi Khác
                                 </h3>
                                 <div className="space-y-3">
+                                    {/* ... hiển thị các quy tắc khuyến mãi ... */}
                                     {sortedPromotionRulesForDisplay.map((rule) => {
                                         const isCurrentlyAppliedToSelection = currentAppliedPromotion &&
                                             currentAppliedPromotion.minItems === rule.minItems &&
@@ -352,7 +363,7 @@ export default function CartPage() {
                     </div>
                 )}
             </div>
-            {/* *** RENDER MODAL *** */}
+
             <ComboBookingModal
                 isOpen={showComboBookingModal}
                 onClose={handleCloseComboBookingModal}
@@ -363,6 +374,56 @@ export default function CartPage() {
                 appliedPromotion={currentAppliedPromotion}
                 onSubmitBooking={handleComboBookingSubmit}
             />
+
+            {/* Khung Thông báo Yêu cầu Đăng nhập ĐÃ CẬP NHẬT */}
+            {showLoginPrompt && (
+                <div className="fixed inset-0 z-[100] flex justify-center items-center p-4">
+                    {/* Lớp phủ nền, sử dụng RGBA trực tiếp */}
+                    <div
+                        className="fixed inset-0 bg-[rgba(0,0,0,0.3)] transition-opacity" // << THAY ĐỔI Ở ĐÂY
+                        onClick={closeLoginPrompt}
+                    ></div>
+                    <div
+                        className="relative max-w-md w-full bg-yellow-50 border border-yellow-300 p-8 pt-10 rounded-lg shadow-xl text-center transform transition-all scale-95 opacity-0 animate-fade-in-scale z-[101]"
+                        style={{ animationFillMode: 'forwards', animationDuration: '0.2s' }}
+                    >
+                        {/* Nút đóng 'X' */}
+                        <button
+                            onClick={closeLoginPrompt}
+                            className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 p-1 rounded-full transition-colors"
+                            title="Đóng"
+                            aria-label="Đóng thông báo"
+                        >
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+
+                        <style jsx>{`
+                            @keyframes fade-in-scale {
+                                from { opacity: 0; transform: scale(0.95); }
+                                to { opacity: 1; transform: scale(1); }
+                            }
+                            .animate-fade-in-scale {
+                                animation-name: fade-in-scale;
+                            }
+                        `}</style>
+                        <svg className="mx-auto mb-4 w-12 h-12 text-yellow-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0-10.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.75c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.57-.598-3.75h-.152c-3.196 0-6.1-1.25-8.25-3.286Zm0 13.036h.008v.008H12v-.008Z" />
+                        </svg>
+                        <h2 className="text-2xl font-semibold text-yellow-800 mb-4">Yêu cầu Đăng nhập</h2>
+                        <p className="text-gray-700 mb-6">
+                            Bạn cần đăng nhập để tiến hành đặt vé.
+                        </p>
+                        <div className="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+                            <button onClick={handleGoLogin} className="px-6 py-2 bg-blue-600 text-white rounded-md shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-150 ease-in-out w-full sm:w-auto">
+                                Đăng nhập
+                            </button>
+                            <button onClick={closeLoginPrompt} className="px-6 py-2 bg-gray-200 text-gray-800 rounded-md shadow hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50 transition duration-150 ease-in-out w-full sm:w-auto">
+                                Hủy
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </Layout>
     );
 }
