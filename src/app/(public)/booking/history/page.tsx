@@ -1,14 +1,11 @@
-// src/app/booking/history/page.tsx
 'use client';
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import Layout from '@/components/layout/Layout';
 import Link from 'next/link';
 // *** SỬ DỤNG TicketBooking TỪ /types/ticketBooking.ts CHO CLIENT ***
+// Đảm bảo type TicketBooking trong @/types/ticketBooking.ts đã có status 'delivered'
 import { TicketBooking, BookedItemDetailClient } from '@/types/ticketBooking';
-// Bỏ import ITicketBooking từ model nếu không dùng trực tiếp ở đây nữa
-// import { ITicketBooking } from '@/lib/models/TicketBooking';
-
 
 // Hàm format giá vé
 const formatPrice = (price: number | undefined | null): string => {
@@ -41,16 +38,47 @@ const formatDateOnly = (dateString: string | Date | undefined | null): string =>
     } catch (e) { return 'Lỗi định dạng ngày'; }
 };
 
+// --- THÊM HÀM HELPER CHO TRẠNG THÁI ---
+type BookingStatusType = TicketBooking['status']; // Lấy kiểu status từ TicketBooking
+
+const getBookingStatusText = (status: BookingStatusType): string => {
+    switch (status) {
+        case 'confirmed':
+            return 'Đã xác nhận';
+        case 'cancelled':
+            return 'Đã hủy';
+        case 'delivered': // THÊM CASE MỚI
+            return 'Đã giao';
+        case 'pending':
+        default:
+            return 'Chờ xác nhận';
+    }
+};
+
+const getBookingStatusClasses = (status: BookingStatusType): string => {
+    switch (status) {
+        case 'confirmed':
+            return 'bg-green-100 text-green-800';
+        case 'cancelled':
+            return 'bg-red-100 text-red-800';
+        case 'delivered': // THÊM CASE MỚI (ví dụ màu xanh dương)
+            return 'bg-blue-100 text-blue-800';
+        case 'pending':
+        default:
+            return 'bg-yellow-100 text-yellow-800';
+    }
+};
+// --- KẾT THÚC HÀM HELPER ---
+
 
 export default function BookingHistoryPage() {
-    const { data: session, status } = useSession();
-    // *** SỬ DỤNG TicketBooking (client-side type) CHO STATE ***
+    const { data: session, status: sessionStatus } = useSession(); // Đổi tên biến status của session để tránh trùng lặp
     const [bookings, setBookings] = useState<TicketBooking[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        if (status === 'authenticated') {
+        if (sessionStatus === 'authenticated') {
             setError(null);
             setLoading(true);
             fetch('/api/user/me/booking')
@@ -59,9 +87,8 @@ export default function BookingHistoryPage() {
                     if (!res.ok) return res.json().then(errData => { throw new Error(errData.message || `Lỗi ${res.status}`) }).catch(() => { throw new Error(`Lỗi ${res.status}`) });
                     return res.json();
                 })
-                // *** API TRẢ VỀ DỮ LIỆU KHỚP VỚI TicketBooking (client-side type) ***
                 .then((data: TicketBooking[]) => {
-                    const sortedData = data.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+                    const sortedData = data.sort((a, b) => new Date(b.createdAt as string).getTime() - new Date(a.createdAt as string).getTime());
                     setBookings(Array.isArray(sortedData) ? sortedData : []);
                 })
                 .catch(error => {
@@ -70,17 +97,16 @@ export default function BookingHistoryPage() {
                     setBookings([]);
                 })
                 .finally(() => setLoading(false));
-        } else if (status === 'unauthenticated') {
+        } else if (sessionStatus === 'unauthenticated') {
             setLoading(false);
             setBookings([]);
             setError(null);
-        } else {
+        } else { // 'loading'
             setError(null);
             setLoading(true);
         }
-    }, [status]);
+    }, [sessionStatus]);
 
-    // *** HÀM renderEventDetails NHẬN TicketBooking (client-side type) ***
     const renderEventDetails = (booking: TicketBooking) => {
         if (booking.bookingType === 'combo') {
             return (
@@ -89,9 +115,7 @@ export default function BookingHistoryPage() {
                         Combo Đặt Vé ({booking.bookedItems.length} sự kiện)
                     </div>
                     <ul className="list-disc list-inside text-xs text-gray-500 mt-1">
-                        {/* booking.bookedItems giờ là BookedItemDetailClient[] */}
                         {booking.bookedItems.map((item: BookedItemDetailClient, index: number) => (
-                            // item.scheduleId giờ là string, không cần .toString()
                             <li key={item.scheduleId + index}>
                                 {item.eventName} ({item.ticketCount} vé)
                                 {item.date && ` - ${formatDateOnly(item.date)}`}
@@ -101,7 +125,6 @@ export default function BookingHistoryPage() {
                 </div>
             );
         }
-        // booking.scheduleId giờ là Pick<Schedule, ...> | null (client-side Schedule type)
         const schedule = booking.scheduleId;
         return (
             <div>
@@ -115,10 +138,10 @@ export default function BookingHistoryPage() {
 
 
     const renderContent = () => {
-        if (status === 'loading') {
-            return <div className="text-center py-10">Đang kiểm tra trạng thái đăng nhập...</div>;
+        if (sessionStatus === 'loading' && loading) { // Kết hợp cả hai trạng thái loading
+            return <div className="text-center py-10">Đang tải dữ liệu...</div>;
         }
-        if (status === 'unauthenticated') {
+        if (sessionStatus === 'unauthenticated') {
             return (
                 <div className="text-center py-10">
                     <p className="text-red-500 mb-4">Bạn cần đăng nhập để xem lịch sử đặt vé.</p>
@@ -128,56 +151,58 @@ export default function BookingHistoryPage() {
                 </div>
             );
         }
-        if (loading) {
+        // Nếu đã authenticated mà vẫn còn loading data thì hiển thị loading
+        if (sessionStatus === 'authenticated' && loading) {
             return <div className="text-center py-10">Đang tải lịch sử đặt vé...</div>;
         }
+
         if (error) {
             return <div className="text-center py-10 text-red-500">Lỗi: {error}</div>;
         }
-        if (bookings.length === 0) {
+        if (bookings.length === 0 && sessionStatus === 'authenticated' && !loading) { // Chỉ hiển thị khi đã authenticated và không loading
             return <div className="text-gray-500 text-center py-10">Bạn chưa có lượt đặt vé nào.</div>;
         }
-
-        return (
-            <div className="bg-white rounded-lg shadow overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-100">
-                        <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Chi tiết Đặt Vé</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Ngày đặt</th>
-                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider">Tổng Số vé</th>
-                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-600 uppercase tracking-wider">Tổng tiền</th>
-                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider">Trạng thái</th>
-                        </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                        {/* booking._id giờ là string, không cần .toString() */}
-                        {bookings.map((booking) => (
-                            <tr key={booking._id}>
-                                <td className="px-6 py-4 whitespace-normal">
-                                    {renderEventDetails(booking)}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    {formatDateTime(booking.createdAt)}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-900">{booking.ticketCount}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900">
-                                    {formatPrice(booking.totalPrice)}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-center">
-                                    <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${booking.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                                            booking.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                                                'bg-yellow-100 text-yellow-800'
-                                        }`}>
-                                        {booking.status === 'confirmed' ? 'Đã xác nhận' : booking.status === 'cancelled' ? 'Đã hủy' : 'Chờ xác nhận'}
-                                    </span>
-                                </td>
+        // Chỉ render bảng nếu có booking và đã authenticated
+        if (bookings.length > 0 && sessionStatus === 'authenticated') {
+            return (
+                <div className="bg-white rounded-lg shadow overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-100">
+                            <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Chi tiết Đặt Vé</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Ngày đặt</th>
+                                <th className="px-6 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider">Tổng Số vé</th>
+                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-600 uppercase tracking-wider">Tổng tiền</th>
+                                <th className="px-6 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider">Trạng thái</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-        );
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                            {bookings.map((booking) => (
+                                <tr key={booking._id}>
+                                    <td className="px-6 py-4 whitespace-normal">
+                                        {renderEventDetails(booking)}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {formatDateTime(booking.createdAt)}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-900">{booking.ticketCount}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900">
+                                        {formatPrice(booking.totalPrice)}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                                        {/* SỬ DỤNG HÀM HELPER Ở ĐÂY */}
+                                        <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getBookingStatusClasses(booking.status)}`}>
+                                            {getBookingStatusText(booking.status)}
+                                        </span>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            );
+        }
+        return null; // Trả về null nếu không rơi vào các trường hợp trên (ví dụ, session authenticated nhưng chưa có bookings và không lỗi)
     };
 
     return (
