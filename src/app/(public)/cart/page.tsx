@@ -1,319 +1,285 @@
 // src/app/(public)/cart/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useMemo } from 'react'; // *** THÊM useMemo VÀO ĐÂY ***
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image'; // Nếu muốn hiển thị ảnh sự kiện
-import { FaTrashAlt, FaPlus, FaMinus, FaShoppingBag, FaTag } from 'react-icons/fa';
 import Layout from '@/components/layout/Layout';
 import { useCart } from '@/contexts/CartContext';
-import { useSession } from 'next-auth/react'; // Để lấy thông tin user nếu đã đăng nhập
-import { useRouter } from 'next/navigation';
-import { toast, ToastContainer } from 'react-toastify'; // Dùng lại toastify
-import 'react-toastify/dist/ReactToastify.css';
-
-// Hàm format giá (có thể import từ schedule page hoặc định nghĩa lại)
-const formatPrice = (price: number | undefined | null): string => {
-    if (price === undefined || price === null) return 'N/A';
-    if (price === 0) return 'Miễn phí';
-    return price.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' });
-};
-
+import { CartItem, PromotionRule } from '@/types/cart';
+import { FaTrashAlt, FaCheckCircle, FaRegCircle, FaPlus, FaMinus, FaGift } from 'react-icons/fa';
+import { PROMOTION_RULES } from '@/config/promotions';
 
 export default function CartPage() {
     const {
-        items,
+        cartItems,
         removeFromCart,
-        updateQuantity,
-        cartCount,
-        distinctItemCount,
-        totalPrice,
-        discount,
-        finalPrice,
-        clearCart // Lấy hàm clearCart
+        selectedItemIdsForCheckout,
+        toggleSelectItemForCheckout,
+        updateItemQuantity,
+        getPromotionForSelectedItems,
+        // getCartItemCount, // Có thể không cần dùng trực tiếp nếu đã có sortedPromotionRulesForDisplay
+        // getTotalTicketCount,
+        selectAllItemsForCheckout,
+        deselectAllItemsForCheckout,
     } = useCart();
-    const { data: session } = useSession(); // Lấy session để điền form nếu có
     const router = useRouter();
 
-    // --- State cho Form Checkout ---
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [bookingSuccess, setBookingSuccess] = useState(false);
-    const [paymentMethod, setPaymentMethod] = useState('cod'); // Mặc định COD
-    const [fullName, setFullName] = useState('');
-    const [email, setEmail] = useState('');
-    const [phoneNumber, setPhoneNumber] = useState('');
-    const [address, setAddress] = useState('');
-    const [notes, setNotes] = useState(''); // Thêm trường ghi chú nếu muốn
+    const currentAppliedPromotion = getPromotionForSelectedItems();
 
-    // Tự động điền thông tin nếu user đã đăng nhập
-    useEffect(() => {
-        if (session?.user) {
-            setFullName(session.user.name ?? '');
-            setEmail(session.user.email ?? '');
-            // Lấy SĐT hoặc địa chỉ từ user profile nếu có
-            // setPhoneNumber(session.user.phoneNumber ?? '');
-            // setAddress(session.user.address ?? '');
-        }
-    }, [session]);
-
-    // --- Hàm xử lý Checkout ---
-    const handleCheckout = async (event: React.FormEvent<HTMLFormElement>) => {
-        event.preventDefault(); // Ngăn form submit mặc định
-        setIsSubmitting(true);
-
-        if (!fullName || !email || !phoneNumber || (paymentMethod === 'cod' && !address)) {
-            toast.error("Vui lòng điền đầy đủ thông tin bắt buộc (*).");
-            setIsSubmitting(false);
-            return;
-        }
-
-        if (items.length === 0) {
-            toast.error("Giỏ hàng của bạn đang trống.");
-            setIsSubmitting(false);
-            return;
-        }
-
-        try {
-            // Tạo payload gửi lên API
-            const payload = {
-                cartItems: items.map(item => ({ // Chỉ gửi thông tin cần thiết
-                    scheduleId: item._id,
-                    eventName: item.eventName,
-                    quantity: item.quantity,
-                    price: item.price,
-                })),
-                customerInfo: {
-                    fullName,
-                    email,
-                    phoneNumber,
-                    address: paymentMethod === 'cod' ? address : undefined, // Chỉ gửi địa chỉ nếu COD
-                    userId: session?.user?.id, // Gửi ID user nếu đăng nhập
-                    notes,
-                },
-                payment: {
-                    method: paymentMethod,
-                    totalAmount: totalPrice,
-                    discountAmount: discount,
-                    finalAmount: finalPrice,
-                },
-                distinctItemCount: distinctItemCount // Gửi số loại SP để backend có thể kiểm tra lại discount
-            };
-
-            // Gọi API endpoint mới cho checkout giỏ hàng
-            const response = await fetch('/api/cart-checkout', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ error: 'Đặt hàng thất bại và không thể đọc lỗi chi tiết.' }));
-                throw new Error(errorData.error || 'Đặt hàng thất bại.');
-            }
-
-            // const result = await response.json(); // Dữ liệu trả về từ API (ví dụ: mã đơn hàng)
-            toast.success('Đặt hàng thành công! Cảm ơn bạn.');
-            setBookingSuccess(true);
-            clearCart(); // Xóa giỏ hàng sau khi thành công
-
-        } catch (err) {
-            console.error('Checkout error:', err);
-            toast.error(err instanceof Error ? err.message : 'Đã xảy ra lỗi không mong muốn khi đặt hàng.');
-        } finally {
-            setIsSubmitting(false);
+    const handleProceedToCheckout = () => {
+        if (selectedItemIdsForCheckout.length > 0) {
+            router.push('/checkout');
+        } else {
+            alert("Vui lòng chọn ít nhất một sự kiện để tiến hành đặt vé.");
         }
     };
 
-    // --- Render ---
+    const selectedItems: CartItem[] = cartItems.filter(item =>
+        selectedItemIdsForCheckout.includes(item._id)
+    );
+    const selectedUniqueItemsCount = selectedItems.length;
 
-    if (bookingSuccess) {
-        return (
-            <Layout>
-                <ToastContainer />
-                <div className="container mx-auto px-4 py-16 text-center">
-                    <div className="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-lg">
-                        <svg className="mx-auto mb-4 w-16 h-16 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        <h1 className="text-3xl font-bold mb-4 text-gray-800">Đặt hàng thành công!</h1>
-                        <p className="mb-6 text-gray-600">
-                            Cảm ơn bạn đã đặt hàng. Chúng tôi sẽ xử lý đơn hàng của bạn sớm nhất có thể.
-                            {paymentMethod === 'cod' && " Shipper sẽ liên hệ với bạn để giao hàng."}
-                            {paymentMethod === 'online' && " Vui lòng kiểm tra email để xem hướng dẫn thanh toán (nếu có)."}
-                        </p>
-                        <div className="flex justify-center gap-4">
-                            <Link href="/schedule" className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
-                                Tiếp tục mua sắm
-                            </Link>
-                            <Link href="/" className="px-6 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors">
-                                Về trang chủ
-                            </Link>
-                        </div>
-                    </div>
-                </div>
-            </Layout>
-        );
+    const selectedItemsSubtotal = selectedItems.reduce(
+        (sum, item) => sum + (item.price ?? 0) * item.quantity,
+        0
+    );
+
+    let discountAmount = 0;
+    let finalSelectedItemsTotal = selectedItemsSubtotal;
+
+    if (currentAppliedPromotion && selectedItems.length > 0) {
+        discountAmount = (selectedItemsSubtotal * currentAppliedPromotion.discountPercentage) / 100;
+        finalSelectedItemsTotal = selectedItemsSubtotal - discountAmount;
     }
+
+    const isAllSelected = cartItems.length > 0 && selectedItemIdsForCheckout.length === cartItems.length;
+
+    const handleToggleSelectAll = () => {
+        if (isAllSelected) {
+            deselectAllItemsForCheckout();
+        } else {
+            selectAllItemsForCheckout();
+        }
+    };
+
+    // Sắp xếp PROMOTION_RULES theo minItems tăng dần để hiển thị gợi ý tốt hơn
+    const sortedPromotionRulesForDisplay = useMemo(() =>
+        [...PROMOTION_RULES].sort((a, b) => a.minItems - b.minItems),
+        [] // PROMOTION_RULES là hằng số từ import, không thay đổi nên dependency array rỗng
+    );
 
     return (
         <Layout>
-            <ToastContainer />
-            <div className="container mx-auto px-4 py-12 md:py-16">
-                <h1 className="text-3xl md:text-4xl font-bold mb-8 text-gray-800 flex items-center">
-                    <FaShoppingBag className="mr-3 text-indigo-600" /> Giỏ hàng của bạn
-                </h1>
+            <div className="container mx-auto px-4 py-16 min-h-screen">
+                <h1 className="text-3xl md:text-4xl font-bold mb-8 text-center text-gray-800">Giỏ Hàng Của Bạn</h1>
 
-                {items.length === 0 ? (
-                    <div className="text-center py-16 bg-white rounded-lg shadow">
-                        <p className="text-xl text-gray-500 mb-6">Giỏ hàng của bạn đang trống.</p>
-                        <Link href="/schedule" className="inline-block px-8 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold rounded-lg shadow hover:from-blue-600 hover:to-indigo-700 transition duration-150">
-                            Khám phá sự kiện
+                {cartItems.length === 0 ? (
+                    <div className="text-center text-gray-500 bg-white p-10 rounded-lg shadow">
+                        {/* ... (phần giỏ hàng trống) ... */}
+                        <p className="text-xl mb-4">Giỏ hàng của bạn đang trống.</p>
+                        <Link href="/schedule">
+                            <span className="text-blue-600 hover:text-blue-800 font-semibold">
+                                Xem lịch trình và thêm sự kiện!
+                            </span>
                         </Link>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
-                        {/* Cột danh sách sản phẩm */}
-                        <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow-md">
-                            <h2 className="text-xl font-semibold mb-6 border-b pb-3 text-gray-700">Chi tiết giỏ hàng ({cartCount} vé)</h2>
-                            <div className="space-y-5">
-                                {items.map(item => (
-                                    <div key={item._id} className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b pb-5 last:border-b-0">
-                                        {/* Thông tin sản phẩm */}
-                                        <div className="flex items-center gap-4 flex-grow w-full sm:w-auto">
-                                            {/* Có thể thêm ảnh nếu Schedule có trường image */}
-                                            {/* <Image src={item.imageUrl || '/placeholder.png'} alt={item.eventName} width={60} height={60} className="rounded" /> */}
-                                            <div className="flex-grow">
-                                                <Link href={`/schedule/${item._id}`} className="font-semibold text-gray-800 hover:text-indigo-600 text-base line-clamp-2">
-                                                    {item.eventName}
-                                                </Link>
-                                                <p className="text-sm text-gray-500">{formatPrice(item.price)}</p>
-                                            </div>
-                                        </div>
-
-                                        {/* Điều chỉnh số lượng và Xóa */}
-                                        <div className="flex items-center gap-3 sm:gap-5 w-full sm:w-auto justify-between sm:justify-end">
-                                            {/* Số lượng */}
-                                            <div className="flex items-center border border-gray-300 rounded">
-                                                <button
-                                                    onClick={() => updateQuantity(item._id, item.quantity - 1)}
-                                                    className="px-2 py-1 text-gray-600 hover:bg-gray-100 disabled:opacity-50"
-                                                    disabled={item.quantity <= 1}
-                                                    title="Giảm số lượng"
-                                                >
-                                                    <FaMinus size={12} />
-                                                </button>
-                                                <input
-                                                    type="number"
-                                                    value={item.quantity}
-                                                    onChange={(e) => {
-                                                        const newQuantity = parseInt(e.target.value, 10);
-                                                        if (!isNaN(newQuantity) && newQuantity >= 0) { // Cho phép nhập số 0 để xóa
-                                                            updateQuantity(item._id, newQuantity);
-                                                        } else if (e.target.value === '') {
-                                                            // Nếu xóa trắng input, có thể tạm coi là 1 hoặc chờ blur
-                                                        }
-                                                    }}
-                                                    onBlur={(e) => { // Xử lý khi người dùng bỏ focus khỏi input
-                                                        const finalQuantity = parseInt(e.target.value, 10);
-                                                        if (isNaN(finalQuantity) || finalQuantity <= 0) {
-                                                            updateQuantity(item._id, 1); // Nếu không hợp lệ, quay về 1
-                                                            // Hoặc gọi removeFromCart nếu muốn xóa khi nhập 0
-                                                            // if(finalQuantity === 0) removeFromCart(item._id)
-                                                        }
-                                                    }}
-                                                    className="w-12 text-center border-l border-r border-gray-300 text-sm py-1 focus:outline-none"
-                                                    min="1"
-                                                />
-                                                <button
-                                                    onClick={() => updateQuantity(item._id, item.quantity + 1)}
-                                                    className="px-2 py-1 text-gray-600 hover:bg-gray-100"
-                                                    title="Tăng số lượng"
-                                                >
-                                                    <FaPlus size={12} />
-                                                </button>
-                                            </div>
-
-                                            {/* Tổng tiền item */}
-                                            <span className="font-semibold text-gray-800 w-24 text-right">{formatPrice((item.price ?? 0) * item.quantity)}</span>
-
-                                            {/* Nút xóa */}
+                    <div className="bg-white p-6 md:p-8 rounded-lg shadow-lg">
+                        {/* ... (phần còn lại của component giữ nguyên như trước) ... */}
+                        <div className="mb-4 flex justify-end">
+                            <button
+                                onClick={handleToggleSelectAll}
+                                className="px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-800 border border-blue-300 rounded-md hover:bg-blue-50 transition-colors"
+                            >
+                                {isAllSelected ? `Bỏ chọn tất cả (${selectedItemIdsForCheckout.length})` : `Chọn tất cả (${cartItems.length})`}
+                            </button>
+                        </div>
+                        <ul className="divide-y divide-gray-200">
+                            {cartItems.map((item: CartItem) => {
+                                const isSelected = selectedItemIdsForCheckout.includes(item._id);
+                                return (
+                                    <li key={item._id} className={`py-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 ${isSelected ? 'bg-green-50 -mx-4 px-4 rounded-lg shadow-sm border border-green-200' : 'border-b border-gray-200 last:border-b-0'}`}>
+                                        <div className="flex items-center flex-shrink-0 mr-4 order-1 md:order-none self-center md:self-auto">
                                             <button
-                                                onClick={() => removeFromCart(item._id)}
-                                                className="text-red-500 hover:text-red-700"
-                                                title="Xóa khỏi giỏ hàng"
+                                                onClick={() => toggleSelectItemForCheckout(item._id)}
+                                                title={isSelected ? "Bỏ chọn" : "Chọn để đặt vé"}
+                                                className={`p-2 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 ${isSelected
+                                                    ? 'text-green-600 bg-green-100 hover:bg-green-200 focus:ring-green-500'
+                                                    : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50 focus:ring-blue-500'
+                                                    }`}
                                             >
-                                                <FaTrashAlt size={16} />
+                                                {isSelected ? <FaCheckCircle className="w-6 h-6" /> : <FaRegCircle className="w-6 h-6" />}
                                             </button>
                                         </div>
+
+                                        <div className="flex-grow text-center md:text-left mb-4 md:mb-0 order-3 md:order-none w-full md:w-auto">
+                                            <h2 className="text-lg font-semibold text-gray-900">{item.eventName}</h2>
+                                            <p className="text-sm text-gray-600">
+                                                {new Date(item.date).toLocaleDateString('vi-VN')} | {item.startTime} | {item.venue.name}
+                                            </p>
+                                            <p className="text-sm font-bold text-indigo-600 mt-1">
+                                                Giá vé: {item.price ? `${item.price.toLocaleString('vi-VN')} VND` : 'Miễn phí'}
+                                            </p>
+                                            <div className="flex items-center justify-center md:justify-start mt-3 space-x-2">
+                                                <button
+                                                    onClick={() => updateItemQuantity(item._id, item.quantity - 1)}
+                                                    disabled={item.quantity <= 1 && item.price !== 0}
+                                                    className="p-1.5 border rounded text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    title="Giảm số lượng"
+                                                >
+                                                    <FaMinus className="w-3 h-3" />
+                                                </button>
+                                                <span className="px-3 py-1 text-gray-800 font-medium tabular-nums w-8 text-center">{item.quantity}</span>
+                                                <button
+                                                    onClick={() => updateItemQuantity(item._id, item.quantity + 1)}
+                                                    className="p-1.5 border rounded text-gray-600 hover:bg-gray-100"
+                                                    title="Tăng số lượng"
+                                                >
+                                                    <FaPlus className="w-3 h-3" />
+                                                </button>
+                                            </div>
+                                            <p className="text-sm font-semibold text-gray-800 mt-2">
+                                                Thành tiền: {((item.price ?? 0) * item.quantity).toLocaleString('vi-VN')} VND
+                                            </p>
+                                        </div>
+
+                                        <div className="flex items-center flex-shrink-0 order-2 md:order-none ml-auto md:ml-0 self-start md:self-center">
+                                            <button
+                                                onClick={() => removeFromCart(item._id)}
+                                                title="Xóa khỏi giỏ hàng"
+                                                className="p-2 rounded-full text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                            >
+                                                <FaTrashAlt className="w-5 h-5" />
+                                                <span className="sr-only">Xóa</span>
+                                            </button>
+                                        </div>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+
+                        {/* === PHẦN THANH TOÁN === */}
+                        <div className="mt-10 pt-6 border-t border-gray-300">
+                            <h2 className="text-2xl font-semibold mb-6 text-center text-gray-800">Thanh Toán Đơn Hàng</h2>
+                            {selectedItems.length > 0 ? (
+                                <div className="bg-indigo-50 p-6 rounded-lg shadow">
+                                    <h3 className="text-xl font-semibold mb-4 text-indigo-800">
+                                        Tổng kết {selectedItems.length} sự kiện đã chọn:
+                                    </h3>
+                                    <div className="space-y-2 text-gray-700">
+                                        <p className="flex justify-between">
+                                            <span>Số loại sự kiện đã chọn:</span>
+                                            <span className="font-medium">{selectedUniqueItemsCount}</span>
+                                        </p>
+                                        <p className="flex justify-between">
+                                            <span>Tổng số vé đã chọn:</span>
+                                            <span className="font-medium">
+                                                {selectedItems.reduce((sum, currentItem) => sum + currentItem.quantity, 0)}
+                                            </span>
+                                        </p>
+                                        <hr className="my-2" />
+                                        <p className="flex justify-between text-lg">
+                                            <span>Tạm tính:</span>
+                                            <span className="font-semibold">{selectedItemsSubtotal.toLocaleString('vi-VN')} VND</span>
+                                        </p>
+
+                                        {currentAppliedPromotion && (
+                                            <>
+                                                <div className='my-3 p-3 bg-green-100 border border-green-300 rounded-md text-green-700'>
+                                                    <p className='font-semibold text-sm'>
+                                                        🎉 Áp dụng: {currentAppliedPromotion.description} (-{currentAppliedPromotion.discountPercentage}%)
+                                                    </p>
+                                                </div>
+                                                <p className="flex justify-between text-lg text-red-600">
+                                                    <span>Giảm giá:</span>
+                                                    <span className="font-semibold">-{discountAmount.toLocaleString('vi-VN')} VND</span>
+                                                </p>
+                                            </>
+                                        )}
+                                        <hr className="my-3 border-t-2 border-dashed border-indigo-200" />
+                                        <p className="flex justify-between text-2xl font-bold text-indigo-600">
+                                            <span>Tổng cộng:</span>
+                                            <span>{finalSelectedItemsTotal.toLocaleString('vi-VN')} VND</span>
+                                        </p>
                                     </div>
-                                ))}
+                                </div>
+                            ) : (
+                                <p className="text-center text-gray-500 my-8">
+                                    Vui lòng chọn các sự kiện bạn muốn đặt vé từ danh sách ở trên.
+                                </p>
+                            )}
+
+                            <div className="mt-8 text-center">
+                                <button
+                                    onClick={handleProceedToCheckout}
+                                    disabled={selectedItems.length === 0}
+                                    className="w-full md:w-auto px-10 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-lg shadow-md hover:from-green-600 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition duration-150 ease-in-out disabled:opacity-60 disabled:cursor-not-allowed"
+                                >
+                                    Tiến hành đặt vé ({selectedItems.length} sự kiện đã chọn)
+                                </button>
+                                {selectedItems.length === 0 && cartItems.length > 0 && (
+                                    <p className='text-sm text-red-500 mt-3'>Bạn chưa chọn sự kiện nào để đặt vé.</p>
+                                )}
                             </div>
                         </div>
 
-                        {/* Cột Tóm tắt đơn hàng và Checkout */}
-                        <div className="lg:col-span-1">
-                            <form onSubmit={handleCheckout} className="bg-white p-6 rounded-lg shadow-md sticky top-24"> {/* Sticky summary */}
-                                <h2 className="text-xl font-semibold mb-5 border-b pb-3 text-gray-700">Tóm tắt đơn hàng</h2>
+                        {/* === PHẦN GỢI Ý KHUYẾN MÃI === */}
+                        {cartItems.length > 0 && (
+                            <div className="mt-12 pt-8 border-t border-gray-300">
+                                <h3 className="text-xl font-semibold mb-4 text-center text-gray-700 flex items-center justify-center">
+                                    <FaGift className="mr-2 text-yellow-500" /> Các Ưu Đãi Khác
+                                </h3>
+                                <div className="space-y-3">
+                                    {sortedPromotionRulesForDisplay.map((rule) => {
+                                        const isCurrentlyAppliedToSelection = currentAppliedPromotion &&
+                                            currentAppliedPromotion.minItems === rule.minItems &&
+                                            currentAppliedPromotion.discountPercentage === rule.discountPercentage;
 
-                                <div className="space-y-3 mb-5 text-sm">
-                                    <div className="flex justify-between">
-                                        <span className="text-gray-600">Tạm tính ({distinctItemCount} loại vé):</span>
-                                        <span className="font-medium text-gray-800">{formatPrice(totalPrice)}</span>
-                                    </div>
-                                    {discount > 0 && (
-                                        <div className="flex justify-between text-green-600">
-                                            {/* Bọc toàn bộ chuỗi text trong {} */}
-                                            <span><FaTag className="inline mr-1" />{' Giảm giá (>=3 loại):'}</span>
-                                            <span className="font-medium">-{formatPrice(discount)}</span>
-                                        </div>
-                                    )}
-                                    <div className="flex justify-between text-lg font-bold pt-3 border-t mt-3">
-                                        <span>Tổng cộng:</span>
-                                        <span>{formatPrice(finalPrice)}</span>
-                                    </div>
+                                        const itemsNeededForThisRuleBasedOnSelection = rule.minItems - selectedUniqueItemsCount;
+
+                                        if (isCurrentlyAppliedToSelection) {
+                                            // Không hiển thị lại nếu nó đã là KM đang được áp dụng cho lựa chọn,
+                                            // vì nó đã được hiển thị ở phần tổng kết thanh toán.
+                                            return null;
+                                        }
+
+                                        if (itemsNeededForThisRuleBasedOnSelection <= 0) {
+                                            // Đủ điều kiện với lựa chọn hiện tại, nhưng không phải là KM tốt nhất được áp dụng
+                                            // hoặc người dùng có thể chọn thêm để đạt KM này nếu nó tốt hơn
+                                            return (
+                                                <div key={rule.description} className="p-3 bg-blue-50 border border-blue-200 rounded-md text-sm">
+                                                    <p className="text-blue-700">
+                                                        Bạn <span className="font-semibold">đã đủ điều kiện</span> cho: <span className="font-semibold">"{rule.description}"</span> (giảm {rule.discountPercentage}%) với các sự kiện đang chọn.
+                                                        {currentAppliedPromotion && currentAppliedPromotion.discountPercentage < rule.discountPercentage && (
+                                                            <span className="block text-xs italic">Đây là ưu đãi tốt hơn khuyến mãi hiện tại của bạn!</span>
+                                                        )}
+                                                        {!currentAppliedPromotion && (
+                                                            <span className="block text-xs italic">Hãy chọn các sự kiện này để nhận ưu đãi!</span>
+                                                        )}
+                                                    </p>
+                                                </div>
+                                            );
+                                        } else {
+                                            // Gợi ý mua thêm
+                                            return (
+                                                <div key={rule.description} className="p-3 bg-yellow-50 border border-yellow-200 rounded-md text-sm">
+                                                    <p className="text-yellow-700">
+                                                        💡 Chọn thêm <span className="font-bold">{itemsNeededForThisRuleBasedOnSelection} loại sự kiện khác</span> vào lựa chọn của bạn để được: <span className="font-semibold">"{rule.description}"</span> (giảm {rule.discountPercentage}%).
+                                                    </p>
+                                                </div>
+                                            );
+                                        }
+                                    })}
+                                    {PROMOTION_RULES.length === 0 && <p className="text-center text-gray-500">Hiện chưa có chương trình khuyến mãi nào.</p>}
+                                    {PROMOTION_RULES.length > 0 && sortedPromotionRulesForDisplay.every(rule => (currentAppliedPromotion &&
+                                        currentAppliedPromotion.minItems === rule.minItems &&
+                                        currentAppliedPromotion.discountPercentage === rule.discountPercentage) || (rule.minItems - selectedUniqueItemsCount > 0)) && !currentAppliedPromotion && selectedUniqueItemsCount === 0 && (
+                                            <p className="text-center text-gray-500 italic text-sm mt-4">Chọn sự kiện để xem các ưu đãi hấp dẫn!</p>
+                                        )}
                                 </div>
-
-                                <h2 className="text-xl font-semibold mb-4 border-t pt-4 text-gray-700">Thông tin đặt hàng</h2>
-                                <div className="space-y-4 mb-6">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Họ và tên <span className="text-red-500">*</span></label>
-                                        <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" placeholder="Nguyễn Văn A" required />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Email <span className="text-red-500">*</span></label>
-                                        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" placeholder="example@domain.com" required />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Số điện thoại <span className="text-red-500">*</span></label>
-                                        <input type="tel" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" placeholder="0987654321" required />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Phương thức thanh toán</label>
-                                        <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white focus:ring-indigo-500 focus:border-indigo-500">
-                                            <option value="cod">Thanh toán khi nhận hàng (COD)</option>
-                                            <option value="online" disabled>Thanh toán online (Sắp có)</option> {/* Tạm thời disable */}
-                                        </select>
-                                    </div>
-                                    {paymentMethod === 'cod' && (
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Địa chỉ nhận vé/hàng <span className="text-red-500">*</span></label>
-                                            <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" placeholder="Số nhà, đường, phường, quận, thành phố" required={paymentMethod === 'cod'} />
-                                        </div>
-                                    )}
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Ghi chú (Tùy chọn)</label>
-                                        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" placeholder="Yêu cầu thêm (ví dụ: thời gian giao hàng)..."></textarea>
-                                    </div>
-                                </div>
-
-                                <button
-                                    type="submit"
-                                    disabled={isSubmitting || items.length === 0}
-                                    className="w-full px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-lg shadow-md hover:from-green-600 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition duration-150 ease-in-out disabled:opacity-60 disabled:cursor-not-allowed"
-                                >
-                                    {isSubmitting ? 'Đang xử lý...' : 'Xác nhận đặt hàng'}
-                                </button>
-                                <p className="text-xs text-gray-500 mt-3 text-center">Bằng việc nhấn nút, bạn đồng ý với Điều khoản dịch vụ của chúng tôi.</p>
-                            </form>
-                        </div>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>

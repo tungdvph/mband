@@ -5,7 +5,8 @@ import { useState, useEffect, useMemo, ChangeEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import Layout from '@/components/layout/Layout';
-import { Schedule } from '@/types/schedule'; // Đảm bảo type này có trường 'price?: number'
+import { useCart } from '@/contexts/CartContext';
+import { Schedule } from '@/types/schedule';
 // Import thêm icon cho giá vé và giỏ hàng
 import {
   FaCalendarAlt,
@@ -60,7 +61,7 @@ export default function ScheduleListPage() {
 
   const { data: session, status } = useSession();
   const router = useRouter();
-
+  const { addToCart } = useCart();
   // Effect fetch dữ liệu (giữ nguyên)
   useEffect(() => {
     const fetchSchedules = async () => {
@@ -128,19 +129,12 @@ export default function ScheduleListPage() {
   };
 
   // *** MỚI: Handler cho nút Thêm vào giỏ hàng (Placeholder) ***
-  const handleAddToCart = (scheduleId: string) => {
-    console.log("Thêm vào giỏ hàng:", scheduleId);
-    if (status === 'loading') return;
-    if (status !== 'authenticated') {
-      setShowLoginPrompt(true); // Yêu cầu đăng nhập
-      return;
-    }
-    // --- Logic thêm vào giỏ hàng thực tế của bạn ở đây ---
-    // Ví dụ: Gọi API, cập nhật state,...
-    alert(`Đã thêm lịch trình ${scheduleId} vào giỏ (chức năng demo)`);
-    // Có thể thêm thông báo thành công (toast)
+  const handleAddToCart = (schedule: Schedule) => { // Nhận toàn bộ object schedule
+    console.log("Attempting to add to cart:", schedule._id);
+    // Không cần kiểm tra đăng nhập ở đây nữa nếu CartContext không yêu cầu
+    // Việc kiểm tra đăng nhập sẽ thực hiện ở trang Checkout
+    addToCart(schedule); // Gọi hàm từ context
   };
-
   // Handler Đặt vé (giữ nguyên)
   const handleBookTicketClick = (scheduleId: string) => {
     if (status === 'loading') return;
@@ -296,16 +290,13 @@ export default function ScheduleListPage() {
                     {/* Chỉ hiển thị nút này cho các sự kiện có thể thêm vào giỏ (ví dụ: concert và chưa bị hủy) */}
                     {(schedule.type === 'concert' && schedule.status !== 'cancelled') ? (
                       <button
-                        onClick={() => handleAddToCart(schedule._id)}
-                        disabled={status === 'loading'}
-                        className={`px-4 py-1.5 text-xs font-medium rounded-md shadow-sm transition ease-in-out duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 ${status === 'loading'
-                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                            // Màu cam cho nút Thêm vào giỏ
-                            : 'bg-orange-500 text-white hover:bg-orange-600 focus:ring-orange-500'
-                          }`}
+                        // onClick={() => handleAddToCart(schedule._id)} // CŨ
+                        onClick={() => handleAddToCart(schedule)} // *** MỚI: Truyền cả object schedule ***
+                        // disabled={status === 'loading'} // Có thể bỏ disable theo status auth nếu không cần login để thêm vào giỏ
+                        className={`px-4 py-1.5 text-xs font-medium rounded-md shadow-sm ...`} // Giữ lại các class khác
                         title="Thêm sự kiện vào giỏ hàng"
                       >
-                        <FaShoppingCart className="inline mr-1" aria-hidden="true" /> {/* Thêm icon */}
+                        <FaShoppingCart className="inline mr-1" aria-hidden="true" />
                         Thêm vào giỏ
                       </button>
                     ) : (
@@ -318,8 +309,8 @@ export default function ScheduleListPage() {
                         onClick={() => handleViewDetailsClick(schedule._id)}
                         disabled={status === 'loading'}
                         className={`px-4 py-1.5 text-xs font-medium rounded-md shadow-sm transition ease-in-out duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${status === 'loading'
-                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                            : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
                           }`}
                         title="Xem thông tin chi tiết lịch trình"
                       >
@@ -331,8 +322,8 @@ export default function ScheduleListPage() {
                           onClick={() => handleBookTicketClick(schedule._id)}
                           disabled={status === 'loading'}
                           className={`px-4 py-1.5 text-white text-xs font-medium rounded-md shadow-sm transition ease-in-out duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 ${status === 'loading'
-                              ? 'bg-gray-400 cursor-not-allowed'
-                              : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 focus:ring-green-500'
+                            ? 'bg-gray-400 cursor-not-allowed'
+                            : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 focus:ring-green-500'
                             }`}
                           title="Đặt vé cho sự kiện này"
                         >

@@ -1,57 +1,137 @@
 // /lib/models/Booking.js
-import mongoose, { Document, Schema, Types } from 'mongoose';
+import mongoose, { Schema, Types } from 'mongoose';
 
-// Interface cho TypeScript (tương tự như trong booking.ts nhưng đặt ở đây cho tiện tham chiếu)
-export interface IBooking extends Document {
-  // userId?: Types.ObjectId; // Có thể thêm nếu cần liên kết với user
-  eventName: string;
-  eventDate: Date;
-  location: string;
-  eventType: 'wedding' | 'birthday' | 'corporate' | 'festival' | 'other';
-  duration: number; // Giờ
-  expectedGuests: number;
-  requirements?: string;
-  budget?: number;
-  status: 'pending' | 'confirmed' | 'cancelled';
-  contactName: string;
-  contactPhone: string;
-  contactEmail: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
+// --- Schema cho Booking (Mua vé sự kiện) ---
 
-const bookingSchema = new Schema<IBooking>({
-  // userId: { type: Schema.Types.ObjectId, ref: 'User' }, // Ví dụ nếu cần liên kết User
-  eventName: { type: String, required: true },
-  eventDate: { type: Date, required: true },
-  location: { type: String, required: true },
-  eventType: {
-    type: String,
-    enum: ['wedding', 'birthday', 'corporate', 'festival', 'other'],
+const bookingSchema = new Schema({
+  // === Liên kết và Thông tin cốt lõi ===
+  user: { // ID của người dùng đã đăng nhập (nếu có)
+    type: Schema.Types.ObjectId,
+    ref: 'User', // Tham chiếu đến model User của bạn (nếu có)
+    required: false // Có thể không bắt buộc nếu cho phép khách đặt vé
+  },
+  schedule: { // ID của sự kiện (Schedule) được đặt vé
+    type: Schema.Types.ObjectId,
+    ref: 'Schedule', // Tham chiếu đến model Schedule
+    required: true
+  },
+  scheduleDetails: { // Lưu trữ snapshot thông tin sự kiện tại thời điểm đặt vé
+    type: { // Định nghĩa là một sub-document
+      eventName: { type: String, required: true },
+      date: { type: Date, required: true },
+      startTime: { type: String, required: true },
+      venueName: { type: String, required: true }, // Lấy từ schedule.venue.name
+      // Thêm các trường khác nếu cần (ví dụ: city)
+    },
     required: true,
+    _id: false // Không cần _id cho sub-document này
   },
-  duration: { type: Number, required: true, min: 1 },
-  expectedGuests: { type: Number, required: true, min: 1 },
-  requirements: { type: String },
-  budget: { type: Number, min: 0 },
-  status: {
+  quantity: { // Số lượng vé (thường là 1 trong luồng checkout từ giỏ hàng này)
+    type: Number,
+    required: true,
+    min: [1, 'Số lượng vé phải ít nhất là 1'],
+    default: 1
+  },
+
+  // === Thông tin Giá cả và Khuyến mãi ===
+  originalPricePerTicket: { // Giá gốc của 1 vé tại thời điểm đặt
+    type: Number,
+    required: true,
+    min: [0, 'Giá gốc không thể âm']
+  },
+  appliedPromotion: { // Thông tin khuyến mãi đã được áp dụng (nếu có)
+    type: { // Sub-document
+      description: { type: String, required: true }, // Mô tả KM (ví dụ: "Giảm 10% khi mua từ 3 sự kiện")
+      discountPercentage: { type: Number, required: true, min: 0, max: 100 }, // % giảm giá
+      minCartItems: { type: Number, required: true, min: 1 }, // Số item tối thiểu trong giỏ để được KM này
+      // code?: { type: String } // Có thể thêm mã KM nếu dùng mã
+      _id: false
+    },
+    required: false, // Không bắt buộc, chỉ có khi KM được áp dụng
+    default: null
+  },
+  discountAmount: { // Tổng số tiền được giảm giá
+    type: Number,
+    required: true,
+    default: 0,
+    min: [0, 'Tiền giảm giá không thể âm']
+  },
+  finalPrice: { // Giá cuối cùng khách hàng phải trả sau khi trừ KM
+    type: Number,
+    required: true,
+    min: [0, 'Giá cuối cùng không thể âm']
+  },
+
+  // === Thông tin Khách hàng ===
+  customerInfo: {
+    type: { // Sub-document
+      fullName: { type: String, required: [true, 'Họ tên là bắt buộc'] },
+      email: { type: String, required: [true, 'Email là bắt buộc'] /*, match: /.../ */ }, // Có thể thêm regex validate email
+      phoneNumber: { type: String, required: [true, 'Số điện thoại là bắt buộc'] },
+      address: { // Địa chỉ giao hàng (chỉ bắt buộc nếu thanh toán COD)
+        type: String,
+        required: function () {
+          // `this` ở đây tham chiếu đến document Booking đang được tạo/cập nhật
+          // Chỉ yêu cầu địa chỉ nếu phương thức thanh toán là 'cod'
+          // Lưu ý: validation phức tạp kiểu này đôi khi dễ thực hiện ở tầng API hơn
+          // return this.paymentMethod === 'cod';
+          return false; // Tạm thời không bắt buộc ở Schema, kiểm tra ở API route
+        }
+      },
+      _id: false
+    },
+    required: true
+  },
+
+  // === Thông tin Thanh toán và Trạng thái ===
+  paymentMethod: {
     type: String,
-    enum: ['pending', 'confirmed', 'cancelled'],
-    default: 'pending',
+    enum: {
+      values: ['cod', 'online'], // Các phương thức được chấp nhận
+      message: 'Phương thức thanh toán không hợp lệ: {VALUE}'
+    },
+    required: [true, 'Phương thức thanh toán là bắt buộc']
   },
-  contactName: { type: String, required: true },
-  contactPhone: { type: String, required: true },
-  contactEmail: { type: String, required: true },
+  // paymentStatus: { // Có thể thêm trạng thái thanh toán riêng
+  //   type: String,
+  //   enum: ['pending', 'paid', 'failed', 'refunded'],
+  //   default: 'pending'
+  // },
+  bookingStatus: { // Trạng thái chung của đơn đặt vé
+    type: String,
+    enum: {
+      values: ['pending', 'confirmed', 'cancelled', 'completed'],
+      message: 'Trạng thái đặt vé không hợp lệ: {VALUE}'
+    },
+    default: 'pending',
+    required: true
+  }
+
 }, {
   timestamps: true, // Tự động thêm createdAt và updatedAt
-  versionKey: '__v',
+  versionKey: false // Không sử dụng trường __v của Mongoose
 });
 
-// Xóa model cũ nếu tồn tại để tránh lỗi HMR (Hot Module Replacement) trong Next.js dev
-if (mongoose.models.Booking) {
-  delete mongoose.models.Booking;
-}
+// --- Indexes (Tùy chọn, giúp tăng tốc độ truy vấn) ---
+bookingSchema.index({ user: 1 }); // Tìm kiếm theo user
+bookingSchema.index({ schedule: 1 }); // Tìm kiếm theo sự kiện
+bookingSchema.index({ 'customerInfo.email': 1 }); // Tìm kiếm theo email khách hàng
+bookingSchema.index({ createdAt: -1 }); // Sắp xếp theo ngày tạo mới nhất
 
-const Booking = mongoose.model<IBooking>('Booking', bookingSchema);
+// --- Middleware (Ví dụ: validate address trước khi save nếu là COD) ---
+// (Cách này an toàn hơn là dùng required function trong schema)
+// bookingSchema.pre('save', function(next) {
+//   if (this.paymentMethod === 'cod' && !this.customerInfo.address) {
+//     next(new Error('Địa chỉ là bắt buộc cho phương thức thanh toán COD.'));
+//   } else {
+//     next();
+//   }
+// });
+
+
+// --- Xuất Model ---
+const modelName = 'Booking';
+// Kiểm tra xem model đã tồn tại chưa trước khi định nghĩa lại (quan trọng cho HMR)
+const Booking = mongoose.models[modelName] || mongoose.model(modelName, bookingSchema);
 
 export default Booking;
