@@ -1,11 +1,10 @@
-// /app/admin/ticket-booking/page.tsx
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
 // *** SỬ DỤNG TicketBooking (client-side type) ***
-import { TicketBooking, TicketBookingStatusUpdateData } from '@/types/ticketBooking';
+import { TicketBooking, TicketBookingStatusUpdateData } from '@/types/ticketBooking'; // Đảm bảo type đã được cập nhật
 import TicketBookingStatusForm from '@/components/admin/TicketBookingStatusForm';
-import { toast } from 'react-toastify'; // Để thay thế alert
+import { toast } from 'react-toastify';
 
 // --- Hàm helper ---
 const formatCurrency = (value: number | undefined | null): string => {
@@ -28,18 +27,24 @@ const formatDateOnly = (dateString: string | Date | undefined | null): string =>
         return date.toLocaleDateString('vi-VN');
     } catch (e) { return 'Lỗi định dạng ngày'; }
 }
-const formatBookingStatusText = (status: 'pending' | 'confirmed' | 'cancelled'): string => {
+
+// CẬP NHẬT HÀM NÀY
+const formatBookingStatusText = (status: 'pending' | 'confirmed' | 'cancelled' | 'delivered'): string => {
     switch (status) {
         case 'confirmed': return 'Đã xác nhận';
         case 'cancelled': return 'Đã hủy';
+        case 'delivered': return 'Đã giao'; // <--- THÊM CASE MỚI
         case 'pending': default: return 'Chờ xác nhận';
     }
 };
-const renderStatusBadge = (status: 'pending' | 'confirmed' | 'cancelled') => {
+
+// CẬP NHẬT HÀM NÀY
+const renderStatusBadge = (status: 'pending' | 'confirmed' | 'cancelled' | 'delivered') => {
     let bgColor, textColor, text;
     switch (status) {
         case 'confirmed': bgColor = 'bg-green-100'; textColor = 'text-green-800'; text = 'Đã xác nhận'; break;
         case 'cancelled': bgColor = 'bg-red-100'; textColor = 'text-red-800'; text = 'Đã hủy'; break;
+        case 'delivered': bgColor = 'bg-blue-100'; textColor = 'text-blue-800'; text = 'Đã giao'; break; // <--- THÊM CASE MỚI (chọn màu blue ví dụ)
         case 'pending': default: bgColor = 'bg-yellow-100'; textColor = 'text-yellow-800'; text = 'Chờ xác nhận'; break;
     }
     return <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${bgColor} ${textColor}`}>{text}</span>;
@@ -47,12 +52,12 @@ const renderStatusBadge = (status: 'pending' | 'confirmed' | 'cancelled') => {
 // --- Kết thúc hàm helper ---
 
 export default function TicketBookingManagement() {
-    const [bookings, setBookings] = useState<TicketBooking[]>([]); // *** SỬ DỤNG TicketBooking ***
+    const [bookings, setBookings] = useState<TicketBooking[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [currentBooking, setCurrentBooking] = useState<TicketBooking | null>(null); // Sửa ITicketBooking thành TicketBooking
+    const [currentBooking, setCurrentBooking] = useState<TicketBooking | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const fetchBookings = async () => {
@@ -64,9 +69,8 @@ export default function TicketBookingManagement() {
                 const errorData = await response.json().catch(() => ({ message: 'Không thể tải danh sách đặt vé' }));
                 throw new Error(errorData.message || 'Không thể tải danh sách đặt vé');
             }
-            const data: TicketBooking[] = await response.json(); // Sửa ITicketBooking[] thành TicketBooking[]
-            // Sắp xếp theo ngày tạo mới nhất
-            const sortedData = data.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            const data: TicketBooking[] = await response.json();
+            const sortedData = data.sort((a, b) => new Date(b.createdAt as string).getTime() - new Date(a.createdAt as string).getTime());
             setBookings(sortedData);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Đã có lỗi xảy ra');
@@ -88,14 +92,13 @@ export default function TicketBookingManagement() {
         return bookings.filter(booking => {
             const customerName = booking.customerDetails?.fullName?.toLowerCase() || '';
             const customerEmail = booking.customerDetails?.email?.toLowerCase() || '';
-            const statusText = formatBookingStatusText(booking.status).toLowerCase();
+            const statusText = formatBookingStatusText(booking.status).toLowerCase(); // Sẽ tự động lấy text mới
 
             let eventMatch = false;
             if (booking.bookingType === 'combo') {
                 eventMatch = booking.bookedItems.some(item => item.eventName.toLowerCase().includes(lowerCaseSearchTerm)) ||
-                    "combo".includes(lowerCaseSearchTerm); // Cho phép tìm chữ "combo"
+                    "combo".includes(lowerCaseSearchTerm);
             } else {
-                // Cần đảm bảo scheduleId được populate nếu là single booking
                 const singleEventName = (booking.scheduleId as any)?.eventName?.toLowerCase() || '';
                 eventMatch = singleEventName.includes(lowerCaseSearchTerm);
             }
@@ -104,21 +107,21 @@ export default function TicketBookingManagement() {
                 customerEmail.includes(lowerCaseSearchTerm) ||
                 statusText.includes(lowerCaseSearchTerm) ||
                 eventMatch ||
-                booking._id.toString().includes(lowerCaseSearchTerm); // Tìm theo Booking ID
+                booking._id.toString().includes(lowerCaseSearchTerm);
         });
     }, [bookings, searchTerm]);
 
-    const handleOpenUpdateModal = (booking: TicketBooking) => { // Sửa ITicketBooking thành TicketBooking
+    const handleOpenUpdateModal = (booking: TicketBooking) => {
         setCurrentBooking(booking);
         setIsModalOpen(true);
-        setError(null); // Xóa lỗi cũ khi mở modal mới
+        setError(null);
     };
 
     const handleCloseModal = () => {
         setIsModalOpen(false);
         setCurrentBooking(null);
         setIsSubmitting(false);
-        setError(null); // Cũng xóa lỗi khi đóng modal
+        setError(null);
     };
 
     const handleDeleteBooking = async (bookingId: string) => {
@@ -126,7 +129,7 @@ export default function TicketBookingManagement() {
             try {
                 const response = await fetch(`/api/ticket-booking/${bookingId}`, { method: 'DELETE' });
                 if (response.ok) {
-                    setBookings(prev => prev.filter(b => b._id !== bookingId)); // _id là string
+                    setBookings(prev => prev.filter(b => b._id !== bookingId));
                     toast.success('Xóa đặt vé thành công!');
                 } else {
                     const errorData = await response.json().catch(() => ({}));
@@ -139,7 +142,7 @@ export default function TicketBookingManagement() {
         }
     };
 
-    const handleSubmitStatusUpdate = async (data: TicketBookingStatusUpdateData) => {
+    const handleSubmitStatusUpdate = async (data: TicketBookingStatusUpdateData) => { // data giờ có thể là 'delivered'
         if (!currentBooking) return;
         setIsSubmitting(true);
         setError(null);
@@ -150,13 +153,12 @@ export default function TicketBookingManagement() {
                 body: JSON.stringify(data),
             });
             if (response.ok) {
-                await fetchBookings(); // Tải lại danh sách để cập nhật
+                await fetchBookings();
                 toast.success('Cập nhật trạng thái thành công!');
                 handleCloseModal();
             } else {
                 const errorData = await response.json().catch(() => ({}));
                 setError(errorData.message || 'Không thể cập nhật trạng thái');
-                // Không đóng modal nếu có lỗi để user thấy
             }
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Đã có lỗi xảy ra');
@@ -166,7 +168,7 @@ export default function TicketBookingManagement() {
         }
     };
 
-    const renderEventDetailsForAdmin = (booking: TicketBooking) => { // Sửa ITicketBooking thành TicketBooking
+    const renderEventDetailsForAdmin = (booking: TicketBooking) => {
         if (booking.bookingType === 'combo') {
             return (
                 <div>
@@ -183,7 +185,7 @@ export default function TicketBookingManagement() {
                 </div>
             );
         }
-        const schedule = booking.scheduleId as any; // Ép kiểu nếu scheduleId được populate
+        const schedule = booking.scheduleId as any;
         return (
             <div>
                 <div className="text-sm font-medium text-gray-900" title={schedule?.eventName}>{schedule?.eventName || 'N/A'}</div>
@@ -237,7 +239,7 @@ export default function TicketBookingManagement() {
                             )}
                             {filteredBookings.map((booking) => (
                                 <tr key={booking._id.toString()} className="hover:bg-gray-50 transition-colors">
-                                    <td className="px-4 py-4 whitespace-normal max-w-xs"> {/* max-w-xs để giới hạn chiều rộng */}
+                                    <td className="px-4 py-4 whitespace-normal max-w-xs">
                                         {renderEventDetailsForAdmin(booking)}
                                     </td>
                                     <td className="px-4 py-4 whitespace-nowrap">
@@ -255,7 +257,7 @@ export default function TicketBookingManagement() {
                                     <td className="px-4 py-4 whitespace-nowrap text-sm text-right text-gray-900 font-medium">{formatCurrency(booking.totalPrice)}</td>
                                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{formatDateTime(booking.createdAt)}</td>
                                     <td className="px-4 py-4 whitespace-nowrap text-center">
-                                        {renderStatusBadge(booking.status)}
+                                        {renderStatusBadge(booking.status)} {/* Sẽ tự động render badge mới */}
                                     </td>
                                     <td className="px-4 py-4 whitespace-nowrap text-sm text-center font-medium">
                                         <button
