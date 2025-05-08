@@ -91,6 +91,10 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
 
   // Nếu không ở trang login mà vẫn chưa xác thực (sau khi isLoading=false), không hiển thị gì
   if (!isAuthenticated) {
+    // Reload lại trang nếu chưa xác thực
+    if (typeof window !== "undefined") {
+      window.location.reload();
+    }
     return null;
   }
 
