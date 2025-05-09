@@ -19,7 +19,7 @@ export interface CartState {
 
 // Định nghĩa các hành động có thể thực hiện trên giỏ hàng
 export interface CartActions {
-    addToCart: (schedule: Schedule) => void;
+    addToCart: (schedule: Schedule, quantity?: number) => void; // Thêm quantity tùy chọn
     removeFromCart: (itemId: string) => void;
     updateItemQuantity: (itemId: string, newQuantity: number) => void;
     toggleSelectItemForCheckout: (itemId: string) => void;
@@ -29,7 +29,8 @@ export interface CartActions {
     getCartItemCount: () => number; // Số loại sự kiện trong toàn bộ giỏ
     getTotalTicketCount: () => number; // Tổng số vé trong toàn bộ giỏ
     getPromotionForCart: () => PromotionRule | null; // Khuyến mãi dựa trên toàn bộ giỏ (có thể dùng để gợi ý)
-    getPromotionForSelectedItems: () => PromotionRule | null; // *** THÊM: Khuyến mãi dựa trên các mục đã chọn ***
+    getPromotionForSelectedItems: () => PromotionRule | null; // Khuyến mãi dựa trên các mục đã chọn
+    isCartLoading: boolean; // << THÊM DÒNG NÀY ĐỂ THEO DÕI TRẠNG THÁI TẢI GIỎ HÀNG
 }
 
 // Kết hợp State và Actions để tạo thành Props cho Context
