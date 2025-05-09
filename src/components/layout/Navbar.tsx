@@ -5,10 +5,28 @@ import { useState } from 'react';
 import UserMenu from '../auth/UserMenu'; // Đảm bảo đường dẫn này chính xác
 import { usePublicAuth } from '@/contexts/PublicAuthContext'; // Đảm bảo đường dẫn này chính xác
 import { FaShoppingCart } from 'react-icons/fa';
+import { useRouter } from 'next/navigation';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const { isAuthenticated } = usePublicAuth();
+  const router = useRouter();
+
+  const handleCartClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!isAuthenticated) {
+      setShowLoginPrompt(true);
+    } else {
+      router.push('/cart');
+    }
+  };
+
+  const closeLoginPrompt = () => setShowLoginPrompt(false);
+  const handleGoLogin = () => {
+    router.push('/login');
+    setShowLoginPrompt(false);
+  };
 
   return (
     <nav className="bg-black text-white">
@@ -41,10 +59,15 @@ const Navbar = () => {
 
         {/* Giỏ hàng, Đăng nhập/Đăng ký hoặc UserMenu (Desktop): Tăng kích thước font và icon */}
         <div className="hidden md:flex flex-shrink-0 items-center space-x-6"> {/* Tăng từ space-x-4 lên space-x-6 */}
-          <Link href="/cart" className="text-gray-300 hover:text-white flex items-center text-lg" title="Giỏ hàng"> {/* Thêm text-lg */}
-            <span className="mr-2">Giỏ hàng</span> {/* Tăng từ mr-1 lên mr-2 */}
-            <FaShoppingCart className="h-7 w-7" /> {/* Tăng từ h-6 w-6 lên h-7 w-7 */}
-          </Link>
+          <a
+            href="/cart"
+            onClick={handleCartClick}
+            className="text-gray-300 hover:text-white flex items-center text-lg"
+            title="Giỏ hàng"
+          >
+            <span className="mr-2">Giỏ hàng</span>
+            <FaShoppingCart className="h-7 w-7" />
+          </a>
 
           {!isAuthenticated ? (
             <>
@@ -111,6 +134,53 @@ const Navbar = () => {
               // UserMenu có thể cần điều chỉnh kích thước bên trong component của nó
               <div className="px-3 py-2"> <UserMenu /> </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Popup yêu cầu đăng nhập khi bấm giỏ hàng */}
+      {showLoginPrompt && (
+        <div className="fixed inset-0 z-[9999] flex justify-center items-center p-4">
+          <div
+            className="fixed inset-0 bg-[rgba(0,0,0,0.5)] transition-opacity"
+            onClick={closeLoginPrompt}
+          ></div>
+          <div
+            className="relative max-w-md w-full bg-yellow-50 border border-yellow-300 p-8 pt-10 rounded-lg shadow-xl text-center transform transition-all scale-95 opacity-0 animate-fade-in-scale z-[10000]"
+            style={{ animationFillMode: 'forwards', animationDuration: '0.2s' }}
+          >
+            <button
+              onClick={closeLoginPrompt}
+              className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 p-1 rounded-full transition-colors"
+              title="Đóng"
+              aria-label="Đóng thông báo"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+            <style jsx>{`
+              @keyframes fade-in-scale {
+                from { opacity: 0; transform: scale(0.95); }
+                to { opacity: 1; transform: scale(1); }
+              }
+              .animate-fade-in-scale {
+                animation-name: fade-in-scale;
+              }
+            `}</style>
+            <svg className="mx-auto mb-4 w-12 h-12 text-yellow-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0-10.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.75c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.57-.598-3.75h-.152c-3.196 0-6.1-1.25-8.25-3.286Zm0 13.036h.008v.008H12v-.008Z" />
+            </svg>
+            <h2 className="text-2xl font-semibold text-yellow-800 mb-4">Yêu cầu Đăng nhập</h2>
+            <p className="text-gray-700 mb-6">
+              Bạn cần đăng nhập để sử dụng tính năng này.
+            </p>
+            <div className="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+              <button onClick={handleGoLogin} className="px-6 py-2 bg-blue-600 text-white rounded-md shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-150 ease-in-out w-full sm:w-auto">
+                Đăng nhập
+              </button>
+              <button onClick={closeLoginPrompt} className="px-6 py-2 bg-gray-200 text-gray-800 rounded-md shadow hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50 transition duration-150 ease-in-out w-full sm:w-auto">
+                Hủy
+              </button>
+            </div>
           </div>
         </div>
       )}
