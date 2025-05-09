@@ -1,4 +1,3 @@
-// src/app/(public)/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -10,7 +9,8 @@ import NewsCard from '@/components/ui/NewsCard';
 import MemberCard from '@/components/ui/MemberCard';
 import { Member } from '@/types/member';
 import { Music } from '@/types/music';
-import { Schedule as ScheduleType, Venue as ScheduleVenueType } from '@/types/schedule';
+import { Schedule as ScheduleType, Venue as ScheduleVenueType } from '@/types/schedule'; // Đổi tên để tránh xung đột
+import { useSession } from 'next-auth/react'; // << THÊM VÀO
 
 import {
   FaCalendarAlt,
@@ -22,6 +22,7 @@ import {
 import { useCart } from '@/contexts/CartContext';
 import { toast } from 'react-toastify';
 
+// Interface HomePageEvent giữ nguyên
 interface HomePageEvent {
   _id: string;
   title: string;
@@ -50,6 +51,7 @@ interface HomeData {
   featuredMusic: Music[];
 }
 
+// Hàm formatDate và formatPrice giữ nguyên
 const formatDate = (dateString: string | Date | undefined | null): string => {
   if (!dateString) return 'N/A';
   try {
@@ -77,9 +79,11 @@ const formatPrice = (price: number | undefined | null): string => {
   return price.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' });
 };
 
+
 export default function Home() {
   const router = useRouter();
   const { addToCart } = useCart();
+  const { data: session, status: sessionStatus } = useSession(); // << LẤY SESSION STATUS
 
   const [data, setData] = useState<HomeData>({ news: [], events: [], featuredMusic: [] });
   const [loading, setLoading] = useState(true);
@@ -88,6 +92,10 @@ export default function Home() {
   const [errorMembers, setErrorMembers] = useState<string | null>(null);
   const bannerImages = ["/upload/home/hero-bg.jpg", "/upload/home/hero-bg2.jpg", "/upload/home/hero-bg3.jpg"];
   const [currentSlide, setCurrentSlide] = useState(0);
+
+  // << THÊM STATE CHO LOGIN PROMPT TRÊN TRANG CHỦ >>
+  const [showLoginPromptHome, setShowLoginPromptHome] = useState(false);
+
 
   useEffect(() => {
     const fetchHomeData = async () => {
@@ -166,7 +174,18 @@ export default function Home() {
   const handleNextClick = () => setCurrentSlide((prev) => (prev + 1) % bannerImages.length);
   const handleDotClick = (idx: number) => setCurrentSlide(idx);
 
+  // << CẬP NHẬT HÀM handleAddToCartOnHome >>
   const handleAddToCartOnHome = (event: HomePageEvent) => {
+    if (sessionStatus === 'loading') {
+      toast.info("Đang kiểm tra trạng thái đăng nhập...");
+      return;
+    }
+    if (sessionStatus !== 'authenticated') {
+      setShowLoginPromptHome(true); // Hiển thị modal yêu cầu đăng nhập
+      return;
+    }
+
+    // Logic chuyển đổi HomePageEvent sang ScheduleType (giữ nguyên)
     let scheduleType: ScheduleType['type'];
     const validTypes: ScheduleType['type'][] = ["concert", "rehearsal", "meeting", "interview", "other"];
     if (event.type && validTypes.includes(event.type as ScheduleType['type'])) {
@@ -190,10 +209,10 @@ export default function Home() {
       try {
         dateString = new Date(event.date).toISOString();
       } catch (e) {
-        dateString = new Date().toISOString();
+        dateString = new Date().toISOString(); // Fallback
       }
     } else {
-      dateString = new Date().toISOString();
+      dateString = new Date().toISOString(); // Fallback
     }
 
     const scheduleVenue: ScheduleVenueType = {
@@ -219,15 +238,35 @@ export default function Home() {
       updatedAt: event.updatedAt ? (typeof event.updatedAt === 'string' ? event.updatedAt : event.updatedAt.toISOString()) : nowISO,
     };
 
-    addToCart(scheduleItem);
-    toast.success(`Đã thêm "${scheduleItem.eventName}" vào giỏ hàng!`);
+    addToCart(scheduleItem); // addToCart từ CartContext đã xử lý API và toast
+    // toast.success(`Đã thêm "${scheduleItem.eventName}" vào giỏ hàng!`); // Toast này có thể đã có trong addToCart của context
   };
+
+  // << THÊM HÀM handleViewDetailsOnHome >>
+  const handleViewDetailsOnHome = (eventId: string) => {
+    if (sessionStatus === 'loading') {
+      // Có thể không cần toast ở đây nếu người dùng chỉ click xem chi tiết
+      return;
+    }
+    if (sessionStatus !== 'authenticated') {
+      setShowLoginPromptHome(true);
+      return;
+    }
+    router.push(`/schedule/${eventId}`);
+  };
+
+  // << THÊM CÁC HÀM CHO MODAL LOGIN PROMPT >>
+  const closeLoginPromptHome = () => setShowLoginPromptHome(false);
+  const handleGoLoginHome = () => {
+    router.push('/login'); // Chuyển hướng đến trang đăng nhập
+    closeLoginPromptHome();
+  };
+
 
   if (loading) {
     return (<Layout><div className="flex justify-center items-center min-h-screen"><div className="text-xl font-semibold animate-pulse text-gray-600">Đang tải nội dung trang chủ...</div></div></Layout>);
   }
 
-  // CẬP NHẬT SectionHeading
   const SectionHeading = ({ title }: { title: string }) => (
     <div className="text-center mb-12 sm:mb-16">
       <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 tracking-tight inline-block py-2">
@@ -240,7 +279,6 @@ export default function Home() {
     <Layout>
       {/* Hero Section */}
       <div className="relative h-[550px] sm:h-[600px] overflow-hidden bg-gray-900">
-        {/* ... (Nội dung Hero Banner giữ nguyên) ... */}
         <div className="absolute inset-0 z-0">
           {bannerImages.length > 0 && (
             <img
@@ -333,13 +371,13 @@ export default function Home() {
                     </div>
 
                     <div className="px-5 pb-5 pt-3 mt-auto border-t border-gray-200 flex flex-col sm:flex-row gap-3 items-center">
-                      {(event.type === 'concert' || !event.type) &&
+                      {(event.type === 'concert' || !event.type) && // Mặc định là concert nếu không có type
                         event.status !== 'cancelled' &&
                         event.status !== 'postponed' &&
-                        event.price > 0 &&
-                        (event.availableTickets === undefined || event.availableTickets > 0) &&
+                        event.price > 0 && // Chỉ hiển thị nếu có giá
+                        (event.availableTickets === undefined || event.availableTickets > 0) && // Còn vé hoặc không quản lý số lượng
                         <button
-                          onClick={() => handleAddToCartOnHome(event)}
+                          onClick={() => handleAddToCartOnHome(event)} // << SỬ DỤNG HÀM ĐÃ CẬP NHẬT
                           className="w-full sm:flex-1 px-4 py-2.5 text-sm font-medium rounded-md shadow-sm bg-sky-600 text-white hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 transition ease-in-out duration-150 flex items-center justify-center"
                           title="Thêm sự kiện vào giỏ hàng"
                         >
@@ -347,6 +385,7 @@ export default function Home() {
                           Thêm vào giỏ
                         </button>
                       }
+                      {/* Các điều kiện hiển thị "Hết vé", "Đã Hủy", "Tạm Hoãn" giữ nguyên */}
                       {(event.type === 'concert' || !event.type) && event.status !== 'cancelled' && event.status !== 'postponed' && (event.availableTickets !== undefined && event.availableTickets <= 0) && (
                         <span className="w-full sm:flex-1 text-center px-4 py-2.5 text-sm font-medium rounded-md bg-red-100 text-red-700 border border-red-200">
                           Hết vé
@@ -358,13 +397,14 @@ export default function Home() {
                           {event.status === 'cancelled' ? 'Đã Hủy' : 'Tạm Hoãn'}
                         </span>
                       )}
-                      <Link
-                        href={`/schedule/${event._id}`}
+                      {/* << THAY THẾ Link BẰNG button >> */}
+                      <button
+                        onClick={() => handleViewDetailsOnHome(event._id)}
                         className="w-full sm:flex-1 px-4 py-2.5 text-sm font-medium rounded-md shadow-sm bg-blue-100 text-blue-700 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150 text-center block"
                         title="Xem thông tin chi tiết lịch trình"
                       >
                         Xem Chi Tiết
-                      </Link>
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -478,6 +518,59 @@ export default function Home() {
           ) : (<p className="text-center text-gray-600 py-10">Chưa có tin tức nào.</p>)}
         </div>
       </section>
+
+      {/* << THÊM MODAL YÊU CẦU ĐĂNG NHẬP >> */}
+      {showLoginPromptHome && (
+        <div className="fixed inset-0 z-[9999] flex justify-center items-center p-4">
+          <div
+            className="fixed inset-0 bg-[rgba(0,0,0,0.5)] transition-opacity"
+            onClick={closeLoginPromptHome} // Sử dụng hàm đóng của trang chủ
+          ></div>
+          <div
+            className="relative max-w-md w-full bg-yellow-50 border border-yellow-300 p-8 pt-10 rounded-lg shadow-xl text-center transform transition-all scale-95 opacity-0 animate-fade-in-scale z-[10000]"
+            style={{ animationFillMode: 'forwards', animationDuration: '0.2s' }}
+          >
+            <button
+              onClick={closeLoginPromptHome} // Sử dụng hàm đóng của trang chủ
+              className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 p-1 rounded-full transition-colors"
+              title="Đóng"
+              aria-label="Đóng thông báo"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+            <style jsx>{`
+                            @keyframes fade-in-scale {
+                                from { opacity: 0; transform: scale(0.95); }
+                                to { opacity: 1; transform: scale(1); }
+                            }
+                            .animate-fade-in-scale {
+                                animation-name: fade-in-scale;
+                            }
+                        `}</style>
+            <svg className="mx-auto mb-4 w-12 h-12 text-yellow-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0-10.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.75c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.57-.598-3.75h-.152c-3.196 0-6.1-1.25-8.25-3.286Zm0 13.036h.008v.008H12v-.008Z" />
+            </svg>
+            <h2 className="text-2xl font-semibold text-yellow-800 mb-4">Yêu cầu Đăng nhập</h2>
+            <p className="text-gray-700 mb-6">
+              Bạn cần đăng nhập để sử dụng tính năng này.
+            </p>
+            <div className="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+              <button
+                onClick={handleGoLoginHome} // Sử dụng hàm đăng nhập của trang chủ
+                className="px-6 py-2 bg-blue-600 text-white rounded-md shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-150 ease-in-out w-full sm:w-auto"
+              >
+                Đăng nhập
+              </button>
+              <button
+                onClick={closeLoginPromptHome} // Sử dụng hàm đóng của trang chủ
+                className="px-6 py-2 bg-gray-200 text-gray-800 rounded-md shadow hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50 transition duration-150 ease-in-out w-full sm:w-auto"
+              >
+                Hủy
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 }
