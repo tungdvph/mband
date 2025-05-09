@@ -18,6 +18,7 @@ import {
   FaDollarSign,
   FaShoppingCart
 } from 'react-icons/fa';
+import { FaExclamationCircle } from 'react-icons/fa';
 
 // Hàm format ngày giờ
 const formatDate = (dateString: string | undefined | null): string => {
@@ -130,6 +131,14 @@ export default function ScheduleListPage() {
   };
 
   const handleAddToCart = (schedule: Schedule) => {
+    if (status === 'loading') {
+      toast.info("Đang kiểm tra trạng thái đăng nhập...");
+      return;
+    }
+    if (status !== 'authenticated') {
+      setShowLoginPrompt(true);
+      return;
+    }
     addToCart(schedule);
     toast.success(`Đã thêm "${schedule.eventName}" vào giỏ hàng!`, {
       position: "bottom-right",
@@ -154,6 +163,10 @@ export default function ScheduleListPage() {
 
   const handleViewDetailsClick = (scheduleId: string) => {
     if (status === 'loading') return;
+    if (status !== 'authenticated') {
+      setShowLoginPrompt(true);
+      return;
+    }
     router.push(`/schedule/${scheduleId}`);
   };
 
@@ -330,14 +343,24 @@ export default function ScheduleListPage() {
         </div>
       </div>
 
-      {/* Khung Thông báo Yêu cầu Đăng nhập */}
       {showLoginPrompt && (
-        <div className="fixed inset-0 z-50 flex justify-center items-center p-4">
-          <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" onClick={closeLoginPrompt}></div>
+        <div className="fixed inset-0 z-[9999] flex justify-center items-center p-4">
           <div
-            className="relative max-w-md w-full bg-yellow-50 border border-yellow-300 p-8 rounded-lg shadow-lg text-center transform transition-all scale-95 opacity-0 animate-fade-in-scale z-10"
+            className="fixed inset-0 bg-[rgba(0,0,0,0.5)] transition-opacity"
+            onClick={closeLoginPrompt}
+          ></div>
+          <div
+            className="relative max-w-md w-full bg-yellow-50 border border-yellow-300 p-8 pt-10 rounded-lg shadow-xl text-center transform transition-all scale-95 opacity-0 animate-fade-in-scale z-[10000]"
             style={{ animationFillMode: 'forwards', animationDuration: '0.2s' }}
           >
+            <button
+              onClick={closeLoginPrompt}
+              className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 p-1 rounded-full transition-colors"
+              title="Đóng"
+              aria-label="Đóng thông báo"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
             <style jsx>{`
               @keyframes fade-in-scale {
                 from { opacity: 0; transform: scale(0.95); }
@@ -352,19 +375,16 @@ export default function ScheduleListPage() {
             </svg>
             <h2 className="text-2xl font-semibold text-yellow-800 mb-4">Yêu cầu Đăng nhập</h2>
             <p className="text-gray-700 mb-6">
-              Bạn cần đăng nhập để thực hiện hành động này.
+              Bạn cần đăng nhập để sử dụng tính năng này.
             </p>
             <div className="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
               <button onClick={handleGoLogin} className="px-6 py-2 bg-blue-600 text-white rounded-md shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-150 ease-in-out w-full sm:w-auto">
                 Đăng nhập
               </button>
-              <button onClick={handleGoHome} className="px-6 py-2 bg-gray-200 text-gray-800 rounded-md shadow hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50 transition duration-150 ease-in-out w-full sm:w-auto">
-                Về trang chủ
+              <button onClick={closeLoginPrompt} className="px-6 py-2 bg-gray-200 text-gray-800 rounded-md shadow hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50 transition duration-150 ease-in-out w-full sm:w-auto">
+                Hủy
               </button>
             </div>
-            <button onClick={closeLoginPrompt} className="absolute top-3 right-3 text-gray-500 hover:text-gray-700" title="Đóng">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-            </button>
           </div>
         </div>
       )}
