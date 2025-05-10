@@ -1,17 +1,33 @@
-// src/components/layout/Navbar.tsx (Hoặc đường dẫn tương ứng của bạn)
+// src/components/layout/Navbar.tsx 
 'use client';
 import Link from 'next/link';
 import { useState } from 'react';
 import UserMenu from '../auth/UserMenu'; // Đảm bảo đường dẫn này chính xác
 import { usePublicAuth } from '@/contexts/PublicAuthContext'; // Đảm bảo đường dẫn này chính xác
 import { FaShoppingCart } from 'react-icons/fa';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation'; // Import usePathname
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const { isAuthenticated } = usePublicAuth();
   const router = useRouter();
+  const pathname = usePathname(); // Lấy đường dẫn hiện tại
+
+  // Define colors for consistency
+  const activeColor = "text-indigo-500"; // Màu khi link active (đang ở trang đó)
+  const activeSvgStrokeColor = "#6366F1"; // Mã hex của indigo-500 cho SVG
+
+  // THAY ĐỔI MÀU HOVER Ở ĐÂY
+  const hoverColorDesktop = "hover:text-purple-400"; // Màu khi hover trên desktop (khác màu active)
+  const hoverSvgStrokeColorDesktop = "group-hover:stroke-purple-400"; // Màu stroke SVG khi hover logo
+
+  const inactiveColorDesktopBase = "text-white"; // Màu mặc định cho link không active trên desktop
+
+  const inactiveColorMobileBase = "text-gray-300";
+  const hoverColorMobile = "hover:text-purple-300 hover:bg-gray-700"; // Màu khi hover trên mobile
+  const activeColorMobile = `${activeColor} bg-gray-700`;
+
 
   const handleCartClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -30,39 +46,38 @@ const Navbar = () => {
 
   return (
     <nav className="bg-black text-white">
-      {/* Container chính: Tăng chiều cao từ h-16 lên h-20 (80px) */}
-      <div className="flex items-center justify-between h-20 w-full px-35"> {/* Giữ px-35, tăng chiều cao */}
+      <div className="flex items-center justify-between h-20 w-full px-4 sm:px-6 lg:px-8">
 
-        {/* Logo: Tăng kích thước font và icon */}
+        {/* Logo */}
         <div className="flex-shrink-0 flex items-center">
-          <Link href="/" className="text-2xl font-bold flex items-center"> {/* Tăng từ text-xl lên text-2xl */}
+          <Link href="/" className={`text-2xl font-bold flex items-center group ${inactiveColorDesktopBase} ${hoverColorDesktop} transition-colors duration-150`}>
             <span className="mr-2 flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="white"> {/* Tăng từ h-6 w-6 lên h-8 w-8 */}
+              <svg xmlns="http://www.w3.org/2000/svg" className={`h-8 w-8 ${hoverSvgStrokeColorDesktop} transition-colors duration-150`} fill="none" viewBox="0 0 24 24" stroke={pathname === "/" ? activeSvgStrokeColor : "white"} >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l9-9 9 9M4 10v10a1 1 0 001 1h3m10-11v10a1 1 0 01-1 1h-3m-4 0h4" />
               </svg>
             </span>
-            Cyber Band
+            <span className={pathname === "/" ? activeColor : `${inactiveColorDesktopBase} group-hover:text-purple-400 transition-colors duration-150`}>Cyber Band</span>
           </Link>
         </div>
 
-        {/* Menu chính căn giữa: Tăng kích thước font và khoảng cách */}
+        {/* Main Menu (Desktop) */}
         <div className="hidden md:flex flex-grow justify-center items-center">
-          <div className="flex items-baseline space-x-6"> {/* Tăng từ space-x-4 lên space-x-6 */}
-            <Link href="/member" className="hover:text-gray-300 text-lg">Thành viên</Link> {/* Thêm text-lg */}
-            <Link href="/schedule" className="hover:text-gray-300 text-lg">Lịch trình</Link> {/* Thêm text-lg */}
-            <Link href="/music" className="hover:text-gray-300 text-lg">Âm nhạc</Link> {/* Thêm text-lg */}
-            <Link href="/news" className="hover:text-gray-300 text-lg">Tin tức</Link> {/* Thêm text-lg */}
-            <Link href="/booking" className="hover:text-gray-300 text-lg">Đặt lịch</Link> {/* Thêm text-lg */}
-            <Link href="/contact" className="hover:text-gray-300 text-lg">Liên hệ</Link> {/* Thêm text-lg */}
+          <div className="flex items-baseline space-x-6">
+            <Link href="/member" className={`text-lg transition-colors duration-150 ${pathname === "/member" || pathname.startsWith("/member/") ? `${activeColor} font-semibold` : `${inactiveColorDesktopBase} ${hoverColorDesktop}`}`}>Thành viên</Link>
+            <Link href="/schedule" className={`text-lg transition-colors duration-150 ${pathname === "/schedule" || pathname.startsWith("/schedule/") ? `${activeColor} font-semibold` : `${inactiveColorDesktopBase} ${hoverColorDesktop}`}`}>Lịch trình</Link>
+            <Link href="/music" className={`text-lg transition-colors duration-150 ${pathname === "/music" || pathname.startsWith("/music/") ? `${activeColor} font-semibold` : `${inactiveColorDesktopBase} ${hoverColorDesktop}`}`}>Âm nhạc</Link>
+            <Link href="/news" className={`text-lg transition-colors duration-150 ${pathname === "/news" || pathname.startsWith("/news/") ? `${activeColor} font-semibold` : `${inactiveColorDesktopBase} ${hoverColorDesktop}`}`}>Tin tức</Link>
+            <Link href="/booking" className={`text-lg transition-colors duration-150 ${pathname === "/booking" ? `${activeColor} font-semibold` : `${inactiveColorDesktopBase} ${hoverColorDesktop}`}`}>Đặt lịch</Link>
+            <Link href="/contact" className={`text-lg transition-colors duration-150 ${pathname === "/contact" ? `${activeColor} font-semibold` : `${inactiveColorDesktopBase} ${hoverColorDesktop}`}`}>Liên hệ</Link>
           </div>
         </div>
 
-        {/* Giỏ hàng, Đăng nhập/Đăng ký hoặc UserMenu (Desktop): Tăng kích thước font và icon */}
-        <div className="hidden md:flex flex-shrink-0 items-center space-x-6"> {/* Tăng từ space-x-4 lên space-x-6 */}
+        {/* Right Section (Desktop) */}
+        <div className="hidden md:flex flex-shrink-0 items-center space-x-6">
           <a
-            href="/cart"
+            href="/cart" // Giữ href cho ngữ nghĩa, onClick xử lý logic
             onClick={handleCartClick}
-            className="text-gray-300 hover:text-white flex items-center text-lg"
+            className={`flex items-center text-lg transition-colors duration-150 ${pathname === "/cart" ? activeColor : `text-gray-300 ${hoverColorDesktop}`}`}
             title="Giỏ hàng"
           >
             <span className="mr-2">Giỏ hàng</span>
@@ -71,30 +86,29 @@ const Navbar = () => {
 
           {!isAuthenticated ? (
             <>
-              <Link href="/login" className="hover:text-gray-300 text-lg">Đăng nhập</Link> {/* Thêm text-lg */}
-              <Link href="/register" className="hover:text-gray-300 text-lg">Đăng ký</Link> {/* Thêm text-lg */}
+              <Link href="/login" className={`text-lg transition-colors duration-150 ${pathname === "/login" ? `${activeColor} font-semibold` : `${inactiveColorDesktopBase} ${hoverColorDesktop}`}`}>Đăng nhập</Link>
+              <Link href="/register" className={`text-lg transition-colors duration-150 ${pathname === "/register" ? `${activeColor} font-semibold` : `${inactiveColorDesktopBase} ${hoverColorDesktop}`}`}>Đăng ký</Link>
             </>
           ) : (
-            // UserMenu có thể cần điều chỉnh kích thước bên trong component của nó nếu cần
             <UserMenu />
           )}
         </div>
 
-        {/* Nút mở Menu Mobile: Tăng kích thước icon */}
+        {/* Mobile Menu Button */}
         <div className="md:hidden flex items-center">
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+            className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white transition-colors duration-150"
             aria-controls="mobile-menu"
             aria-expanded={isOpen}
           >
             <span className="sr-only">Mở menu chính</span>
             {!isOpen ? (
-              <svg className="block h-7 w-7" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"> {/* Tăng từ h-6 w-6 lên h-7 w-7 */}
+              <svg className="block h-7 w-7" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             ) : (
-              <svg className="block h-7 w-7" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"> {/* Tăng từ h-6 w-6 lên h-7 w-7 */}
+              <svg className="block h-7 w-7" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             )}
@@ -102,43 +116,45 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* Menu Mobile: Tăng kích thước font, icon và padding */}
+      {/* Mobile Menu */}
       {isOpen && (
         <div className="md:hidden" id="mobile-menu">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-            {/* Tăng text-base lên text-lg, py-2 lên py-3 */}
-            <Link href="/" className="block px-3 py-3 rounded-md text-lg font-medium text-gray-300 hover:text-white hover:bg-gray-700">Trang chủ</Link>
-            <Link href="/member" className="block px-3 py-3 rounded-md text-lg font-medium text-gray-300 hover:text-white hover:bg-gray-700">Thành viên</Link>
-            <Link href="/schedule" className="block px-3 py-3 rounded-md text-lg font-medium text-gray-300 hover:text-white hover:bg-gray-700">Lịch trình</Link>
-            <Link href="/music" className="block px-3 py-3 rounded-md text-lg font-medium text-gray-300 hover:text-white hover:bg-gray-700">Âm nhạc</Link>
-            <Link href="/news" className="block px-3 py-3 rounded-md text-lg font-medium text-gray-300 hover:text-white hover:bg-gray-700">Tin tức</Link>
-            <Link href="/booking" className="block px-3 py-3 rounded-md text-lg font-medium text-gray-300 hover:text-white hover:bg-gray-700">Đặt lịch</Link>
-            <Link href="/contact" className="block px-3 py-3 rounded-md text-lg font-medium text-gray-300 hover:text-white hover:bg-gray-700">Liên hệ</Link>
+            <Link href="/" onClick={() => setIsOpen(false)} className={`block px-3 py-3 rounded-md text-lg font-medium transition-colors duration-150 ${pathname === "/" ? activeColorMobile : `${inactiveColorMobileBase} ${hoverColorMobile}`}`}>Trang chủ</Link>
+            <Link href="/member" onClick={() => setIsOpen(false)} className={`block px-3 py-3 rounded-md text-lg font-medium transition-colors duration-150 ${pathname === "/member" || pathname.startsWith("/member/") ? activeColorMobile : `${inactiveColorMobileBase} ${hoverColorMobile}`}`}>Thành viên</Link>
+            <Link href="/schedule" onClick={() => setIsOpen(false)} className={`block px-3 py-3 rounded-md text-lg font-medium transition-colors duration-150 ${pathname === "/schedule" || pathname.startsWith("/schedule/") ? activeColorMobile : `${inactiveColorMobileBase} ${hoverColorMobile}`}`}>Lịch trình</Link>
+            <Link href="/music" onClick={() => setIsOpen(false)} className={`block px-3 py-3 rounded-md text-lg font-medium transition-colors duration-150 ${pathname === "/music" || pathname.startsWith("/music/") ? activeColorMobile : `${inactiveColorMobileBase} ${hoverColorMobile}`}`}>Âm nhạc</Link>
+            <Link href="/news" onClick={() => setIsOpen(false)} className={`block px-3 py-3 rounded-md text-lg font-medium transition-colors duration-150 ${pathname === "/news" || pathname.startsWith("/news/") ? activeColorMobile : `${inactiveColorMobileBase} ${hoverColorMobile}`}`}>Tin tức</Link>
+            <Link href="/booking" onClick={() => setIsOpen(false)} className={`block px-3 py-3 rounded-md text-lg font-medium transition-colors duration-150 ${pathname === "/booking" ? activeColorMobile : `${inactiveColorMobileBase} ${hoverColorMobile}`}`}>Đặt lịch</Link>
+            <Link href="/contact" onClick={() => setIsOpen(false)} className={`block px-3 py-3 rounded-md text-lg font-medium transition-colors duration-150 ${pathname === "/contact" ? activeColorMobile : `${inactiveColorMobileBase} ${hoverColorMobile}`}`}>Liên hệ</Link>
           </div>
           <div className="border-t border-gray-700 pt-4 pb-3">
             <div className="px-2 pb-2">
-              {/* Tăng text-base lên text-lg, py-2 lên py-3, icon h-5 w-5 lên h-6 w-6 */}
-              <Link href="/cart" className="flex items-center px-3 py-3 rounded-md text-lg font-medium text-gray-300 hover:text-white hover:bg-gray-700">
+              <a
+                href="/cart"
+                onClick={(e) => { handleCartClick(e); setIsOpen(false); }}
+                className={`flex items-center px-3 py-3 rounded-md text-lg font-medium transition-colors duration-150 ${pathname === "/cart" ? activeColorMobile : `${inactiveColorMobileBase} ${hoverColorMobile}`}`}
+              >
                 <span className="mr-2">Giỏ hàng</span>
                 <FaShoppingCart className="h-6 w-6" />
-              </Link>
+              </a>
             </div>
 
             {!isAuthenticated ? (
               <div className="space-y-1 px-2">
-                {/* Tăng text-base lên text-lg, py-2 lên py-3 */}
-                <Link href="/login" className="block px-3 py-3 rounded-md text-lg font-medium text-gray-300 hover:text-white hover:bg-gray-700">Đăng nhập</Link>
-                <Link href="/register" className="block px-3 py-3 rounded-md text-lg font-medium text-gray-300 hover:text-white hover:bg-gray-700">Đăng ký</Link>
+                <Link href="/login" onClick={() => setIsOpen(false)} className={`block px-3 py-3 rounded-md text-lg font-medium transition-colors duration-150 ${pathname === "/login" ? activeColorMobile : `${inactiveColorMobileBase} ${hoverColorMobile}`}`}>Đăng nhập</Link>
+                <Link href="/register" onClick={() => setIsOpen(false)} className={`block px-3 py-3 rounded-md text-lg font-medium transition-colors duration-150 ${pathname === "/register" ? activeColorMobile : `${inactiveColorMobileBase} ${hoverColorMobile}`}`}>Đăng ký</Link>
               </div>
             ) : (
-              // UserMenu có thể cần điều chỉnh kích thước bên trong component của nó
-              <div className="px-3 py-2"> <UserMenu /> </div>
+              // UserMenu cũng nên có onClick={() => setIsOpen(false)} nếu nó chứa các link điều hướng
+              // và bạn muốn menu mobile đóng lại khi một mục trong UserMenu được chọn.
+              <div className="px-3 py-2" onClick={() => setIsOpen(false)}> <UserMenu /> </div>
             )}
           </div>
         </div>
       )}
 
-      {/* Popup yêu cầu đăng nhập khi bấm giỏ hàng */}
+      {/* Login Prompt Popup */}
       {showLoginPrompt && (
         <div className="fixed inset-0 z-[9999] flex justify-center items-center p-4">
           <div
