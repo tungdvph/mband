@@ -1,33 +1,32 @@
-// src/components/layout/Navbar.tsx 
+// src/components/layout/Navbar.tsx (Hoặc đường dẫn tương ứng của bạn)
 'use client';
 import Link from 'next/link';
 import { useState } from 'react';
 import UserMenu from '../auth/UserMenu'; // Đảm bảo đường dẫn này chính xác
 import { usePublicAuth } from '@/contexts/PublicAuthContext'; // Đảm bảo đường dẫn này chính xác
+import { useCart } from '@/contexts/CartContext'; // THÊM: Import useCart
 import { FaShoppingCart } from 'react-icons/fa';
-import { useRouter, usePathname } from 'next/navigation'; // Import usePathname
+import { useRouter, usePathname } from 'next/navigation';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const { isAuthenticated } = usePublicAuth();
+  const { cartItems } = useCart(); // THÊM: Lấy cartItems từ context
   const router = useRouter();
-  const pathname = usePathname(); // Lấy đường dẫn hiện tại
+  const pathname = usePathname();
 
-  // Define colors for consistency
-  const activeColor = "text-indigo-500"; // Màu khi link active (đang ở trang đó)
-  const activeSvgStrokeColor = "#6366F1"; // Mã hex của indigo-500 cho SVG
+  // Tính số lượng loại sự kiện khác nhau trong giỏ hàng
+  const uniqueCartItemCount = cartItems.length;
 
-  // THAY ĐỔI MÀU HOVER Ở ĐÂY
-  const hoverColorDesktop = "hover:text-purple-400"; // Màu khi hover trên desktop (khác màu active)
-  const hoverSvgStrokeColorDesktop = "group-hover:stroke-purple-400"; // Màu stroke SVG khi hover logo
-
-  const inactiveColorDesktopBase = "text-white"; // Màu mặc định cho link không active trên desktop
-
+  const activeColor = "text-indigo-500";
+  const activeSvgStrokeColor = "#6366F1";
+  const hoverColorDesktop = "hover:text-purple-400";
+  const hoverSvgStrokeColorDesktop = "group-hover:stroke-purple-400";
+  const inactiveColorDesktopBase = "text-white";
   const inactiveColorMobileBase = "text-gray-300";
-  const hoverColorMobile = "hover:text-purple-300 hover:bg-gray-700"; // Màu khi hover trên mobile
+  const hoverColorMobile = "hover:text-purple-300 hover:bg-gray-700";
   const activeColorMobile = `${activeColor} bg-gray-700`;
-
 
   const handleCartClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -74,14 +73,20 @@ const Navbar = () => {
 
         {/* Right Section (Desktop) */}
         <div className="hidden md:flex flex-shrink-0 items-center space-x-6">
+          {/* THAY ĐỔI: Thêm badge cho giỏ hàng */}
           <a
-            href="/cart" // Giữ href cho ngữ nghĩa, onClick xử lý logic
+            href="/cart"
             onClick={handleCartClick}
-            className={`flex items-center text-lg transition-colors duration-150 ${pathname === "/cart" ? activeColor : `text-gray-300 ${hoverColorDesktop}`}`}
+            className={`relative flex items-center text-lg transition-colors duration-150 ${pathname === "/cart" ? activeColor : `text-gray-300 ${hoverColorDesktop}`}`}
             title="Giỏ hàng"
           >
             <span className="mr-2">Giỏ hàng</span>
             <FaShoppingCart className="h-7 w-7" />
+            {uniqueCartItemCount > 0 && (
+              <span className="absolute -top-2 -right-2.5 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full">
+                {uniqueCartItemCount}
+              </span>
+            )}
           </a>
 
           {!isAuthenticated ? (
@@ -96,6 +101,20 @@ const Navbar = () => {
 
         {/* Mobile Menu Button */}
         <div className="md:hidden flex items-center">
+          {/* THÊM: Icon giỏ hàng cho mobile (nếu cần hiển thị số lượng ở đây nữa) */}
+          <a
+            href="/cart"
+            onClick={(e) => { handleCartClick(e); setIsOpen(false); }}
+            className="relative text-gray-400 hover:text-white p-2 mr-2" // Thêm style nếu cần
+            title="Giỏ hàng"
+          >
+            <FaShoppingCart className="h-7 w-7" />
+            {uniqueCartItemCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-red-100 bg-red-600 rounded-full">
+                {uniqueCartItemCount}
+              </span>
+            )}
+          </a>
           <button
             onClick={() => setIsOpen(!isOpen)}
             className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white transition-colors duration-150"
@@ -129,14 +148,20 @@ const Navbar = () => {
             <Link href="/contact" onClick={() => setIsOpen(false)} className={`block px-3 py-3 rounded-md text-lg font-medium transition-colors duration-150 ${pathname === "/contact" ? activeColorMobile : `${inactiveColorMobileBase} ${hoverColorMobile}`}`}>Liên hệ</Link>
           </div>
           <div className="border-t border-gray-700 pt-4 pb-3">
+            {/* THAY ĐỔI: Giỏ hàng trong mobile menu cũng có badge */}
             <div className="px-2 pb-2">
               <a
                 href="/cart"
                 onClick={(e) => { handleCartClick(e); setIsOpen(false); }}
-                className={`flex items-center px-3 py-3 rounded-md text-lg font-medium transition-colors duration-150 ${pathname === "/cart" ? activeColorMobile : `${inactiveColorMobileBase} ${hoverColorMobile}`}`}
+                className={`relative flex items-center px-3 py-3 rounded-md text-lg font-medium transition-colors duration-150 ${pathname === "/cart" ? activeColorMobile : `${inactiveColorMobileBase} ${hoverColorMobile}`}`}
               >
                 <span className="mr-2">Giỏ hàng</span>
                 <FaShoppingCart className="h-6 w-6" />
+                {uniqueCartItemCount > 0 && (
+                  <span className="absolute top-1.5 left-[calc(100%_-_60px)] ml-1 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-red-100 bg-red-600 rounded-full">
+                    {uniqueCartItemCount}
+                  </span>
+                )}
               </a>
             </div>
 
@@ -146,8 +171,6 @@ const Navbar = () => {
                 <Link href="/register" onClick={() => setIsOpen(false)} className={`block px-3 py-3 rounded-md text-lg font-medium transition-colors duration-150 ${pathname === "/register" ? activeColorMobile : `${inactiveColorMobileBase} ${hoverColorMobile}`}`}>Đăng ký</Link>
               </div>
             ) : (
-              // UserMenu cũng nên có onClick={() => setIsOpen(false)} nếu nó chứa các link điều hướng
-              // và bạn muốn menu mobile đóng lại khi một mục trong UserMenu được chọn.
               <div className="px-3 py-2" onClick={() => setIsOpen(false)}> <UserMenu /> </div>
             )}
           </div>
