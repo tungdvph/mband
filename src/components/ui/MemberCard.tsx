@@ -1,4 +1,4 @@
-// src/components/ui/MemberCard.tsx (hoặc đường dẫn tương tự)
+// src/components/ui/MemberCard.tsx 
 import Link from 'next/link';
 
 interface MemberCardProps {
