@@ -4,29 +4,32 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
-import Link from 'next/link'; // Đảm bảo đã import Link
+import Link from 'next/link';
+
+import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline'; // Sử dụng icon outline từ Heroicons v2
 
 const UserLoginForm = () => {
   const router = useRouter();
   const [formData, setFormData] = useState({ username: '', password: '' });
-  const [isLoading, setIsLoading] = useState(false); // Thêm state loading
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false); // State mới để bật/tắt hiển thị mật khẩu
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setError(''); // Xóa lỗi khi người dùng bắt đầu nhập lại
+    setError('');
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError(''); // Reset lỗi
-    setIsLoading(true); // Bắt đầu loading
+    setError('');
+    setIsLoading(true);
 
     try {
       const result = await signIn('user-credentials', {
-        username: formData.username.trim(), // Trim khoảng trắng thừa
+        username: formData.username.trim(),
         password: formData.password,
-        redirect: false, // Quan trọng: tự xử lý redirect sau khi check kết quả
+        redirect: false,
       });
 
       if (!result) {
@@ -35,24 +38,18 @@ const UserLoginForm = () => {
 
       if (result.error) {
         console.error('SignIn Error:', result.error);
-        // Kiểm tra lỗi cụ thể từ next-auth hoặc API của bạn
         if (result.error === 'CredentialsSignin') {
           setError('Tên đăng nhập hoặc mật khẩu không chính xác.');
         } else {
-          // Hiển thị lỗi chung hoặc lỗi cụ thể từ result.error nếu có
           setError(result.error || 'Đăng nhập thất bại. Vui lòng thử lại.');
         }
-        setIsLoading(false); // Dừng loading khi có lỗi
+        setIsLoading(false);
         return;
       }
 
       if (result.ok) {
-        // Đăng nhập thành công, chuyển hướng về trang chủ hoặc trang trước đó
-        // Bạn có thể dùng result.url nếu đã cấu hình callbackUrl đúng
         router.replace('/'); // Chuyển về trang chủ
-        // Không cần setIsLoading(false) vì trang sẽ chuyển hướng
       } else {
-        // Trường hợp không mong muốn khác
         setError('Đăng nhập thất bại, vui lòng thử lại.');
         setIsLoading(false);
       }
@@ -60,36 +57,34 @@ const UserLoginForm = () => {
     } catch (err: any) {
       console.error('Login submit error:', err);
       setError('Đã xảy ra lỗi hệ thống khi đăng nhập.');
-      setIsLoading(false); // Dừng loading khi có exception
+      setIsLoading(false);
     }
   };
 
+  // Hàm toggle hiển thị mật khẩu
+  const toggleShowPassword = () => {
+    setShowPassword(!showPassword);
+  };
+
   return (
-    // Container bao ngoài để căn giữa form trên màn hình
     <div className="flex items-center justify-center min-h-[calc(100vh-200px)] bg-gradient-to-br from-indigo-50 via-white to-cyan-50 py-12 px-4 sm:px-6 lg:px-8">
-      {/* Thẻ (Card) chứa form */}
       <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-xl shadow-lg">
-        {/* Tiêu đề */}
         <div>
           {/* Optional: Thêm logo ở đây */}
-          {/* <img className="mx-auto h-12 w-auto" src="/logo.png" alt="Logo" /> */}
           <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
             Đăng nhập tài khoản
           </h2>
         </div>
 
-        {/* Form */}
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {/* Hiển thị lỗi */}
           {error && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-sm" role="alert">
               <span className="block sm:inline">{error}</span>
             </div>
           )}
 
-          {/* Phần nhập liệu */}
           <div className="space-y-4 rounded-md shadow-sm">
-            {/* Trường Tên đăng nhập */}
+            {/* Trường Tên đăng nhập (giữ nguyên) */}
             <div>
               <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
                 Tên đăng nhập
@@ -100,45 +95,63 @@ const UserLoginForm = () => {
                 type="text"
                 autoComplete="username"
                 required
-                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm transition duration-150 ease-in-out"
+                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition duration-150 ease-in-out"
                 placeholder="Nhập tên đăng nhập của bạn"
                 value={formData.username}
                 onChange={handleChange}
-                disabled={isLoading} // Vô hiệu hóa khi đang gửi
+                disabled={isLoading}
               />
             </div>
 
-            {/* Trường Mật khẩu */}
+            {/* Trường Mật khẩu - THÊM ICON CON MẮT */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                 Mật khẩu
               </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm transition duration-150 ease-in-out"
-                placeholder="Nhập mật khẩu của bạn"
-                value={formData.password}
-                onChange={handleChange}
-                disabled={isLoading} // Vô hiệu hóa khi đang gửi
-              />
+              <div className="relative"> {/* Container cha có relative */}
+                <input
+                  id="password"
+                  name="password"
+                  // Thay đổi type dựa trên state showPassword
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  required
+                  // Thêm padding bên phải (pr) để không bị icon che - Bỏ focus:z-10
+                  className="appearance-none relative block w-full px-3 py-2 pr-10 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition duration-150 ease-in-out"
+                  placeholder="Nhập mật khẩu của bạn"
+                  value={formData.password}
+                  onChange={handleChange}
+                  disabled={isLoading}
+                />
+                {/* Button chứa icon con mắt */}
+                <button
+                  type="button" // Quan trọng: đặt type="button" để không submit form
+                  onClick={toggleShowPassword} // Gọi hàm toggle khi click
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-600 hover:text-gray-800 cursor-pointer focus:outline-none"
+                  aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'} // Hỗ trợ screen reader
+                >
+                  {showPassword ? (
+                    // Icon Mắt có gạch chéo khi mật khẩu hiển thị
+                    <EyeSlashIcon className="h-5 w-5" />
+                  ) : (
+                    // Icon Mắt khi mật khẩu ẩn
+                    <EyeIcon className="h-5 w-5" />
+                  )}
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* Nút Đăng nhập */}
+          {/* Nút Đăng nhập (giữ nguyên) */}
           <div>
             <button
               type="submit"
-              disabled={isLoading} // Vô hiệu hóa khi đang gửi
+              disabled={isLoading}
               className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${isLoading
                 ? 'bg-indigo-400 cursor-not-allowed'
                 : 'bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'
                 } transition duration-150 ease-in-out`}
             >
-              {/* Icon loading */}
               {isLoading && (
                 <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -148,11 +161,10 @@ const UserLoginForm = () => {
               {isLoading ? 'Đang xử lý...' : 'Đăng nhập'}
             </button>
           </div>
-        </form> {/* Kết thúc form ở đây */}
+        </form>
 
-        {/* ----- PHẦN THÊM MỚI ----- */}
-        {/* Liên kết Quên mật khẩu và Đăng ký */}
-        <div className="text-sm text-center space-y-2 mt-4"> {/* Thêm khoảng cách trên nếu cần */}
+        {/* Liên kết Quên mật khẩu và Đăng ký (giữ nguyên) */}
+        <div className="text-sm text-center space-y-2 mt-4">
           <div>
             <Link href="/forgot-password" className="font-medium text-indigo-600 hover:text-indigo-500">
               Quên mật khẩu?
@@ -165,10 +177,9 @@ const UserLoginForm = () => {
             </Link>
           </div>
         </div>
-        {/* ----- KẾT THÚC PHẦN THÊM MỚI ----- */}
 
-      </div> {/* Kết thúc thẻ (Card) chứa form */}
-    </div> // Kết thúc container bao ngoài
+      </div>
+    </div>
   );
 };
 

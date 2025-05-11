@@ -4,6 +4,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 
 const RegisterForm = () => {
   const router = useRouter();
@@ -11,14 +12,19 @@ const RegisterForm = () => {
     username: '',
     email: '',
     password: '',
+    confirmPassword: '', // THÊM state cho ô nhập lại mật khẩu
     fullName: ''
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  // THÊM states để bật/tắt hiển thị mật khẩu
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setError(''); // Xóa lỗi khi người dùng bắt đầu nhập lại
+    setError(''); // Xóa lỗi khi người dùng bắt đầu nhập lại (bao gồm cả lỗi xác nhận mật khẩu)
     setSuccess('');
     const { name, value } = e.target;
     setFormData({
@@ -34,58 +40,61 @@ const RegisterForm = () => {
     setIsLoading(true);
 
     // Lấy giá trị và trim() trước khi validation và gửi đi
-    // Ngoại trừ password, không trim() password
+    // Ngoại trừ password và confirmPassword, không trim() trực tiếp ở đây
     const trimmedUsername = formData.username.trim();
     const trimmedEmail = formData.email.trim();
-    const password = formData.password; // Không trim password ở đây
+    const password = formData.password;
+    const confirmPassword = formData.confirmPassword; // Lấy giá trị nhập lại mật khẩu
     const trimmedFullName = formData.fullName.trim();
 
     // --- Validation phía Client ---
 
-    // 1. Kiểm tra Tên đăng nhập có khoảng trắng bên trong không
-    // Regex \s kiểm tra bất kỳ ký tự khoảng trắng nào
+    // 1. Kiểm tra Tên đăng nhập
     if (/\s/.test(trimmedUsername)) {
       setError('Tên đăng nhập không được chứa khoảng trắng.');
       setIsLoading(false);
       return;
     }
-    // Kiểm tra Tên đăng nhập có rỗng không sau khi trim
     if (!trimmedUsername) {
       setError('Vui lòng nhập tên đăng nhập.');
       setIsLoading(false);
       return;
     }
 
-    // 2. Kiểm tra Họ và tên có rỗng không sau khi trim
+    // 2. Kiểm tra Họ và tên
     if (!trimmedFullName) {
       setError('Vui lòng nhập họ và tên.');
       setIsLoading(false);
       return;
     }
 
-    // 3. Kiểm tra Email có rỗng không sau khi trim
+    // 3. Kiểm tra Email
     if (!trimmedEmail) {
       setError('Vui lòng nhập địa chỉ email.');
       setIsLoading(false);
       return;
     }
-    // Kiểm tra định dạng email cơ bản (có thể dùng regex phức tạp hơn)
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
       setError('Định dạng email không hợp lệ.');
       setIsLoading(false);
       return;
     }
 
-    // 4. Kiểm tra độ dài mật khẩu
+    // 4. Kiểm tra Mật khẩu
     if (password.length < 6) {
       setError('Mật khẩu phải từ 6 ký tự trở lên.');
       setIsLoading(false);
       return;
     }
-
-    // 5. Kiểm tra mật khẩu có khoảng trắng bên trong không
     if (/\s/.test(password)) {
       setError('Mật khẩu không được chứa khoảng trắng.');
+      setIsLoading(false);
+      return;
+    }
+
+    // 5. Kiểm tra Nhập lại mật khẩu có khớp không
+    if (password !== confirmPassword) {
+      setError('Mật khẩu nhập lại không khớp.');
       setIsLoading(false);
       return;
     }
@@ -97,33 +106,30 @@ const RegisterForm = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          username: trimmedUsername, // Gửi giá trị đã trim
-          email: trimmedEmail,       // Gửi giá trị đã trim
-          password: password,         // Gửi mật khẩu gốc (server sẽ xử lý)
-          fullName: trimmedFullName, // Gửi giá trị đã trim
+          username: trimmedUsername,
+          email: trimmedEmail,
+          password: password, // Gửi mật khẩu gốc
+          fullName: trimmedFullName,
         })
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        // Xử lý lỗi cụ thể từ API dựa vào message trả về
         if (data.error === 'Email đã được sử dụng') {
           setError('Địa chỉ Email này đã được đăng ký. Vui lòng sử dụng email khác.');
         } else if (data.error === 'Tên đăng nhập đã được sử dụng') {
           setError('Tên đăng nhập này đã tồn tại. Vui lòng chọn tên khác.');
         } else {
-          // Các lỗi khác từ API hoặc lỗi chung
           setError(data.error || 'Đăng ký thất bại. Vui lòng thử lại.');
         }
-        setIsLoading(false); // Dừng loading khi có lỗi
-        return; // Quan trọng: dừng thực thi sau khi xử lý lỗi
+        setIsLoading(false);
+        return;
       }
 
-      // Đăng ký thành công
       setSuccess('Đăng ký thành công! Đang chuyển đến trang đăng nhập...');
       // Reset form (tùy chọn)
-      setFormData({ username: '', email: '', password: '', fullName: '' });
+      setFormData({ username: '', email: '', password: '', confirmPassword: '', fullName: '' }); // Reset cả confirmPassword
 
       setTimeout(() => {
         router.push('/login');
@@ -131,43 +137,45 @@ const RegisterForm = () => {
 
     } catch (err: any) {
       console.error("Registration error:", err);
-      // Lỗi mạng hoặc lỗi không xác định khác
       setError('Đã xảy ra lỗi kết nối hoặc lỗi hệ thống khi đăng ký.');
       setIsLoading(false);
     }
-    // Không cần setIsLoading(false) ở cuối nếu thành công và chuyển hướng
   };
 
+  // Hàm toggle hiển thị mật khẩu chính
+  const toggleShowPassword = () => {
+    setShowPassword(!showPassword);
+  };
+
+  // Hàm toggle hiển thị mật khẩu nhập lại
+  const toggleShowConfirmPassword = () => {
+    setShowConfirmPassword(!showConfirmPassword);
+  };
+
+
   return (
-    // Container bao ngoài, căn giữa, nền gradient
     <div className="flex items-center justify-center min-h-[calc(100vh-200px)] bg-gradient-to-br from-cyan-50 via-white to-blue-50 py-12 px-4 sm:px-6 lg:px-8">
-      {/* Thẻ (Card) chứa form */}
       <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-lg">
-        {/* Tiêu đề */}
         <div>
           <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
             Tạo tài khoản mới
           </h2>
         </div>
 
-        {/* Form đăng ký */}
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {/* Hiển thị lỗi */}
           {error && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-sm" role="alert">
               <span className="block sm:inline">{error}</span>
             </div>
           )}
-          {/* Hiển thị thành công */}
           {success && (
             <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative text-sm" role="alert">
               <span className="block sm:inline">{success}</span>
             </div>
           )}
 
-          {/* Phần nhập liệu */}
           <div className="space-y-4">
-            {/* Tên đăng nhập */}
+            {/* Tên đăng nhập (giữ nguyên) */}
             <div>
               <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
                 Tên đăng nhập <span className="text-red-500">*</span>
@@ -186,7 +194,7 @@ const RegisterForm = () => {
               />
             </div>
 
-            {/* Họ và tên */}
+            {/* Họ và tên (giữ nguyên) */}
             <div>
               <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
                 Họ và tên <span className="text-red-500">*</span>
@@ -205,7 +213,7 @@ const RegisterForm = () => {
               />
             </div>
 
-            {/* Email */}
+            {/* Email (giữ nguyên) */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                 Địa chỉ Email <span className="text-red-500">*</span>
@@ -224,24 +232,83 @@ const RegisterForm = () => {
               />
             </div>
 
-            {/* Mật khẩu */}
+            {/* Mật khẩu - THÊM ICON CON MẮT */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                 Mật khẩu <span className="text-red-500">*</span>
               </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="new-password"
-                required
-                className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition duration-150 ease-in-out"
-                placeholder="Từ 6 ký tự trở lên, không chứa khoảng trắng"
-                value={formData.password}
-                onChange={handleChange}
-                disabled={isLoading}
-              />
+              <div className="relative"> {/* Container cha có relative */}
+                <input
+                  id="password"
+                  name="password"
+                  // Thay đổi type dựa trên state showPassword
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  required
+                  // Thêm padding bên phải (pr) để không bị icon che
+                  className="appearance-none block w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition duration-150 ease-in-out"
+                  placeholder="Từ 6 ký tự trở lên, không chứa khoảng trắng"
+                  value={formData.password}
+                  onChange={handleChange}
+                  disabled={isLoading}
+                />
+                {/* Button chứa icon con mắt */}
+                <button
+                  type="button" // Quan trọng: đặt type="button" để không submit form
+                  onClick={toggleShowPassword} // Gọi hàm toggle state khi click
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-600 hover:text-gray-800 cursor-pointer focus:outline-none"
+                  aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'} // Hỗ trợ screen reader
+                >
+                  {showPassword ? (
+                    // Icon Mắt có gạch chéo khi mật khẩu hiển thị
+                    <EyeSlashIcon className="h-5 w-5" />
+                  ) : (
+                    // Icon Mắt khi mật khẩu ẩn
+                    <EyeIcon className="h-5 w-5" />
+                  )}
+                </button>
+              </div>
             </div>
+
+            {/* Nhập lại mật khẩu - THÊM MỚI */}
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                Nhập lại mật khẩu <span className="text-red-500">*</span>
+              </label>
+              <div className="relative"> {/* Container cha có relative */}
+                <input
+                  id="confirmPassword"
+                  name="confirmPassword" // Tên phải khớp với key trong state formData
+                  // Thay đổi type dựa trên state showConfirmPassword
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  autoComplete="new-password" // Dùng new-password cho cả 2 trường password mới
+                  required
+                  // Thêm padding bên phải (pr) để không bị icon che
+                  className="appearance-none block w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition duration-150 ease-in-out"
+                  placeholder="Nhập lại mật khẩu vừa tạo"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  disabled={isLoading}
+                />
+                {/* Button chứa icon con mắt */}
+                <button
+                  type="button" // Quan trọng: đặt type="button" để không submit form
+                  onClick={toggleShowConfirmPassword} // Gọi hàm toggle state khi click
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-600 hover:text-gray-800 cursor-pointer focus:outline-none"
+                  aria-label={showConfirmPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'} // Hỗ trợ screen reader
+                >
+                  {showConfirmPassword ? (
+                    // Icon Mắt có gạch chéo khi mật khẩu hiển thị
+                    <EyeSlashIcon className="h-5 w-5" />
+                  ) : (
+                    // Icon Mắt khi mật khẩu ẩn
+                    <EyeIcon className="h-5 w-5" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+
           </div>
 
           {/* Nút Đăng ký */}
@@ -264,7 +331,7 @@ const RegisterForm = () => {
             </button>
           </div>
 
-          {/* Liên kết quay lại Đăng nhập */}
+          {/* Liên kết quay lại Đăng nhập (giữ nguyên) */}
           <div className="text-sm text-center">
             <span className="text-gray-600">Đã có tài khoản? </span>
             <Link href="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
