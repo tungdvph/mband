@@ -1,8 +1,11 @@
+// src/app/api/stats/route.ts
+
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/mongodb'; // Đảm bảo đường dẫn này đúng
-import User from '@/lib/models/User';           // Đảm bảo đường dẫn này đúng
-import Booking from '@/lib/models/Booking';       // Đảm bảo đường dẫn này đúng
-import Song from '@/lib/models/Music';          // Lưu ý: Import Model 'Music' nhưng đặt tên là 'Song'
+import { connectToDatabase } from '@/lib/mongodb';    // Đảm bảo đường dẫn này đúng
+import User from '@/lib/models/User';                // Đảm bảo đường dẫn này đúng
+// import Booking from '@/lib/models/Booking';       // <<--- XÓA DÒNG NÀY HOẶC COMMENT LẠI
+import TicketBooking from '@/lib/models/TicketBooking'; // <<+++ THÊM DÒNG NÀY: Import model TicketBooking
+import Song from '@/lib/models/Music';               // Lưu ý: Import Model 'Music' nhưng đặt tên là 'Song'
 
 
 export async function GET() {
@@ -15,27 +18,25 @@ export async function GET() {
 
         // Log ngay trước khi thực hiện các lệnh đếm
         console.log('[API /api/stats] Đang thực thi Promise.all cho các lệnh countDocuments...');
-        // <<--- BỎ contactCount KHỎI DESTRUCTURING VÀ Contact.countDocuments() KHỎI PROMISE.ALL ---
+        // Sử dụng TicketBooking.countDocuments()
         const [userCount, bookingCount, songCount] = await Promise.all([
             User.countDocuments(),
-            Booking.countDocuments(),
+            TicketBooking.countDocuments(), // <<--- SỬA Ở ĐÂY: Dùng TicketBooking để đếm
             // Nhớ rằng: Biến 'Song' ở đây là Model 'Music', sẽ đếm collection 'musics'
             Song.countDocuments(),
-            // Contact.countDocuments() // <<--- BỎ DÒNG NÀY
         ]);
 
-        // !!! Log quan trọng: In ra các giá trị đếm nhận được từ database !!!
-        // <<--- BỎ contactCount KHỎI LOG ---
-        console.log(`[API /api/stats] Kết quả đếm nhận được - Users: ${userCount}, Bookings: ${bookingCount}, Songs (collection 'musics'): ${songCount}`);
+        // Log quan trọng: In ra các giá trị đếm nhận được từ database
+        console.log(`[API /api/stats] Kết quả đếm nhận được - Users: ${userCount}, Bookings (from TicketBooking): ${bookingCount}, Songs (collection 'musics'): ${songCount}`);
 
         // Chuẩn bị đối tượng JSON để trả về
-        // <<--- BỎ contacts: contactCount KHỎI OBJECT stats ---
+        // Frontend của bạn trong AdminDashboardPage đang tìm key `ticketBookingCount` hoặc `ticketBookings` hoặc `bookings`.
+        // Trả về `ticketBookings` sẽ khớp với một trong các key đó.
         const stats = {
             users: userCount,
-            bookings: bookingCount,
+            ticketBookings: bookingCount, // <<--- SỬA KEY (hoặc giữ 'bookings' nếu frontend đã quen)
             // Frontend đang mong đợi key là 'songs', nên ta dùng giá trị songCount (từ collection 'musics') ở đây
             songs: songCount,
-            // contacts: contactCount // <<--- BỎ DÒNG NÀY
         };
 
         // Log đối tượng chuẩn bị trả về cho client

@@ -1,5 +1,5 @@
 import mongoose, { Document, Schema, Types, Model } from 'mongoose';
-// Giả sử ISchedule và IVenue được export từ file Schedule model của bạn
+
 import { ISchedule, IVenue } from './Schedule';
 
 // Interface cho thông tin schedule được nhúng vào cart item
