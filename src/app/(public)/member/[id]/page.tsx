@@ -102,7 +102,7 @@ export default function MemberDetailPage() {
               <img
                 src={member.image || '/img/default-avatar.png'} // Cập nhật đường dẫn ảnh mặc định nếu cần
                 alt={member.name || 'Ảnh thành viên'}
-                className="w-full h-auto md:h-96 object-cover" // Điều chỉnh chiều cao ảnh
+                className="w-full h-auto object-cover" // Điều chỉnh chiều cao ảnh
               />
             </div>
             {/* Phần thông tin */}

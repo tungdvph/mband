@@ -68,7 +68,7 @@ export default function ContactPage() {
           {/* Phần Tiêu Đề Chính */}
           <div className="text-center mb-16 sm:mb-20">
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 tracking-tight">
-              Kết Nối Với CyberBand
+              Kết Nối Với Cyber Band
             </h1>
             <p className="mt-6 text-lg sm:text-xl text-slate-600 max-w-3xl mx-auto">
               Chúng tôi luôn trân trọng sự quan tâm của bạn. Dưới đây là thông tin liên hệ chi tiết và một cái nhìn tổng quan về những trải nghiệm bạn có thể tìm thấy trên website.
