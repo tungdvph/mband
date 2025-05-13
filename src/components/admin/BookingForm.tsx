@@ -1,6 +1,6 @@
 'use client';
 import { useState, ChangeEvent, FormEvent, useEffect } from 'react';
-import { IBookingRequest } from '@/lib/models/BookingRequest'; // For type hints from the main model
+import { IBookingRequest } from '@/lib/models/BookingRequest';
 
 // 1. INTERFACE CHO DỮ LIỆU FORM CỦA ADMIN
 export interface IAdminBookingFormFields {

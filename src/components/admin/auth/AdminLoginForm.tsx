@@ -1,13 +1,11 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState } from 'react'; // useEffect đã được xóa
 import { signIn } from 'next-auth/react';
-// Sửa dòng import này
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useAdminAuth } from '@/contexts/AdminAuthContext';
+// import { useAdminAuth } from '@/contexts/AdminAuthContext'; // không sử dụng
 
 export default function AdminLoginForm() {
   const router = useRouter();
-  // Bây giờ useSearchParams đã được import và có thể sử dụng
   const searchParams = useSearchParams();
   const callbackUrl = searchParams?.get('callbackUrl') || '/admin';
 
@@ -24,7 +22,6 @@ export default function AdminLoginForm() {
     const password = formData.get('password') as string;
 
     try {
-      // Thêm basePath để đảm bảo sử dụng API route admin
       const result = await signIn('admin-credentials', {
         username,
         password,
@@ -40,17 +37,14 @@ export default function AdminLoginForm() {
         setError('Không nhận được phản hồi từ máy chủ đăng nhập.');
       } else if (result.error) {
         console.error('[AdminLoginForm] Error from result.error:', result.error, 'Status:', result.status, 'OK:', result.ok);
-        // Nên dựa vào result.error để hiển thị lỗi cụ thể hơn nếu có thể
         if (result.error === 'CredentialsSignin') {
           setError('Tên đăng nhập hoặc mật khẩu không đúng.');
         } else {
-          setError(`Lỗi đăng nhập: ${result.error}`); // Hiển thị lỗi cụ thể hơn
+          setError(`Lỗi đăng nhập: ${result.error}`);
         }
       } else if (result.ok) {
         console.log('[AdminLoginForm] Sign In OK. Client-side redirecting to:', callbackUrl);
         router.push(callbackUrl);
-        // Không cần gọi router.refresh() ngay sau push, vì push thường đã đủ để trigger re-render và cập nhật session nếu middleware xử lý đúng.
-        // router.refresh();
       } else {
         console.warn('[AdminLoginForm] Warning: signIn result has no error but is not ok.', result);
         setError('Trạng thái đăng nhập không xác định.');
@@ -65,14 +59,12 @@ export default function AdminLoginForm() {
   };
 
   return (
-    // Phần JSX của form giữ nguyên
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
         <div className="p-3 bg-red-100 text-red-700 rounded-md text-sm">
           {error}
         </div>
       )}
-      {/* Input fields */}
       <div>
         <label htmlFor="username-admin" className="block text-sm font-medium text-gray-700 mb-1">Tên đăng nhập</label>
         <input
@@ -95,7 +87,6 @@ export default function AdminLoginForm() {
           placeholder="••••••••"
         />
       </div>
-      {/* Submit Button */}
       <button
         type="submit"
         disabled={loading}
