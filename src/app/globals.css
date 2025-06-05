@@ -1,4 +1,7 @@
+/* globals.css */
+
 @import "tailwindcss";
+
 
 :root {
   --background: #ffffff;
@@ -8,8 +11,6 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -70,6 +71,7 @@ body {
   100% {
     /* Bắt đầu và kết thúc bằng màu chữ mặc định */
     color: hsl(var(--foreground));
+    /* Sử dụng hsl để đảm bảo biến CSS được diễn giải đúng */
   }
 
   25% {
@@ -95,4 +97,24 @@ body {
 .text-color-cycle {
   /* Áp dụng animation 'text-color-cycle', lặp vô hạn, mỗi chu kỳ 6 giây */
   animation: text-color-cycle 6s linear infinite;
+}
+
+
+
+/* CSS CHO NAVBAR DÍNH (STICKY NAVBAR) */
+.sticky-navbar {
+  position: -webkit-sticky;
+  /* Hỗ trợ trình duyệt Safari cũ hơn */
+  position: sticky;
+  top: 0;
+  /* Dính vào đỉnh của viewport */
+  width: 100%;
+  /* Đảm bảo Navbar chiếm toàn bộ chiều rộng */
+  z-index: 50;
+  /* Đảm bảo Navbar nổi lên trên các phần tử khác.
+                  Giá trị này có thể cần điều chỉnh tùy thuộc vào z-index của các phần tử khác.
+                  Ví dụ, nếu modal của bạn có z-index cao hơn (ví dụ z-[9999] trong Tailwind),
+                  thì navbar nên có z-index thấp hơn modal nhưng cao hơn nội dung thông thường. */
+  /* Bạn có thể thêm hiệu ứng đổ bóng nhẹ khi navbar dính lại nếu muốn */
+  /* box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); */
 }

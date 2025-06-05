@@ -1,4 +1,4 @@
-// src/components/layout/Navbar.tsx (Hoặc đường dẫn tương ứng của bạn)
+// src/components/layout/Navbar.tsx
 'use client';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -44,7 +44,8 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-black text-white">
+    // THÊM CLASS 'sticky-navbar' VÀO THẺ NAV
+    <nav className="bg-black text-white sticky-navbar">
       <div className="flex items-center justify-between h-20 w-full px-4 sm:px-6 lg:px-8">
 
         {/* Logo */}
@@ -73,7 +74,6 @@ const Navbar = () => {
 
         {/* Right Section (Desktop) */}
         <div className="hidden md:flex flex-shrink-0 items-center space-x-6">
-          {/* THAY ĐỔI: Thêm badge cho giỏ hàng */}
           <a
             href="/cart"
             onClick={handleCartClick}
@@ -101,11 +101,10 @@ const Navbar = () => {
 
         {/* Mobile Menu Button */}
         <div className="md:hidden flex items-center">
-          {/* THÊM: Icon giỏ hàng cho mobile (nếu cần hiển thị số lượng ở đây nữa) */}
           <a
             href="/cart"
             onClick={(e) => { handleCartClick(e); setIsOpen(false); }}
-            className="relative text-gray-400 hover:text-white p-2 mr-2" // Thêm style nếu cần
+            className="relative text-gray-400 hover:text-white p-2 mr-2"
             title="Giỏ hàng"
           >
             <FaShoppingCart className="h-7 w-7" />
@@ -148,7 +147,6 @@ const Navbar = () => {
             <Link href="/contact" onClick={() => setIsOpen(false)} className={`block px-3 py-3 rounded-md text-lg font-medium transition-colors duration-150 ${pathname === "/contact" ? activeColorMobile : `${inactiveColorMobileBase} ${hoverColorMobile}`}`}>Liên hệ</Link>
           </div>
           <div className="border-t border-gray-700 pt-4 pb-3">
-            {/* THAY ĐỔI: Giỏ hàng trong mobile menu cũng có badge */}
             <div className="px-2 pb-2">
               <a
                 href="/cart"
