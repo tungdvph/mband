@@ -1,8 +1,10 @@
+// src/components/auth/ResetPasswordForm.tsx
 'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline'; // Import icons
 
 // Nhận token làm prop
 interface ResetPasswordFormProps {
@@ -16,6 +18,10 @@ const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({ token }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+
+    // State để quản lý việc hiển thị mật khẩu
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -71,6 +77,16 @@ const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({ token }) => {
         }
     };
 
+    // Hàm toggle hiển thị mật khẩu mới
+    const toggleShowPassword = () => {
+        setShowPassword(!showPassword);
+    };
+
+    // Hàm toggle hiển thị mật khẩu xác nhận
+    const toggleShowConfirmPassword = () => {
+        setShowConfirmPassword(!showConfirmPassword);
+    };
+
     return (
         <div className="flex items-center justify-center min-h-[calc(100vh-200px)] bg-gradient-to-br from-teal-50 via-white to-cyan-50 py-12 px-4 sm:px-6 lg:px-8">
             <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-lg">
@@ -92,34 +108,62 @@ const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({ token }) => {
                             <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                                 Mật khẩu mới <span className="text-red-500">*</span>
                             </label>
-                            <input
-                                id="password"
-                                name="password"
-                                type="password"
-                                required
-                                className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition duration-150 ease-in-out"
-                                placeholder="Nhập mật khẩu mới (tối thiểu 6 ký tự)"
-                                value={password}
-                                onChange={(e) => { setPassword(e.target.value); setError(''); }}
-                                disabled={isLoading || !!success}
-                            />
+                            <div className="relative"> {/* Container cha có relative */}
+                                <input
+                                    id="password"
+                                    name="password"
+                                    type={showPassword ? 'text' : 'password'} // Thay đổi type dựa trên state
+                                    required
+                                    className="appearance-none block w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition duration-150 ease-in-out"
+                                    placeholder="Nhập mật khẩu mới (tối thiểu 6 ký tự)"
+                                    value={password}
+                                    onChange={(e) => { setPassword(e.target.value); setError(''); }}
+                                    disabled={isLoading || !!success}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={toggleShowPassword}
+                                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-600 hover:text-gray-800 cursor-pointer focus:outline-none"
+                                    aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                                >
+                                    {showPassword ? (
+                                        <EyeSlashIcon className="h-5 w-5" />
+                                    ) : (
+                                        <EyeIcon className="h-5 w-5" />
+                                    )}
+                                </button>
+                            </div>
                         </div>
                         {/* Xác nhận mật khẩu */}
                         <div>
                             <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
                                 Xác nhận mật khẩu mới <span className="text-red-500">*</span>
                             </label>
-                            <input
-                                id="confirmPassword"
-                                name="confirmPassword"
-                                type="password"
-                                required
-                                className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition duration-150 ease-in-out"
-                                placeholder="Nhập lại mật khẩu mới"
-                                value={confirmPassword}
-                                onChange={(e) => { setConfirmPassword(e.target.value); setError(''); }}
-                                disabled={isLoading || !!success}
-                            />
+                            <div className="relative"> {/* Container cha có relative */}
+                                <input
+                                    id="confirmPassword"
+                                    name="confirmPassword"
+                                    type={showConfirmPassword ? 'text' : 'password'} // Thay đổi type dựa trên state
+                                    required
+                                    className="appearance-none block w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition duration-150 ease-in-out"
+                                    placeholder="Nhập lại mật khẩu mới"
+                                    value={confirmPassword}
+                                    onChange={(e) => { setConfirmPassword(e.target.value); setError(''); }}
+                                    disabled={isLoading || !!success}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={toggleShowConfirmPassword}
+                                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-600 hover:text-gray-800 cursor-pointer focus:outline-none"
+                                    aria-label={showConfirmPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                                >
+                                    {showConfirmPassword ? (
+                                        <EyeSlashIcon className="h-5 w-5" />
+                                    ) : (
+                                        <EyeIcon className="h-5 w-5" />
+                                    )}
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -129,7 +173,12 @@ const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({ token }) => {
                             disabled={isLoading || !!success}
                             className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${isLoading || success ? 'bg-indigo-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'} transition duration-150 ease-in-out`}
                         >
-                            {/* Icon loading */}
+                            {isLoading && (
+                                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                            )}
                             {isLoading ? 'Đang cập nhật...' : (success ? 'Đã cập nhật!' : 'Đặt lại mật khẩu')}
                         </button>
                     </div>

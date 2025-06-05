@@ -17,8 +17,6 @@ import {
   FaDollarSign,
   FaShoppingCart
 } from 'react-icons/fa';
-// FaExclamationCircle không được sử dụng, có thể bỏ nếu không cần
-// import { FaExclamationCircle } from 'react-icons/fa';
 
 // Hàm format ngày giờ
 const formatDate = (dateString: string | undefined | null): string => {
@@ -62,15 +60,14 @@ export default function ScheduleListPage() {
 
   const { data: session, status } = useSession();
   const router = useRouter();
-  const { addToCart } = useCart(); // addToCart từ context sẽ xử lý toast
+  const { addToCart } = useCart();
 
-  // Effect fetch dữ liệu
   useEffect(() => {
     const fetchSchedules = async () => {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch('/api/schedule'); // Điều chỉnh API endpoint nếu cần
+        const response = await fetch('/api/schedule');
         if (!response.ok) {
           throw new Error(`Không thể tải lịch trình (${response.status})`);
         }
@@ -87,7 +84,6 @@ export default function ScheduleListPage() {
     fetchSchedules();
   }, []);
 
-  // Lọc và sắp xếp danh sách hiển thị
   const displayedSchedules = useMemo(() => {
     let filtered = schedules;
 
@@ -109,13 +105,12 @@ export default function ScheduleListPage() {
         sorted.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
         break;
       case 'price_asc':
-        sorted.sort((a, b) => (a.price ?? 0) - (b.price ?? 0));
+        sorted.sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity)); // Xử lý giá null/undefined khi sắp xếp
         break;
       case 'price_desc':
-        sorted.sort((a, b) => (b.price ?? 0) - (a.price ?? 0));
+        sorted.sort((a, b) => (b.price ?? -Infinity) - (a.price ?? -Infinity)); // Xử lý giá null/undefined khi sắp xếp
         break;
       default:
-        // Mặc định sắp xếp theo ngày mới nhất
         sorted.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         break;
     }
@@ -139,22 +134,11 @@ export default function ScheduleListPage() {
       setShowLoginPrompt(true);
       return;
     }
-    addToCart(schedule); // Gọi addToCart từ context, context sẽ xử lý toast
-    // << BỎ DÒNG TOAST.SUCCESS Ở ĐÂY >>
-    // toast.success(`Đã thêm "${schedule.eventName}" vào giỏ hàng!`, {
-    //   position: "bottom-right",
-    //   autoClose: 3000,
-    //   hideProgressBar: false,
-    //   closeOnClick: true,
-    //   pauseOnHover: true,
-    //   draggable: true,
-    //   progress: undefined,
-    //   theme: "light",
-    // });
+    addToCart(schedule);
   };
 
   const handleViewDetailsClick = (scheduleId: string) => {
-    if (status === 'loading') return; // Có thể thêm toast.info nếu muốn
+    if (status === 'loading') return;
     if (status !== 'authenticated') {
       setShowLoginPrompt(true);
       return;
@@ -163,9 +147,23 @@ export default function ScheduleListPage() {
   };
 
   const closeLoginPrompt = () => setShowLoginPrompt(false);
-  // handleGoHome không được sử dụng, có thể bỏ nếu không cần
-  // const handleGoHome = () => { router.push('/'); closeLoginPrompt(); };
   const handleGoLogin = () => { router.push('/login'); closeLoginPrompt(); };
+
+  const getScheduleStatusDisplay = (scheduleStatus?: string) => {
+    if (!scheduleStatus || scheduleStatus === 'scheduled') {
+      return null;
+    }
+    switch (scheduleStatus) {
+      case 'cancelled':
+        return { text: 'Đã hủy', className: 'bg-red-100 text-red-800' };
+      case 'postponed':
+        return { text: 'Tạm hoãn', className: 'bg-yellow-100 text-yellow-800' };
+      case 'completed':
+        return { text: 'Đã hoàn thành', className: 'bg-green-100 text-green-800' }; // Thêm trạng thái completed
+      default:
+        return { text: scheduleStatus, className: 'bg-gray-100 text-gray-800' }; // Mặc định
+    }
+  };
 
   return (
     <Layout>
@@ -240,84 +238,88 @@ export default function ScheduleListPage() {
           {/* Hiển thị danh sách lịch trình */}
           {!loading && !error && displayedSchedules.length > 0 && (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 md:gap-8">
-              {displayedSchedules.map((schedule) => (
-                <div
-                  key={schedule._id}
-                  className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden flex flex-col border border-gray-200 h-full group"
-                >
-                  <div className="p-5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-t-xl">
-                    <h2 className="text-xl font-bold truncate group-hover:text-yellow-300 transition-colors" title={schedule.eventName}>
-                      {schedule.eventName}
-                    </h2>
-                    {schedule.status && schedule.status !== 'scheduled' && (
-                      <span className={`mt-1 inline-block text-xs font-semibold px-2 py-0.5 rounded ${schedule.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                        schedule.status === 'postponed' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-gray-100 text-gray-800' // Mặc định cho các trạng thái khác
-                        }`}>
-                        {schedule.status === 'cancelled' ? 'Đã hủy' :
-                          schedule.status === 'postponed' ? 'Tạm hoãn' : schedule.status}
-                      </span>
-                    )}
-                  </div>
+              {displayedSchedules.map((schedule) => {
+                const statusDisplay = getScheduleStatusDisplay(schedule.status);
+                const canAddToCart = schedule.type === 'concert' &&
+                  schedule.status !== 'cancelled' &&
+                  schedule.status !== 'postponed' &&
+                  schedule.status !== 'completed' && // Thêm điều kiện completed
+                  schedule.price != null &&
+                  schedule.price > 0;
 
-                  <div className="p-5 flex-grow space-y-3 text-sm">
-                    <div className="flex items-start text-gray-700">
-                      <FaCalendarAlt className="mr-2 mt-0.5 text-indigo-500 flex-shrink-0" aria-hidden="true" />
-                      <span><strong className="font-medium text-gray-800">Ngày:</strong> {formatDate(schedule.date)}</span>
+                return (
+                  <div
+                    key={schedule._id}
+                    className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden flex flex-col border border-gray-200 h-full group"
+                  >
+                    <div className="p-5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-t-xl">
+                      <h2 className="text-xl font-bold truncate group-hover:text-yellow-300 transition-colors" title={schedule.eventName}>
+                        {schedule.eventName}
+                      </h2>
+                      {statusDisplay && (
+                        <span className={`mt-1 inline-block text-xs font-semibold px-2 py-0.5 rounded ${statusDisplay.className}`}>
+                          {statusDisplay.text}
+                        </span>
+                      )}
                     </div>
-                    <div className="flex items-start text-gray-700">
-                      <FaClock className="mr-2 mt-0.5 text-indigo-500 flex-shrink-0" aria-hidden="true" />
-                      <span><strong className="font-medium text-gray-800">Thời gian:</strong> {schedule.startTime} {schedule.endTime ? ` - ${schedule.endTime}` : ''}</span>
-                    </div>
-                    <div className="flex items-start text-gray-700">
-                      <FaMapMarkerAlt className="mr-2 mt-0.5 text-indigo-500 flex-shrink-0" aria-hidden="true" />
-                      <span>
-                        <strong className="font-medium text-gray-800">Địa điểm:</strong> {schedule.venue.name}
-                        {schedule.venue.city ? `, ${schedule.venue.city}` : ''}
-                      </span>
-                    </div>
-                    <div className="flex items-start text-gray-700">
-                      <FaDollarSign className="mr-2 mt-0.5 text-indigo-500 flex-shrink-0" aria-hidden="true" />
-                      <span><strong className="font-medium text-gray-800">Giá vé:</strong> {formatPrice(schedule.price)}</span>
-                    </div>
-                    {schedule.description && (
-                      <p className="text-gray-600 pt-2 text-xs line-clamp-3 border-t border-gray-100 mt-3" title={schedule.description}>
-                        {schedule.description}
-                      </p>
-                    )}
-                  </div>
 
-                  <div className="px-5 pb-5 pt-3 mt-auto border-t border-gray-100 flex justify-between items-center">
-                    {/* Điều kiện hiển thị nút "Thêm vào giỏ" */}
-                    {(schedule.type === 'concert' && schedule.status !== 'cancelled' && schedule.status !== 'postponed' && schedule.price != null && schedule.price > 0) ? (
-                      <button
-                        onClick={() => handleAddToCart(schedule)}
-                        className="px-4 py-2 text-sm font-medium rounded-md shadow-sm bg-sky-600 text-white hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 transition ease-in-out duration-150 flex items-center"
-                        title="Thêm sự kiện vào giỏ hàng"
-                      >
-                        <FaShoppingCart className="inline mr-2" aria-hidden="true" />
-                        Thêm vào giỏ
-                      </button>
-                    ) : (
-                      // Hiển thị div trống hoặc thông báo khác nếu không đủ điều kiện
-                      <div />
-                    )}
+                    <div className="p-5 flex-grow space-y-3 text-sm">
+                      <div className="flex items-start text-gray-700">
+                        <FaCalendarAlt className="mr-2 mt-0.5 text-indigo-500 flex-shrink-0" aria-hidden="true" />
+                        <span><strong className="font-medium text-gray-800">Ngày:</strong> {formatDate(schedule.date)}</span>
+                      </div>
+                      <div className="flex items-start text-gray-700">
+                        <FaClock className="mr-2 mt-0.5 text-indigo-500 flex-shrink-0" aria-hidden="true" />
+                        <span><strong className="font-medium text-gray-800">Thời gian:</strong> {schedule.startTime} {schedule.endTime ? ` - ${schedule.endTime}` : ''}</span>
+                      </div>
+                      <div className="flex items-start text-gray-700">
+                        <FaMapMarkerAlt className="mr-2 mt-0.5 text-indigo-500 flex-shrink-0" aria-hidden="true" />
+                        <span>
+                          <strong className="font-medium text-gray-800">Địa điểm:</strong> {schedule.venue.name}
+                          {schedule.venue.city ? `, ${schedule.venue.city}` : ''}
+                        </span>
+                      </div>
+                      <div className="flex items-start text-gray-700">
+                        <FaDollarSign className="mr-2 mt-0.5 text-indigo-500 flex-shrink-0" aria-hidden="true" />
+                        <span><strong className="font-medium text-gray-800">Giá vé:</strong> {formatPrice(schedule.price)}</span>
+                      </div>
+                      {schedule.description && (
+                        <p className="text-gray-600 pt-2 text-xs line-clamp-3 border-t border-gray-100 mt-3" title={schedule.description}>
+                          {schedule.description}
+                        </p>
+                      )}
+                    </div>
 
-                    <div className="flex items-center space-x-3">
-                      <button
-                        onClick={() => handleViewDetailsClick(schedule._id)}
-                        className={`px-4 py-2 text-sm font-medium rounded-md shadow-sm transition ease-in-out duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${status === 'loading' // Giữ nguyên logic disable dựa trên status session
-                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                          : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-                          }`}
-                        title="Xem thông tin chi tiết lịch trình"
-                      >
-                        Chi tiết
-                      </button>
+                    <div className="px-5 pb-5 pt-3 mt-auto border-t border-gray-100 flex justify-between items-center">
+                      {canAddToCart ? (
+                        <button
+                          onClick={() => handleAddToCart(schedule)}
+                          className="px-4 py-2 text-sm font-medium rounded-md shadow-sm bg-sky-600 text-white hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 transition ease-in-out duration-150 flex items-center"
+                          title="Thêm sự kiện vào giỏ hàng"
+                        >
+                          <FaShoppingCart className="inline mr-2" aria-hidden="true" />
+                          Thêm vào giỏ
+                        </button>
+                      ) : (
+                        <div /> // Div trống để giữ layout nếu không có nút
+                      )}
+
+                      <div className="flex items-center space-x-3">
+                        <button
+                          onClick={() => handleViewDetailsClick(schedule._id)}
+                          className={`px-4 py-2 text-sm font-medium rounded-md shadow-sm transition ease-in-out duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${status === 'loading'
+                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                            }`}
+                          title="Xem thông tin chi tiết lịch trình"
+                        >
+                          Chi tiết
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>
@@ -343,14 +345,14 @@ export default function ScheduleListPage() {
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
             <style jsx>{`
-                            @keyframes fade-in-scale {
-                                from { opacity: 0; transform: scale(0.95); }
-                                to { opacity: 1; transform: scale(1); }
-                            }
-                            .animate-fade-in-scale {
-                                animation-name: fade-in-scale;
-                            }
-                        `}</style>
+                          @keyframes fade-in-scale {
+                              from { opacity: 0; transform: scale(0.95); }
+                              to { opacity: 1; transform: scale(1); }
+                          }
+                          .animate-fade-in-scale {
+                              animation-name: fade-in-scale;
+                          }
+                      `}</style>
             <svg className="mx-auto mb-4 w-12 h-12 text-yellow-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0-10.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.75c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.57-.598-3.75h-.152c-3.196 0-6.1-1.25-8.25-3.286Zm0 13.036h.008v.008H12v-.008Z" />
             </svg>
