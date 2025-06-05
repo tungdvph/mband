@@ -85,7 +85,8 @@ export default function ScheduleListPage() {
   }, []);
 
   const displayedSchedules = useMemo(() => {
-    let filtered = schedules;
+    // Lọc bỏ các lịch trình đã hoàn thành ngay từ đầu
+    let filtered = schedules.filter(schedule => schedule.status !== 'completed');
 
     if (searchTerm) {
       const lowerCaseSearchTerm = searchTerm.toLowerCase();
@@ -105,10 +106,10 @@ export default function ScheduleListPage() {
         sorted.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
         break;
       case 'price_asc':
-        sorted.sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity)); // Xử lý giá null/undefined khi sắp xếp
+        sorted.sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity));
         break;
       case 'price_desc':
-        sorted.sort((a, b) => (b.price ?? -Infinity) - (a.price ?? -Infinity)); // Xử lý giá null/undefined khi sắp xếp
+        sorted.sort((a, b) => (b.price ?? -Infinity) - (a.price ?? -Infinity));
         break;
       default:
         sorted.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -150,7 +151,9 @@ export default function ScheduleListPage() {
   const handleGoLogin = () => { router.push('/login'); closeLoginPrompt(); };
 
   const getScheduleStatusDisplay = (scheduleStatus?: string) => {
-    if (!scheduleStatus || scheduleStatus === 'scheduled') {
+    // Nếu lịch trình là 'completed', chúng sẽ không được hiển thị do đã lọc ở displayedSchedules
+    // Tuy nhiên, hàm này vẫn giữ nguyên logic để có thể tái sử dụng nếu cần
+    if (!scheduleStatus || scheduleStatus === 'scheduled' || scheduleStatus === 'completed') {
       return null;
     }
     switch (scheduleStatus) {
@@ -158,10 +161,11 @@ export default function ScheduleListPage() {
         return { text: 'Đã hủy', className: 'bg-red-100 text-red-800' };
       case 'postponed':
         return { text: 'Tạm hoãn', className: 'bg-yellow-100 text-yellow-800' };
-      case 'completed':
-        return { text: 'Đã hoàn thành', className: 'bg-green-100 text-green-800' }; // Thêm trạng thái completed
+      // Trường hợp 'completed' sẽ không bao giờ đạt tới đây trong ngữ cảnh hiển thị danh sách
+      // do đã được lọc ở `displayedSchedules`.
+      // Nếu cần hiển thị 'completed' ở nơi khác, có thể thêm case ở đây.
       default:
-        return { text: scheduleStatus, className: 'bg-gray-100 text-gray-800' }; // Mặc định
+        return { text: scheduleStatus, className: 'bg-gray-100 text-gray-800' };
     }
   };
 
@@ -173,7 +177,6 @@ export default function ScheduleListPage() {
             Lịch Trình Sự Kiện
           </h1>
 
-          {/* Phần Tìm kiếm và Sắp xếp */}
           <div className="mb-10 p-4 bg-white rounded-lg shadow-md border border-gray-200 flex flex-col sm:flex-row gap-4 items-center justify-between">
             <div className="relative w-full sm:w-2/3">
               <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
@@ -209,7 +212,6 @@ export default function ScheduleListPage() {
             </div>
           </div>
 
-          {/* Loading, Error, No Data messages */}
           {loading && (
             <div className="text-center py-20">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
@@ -235,15 +237,16 @@ export default function ScheduleListPage() {
             </div>
           )}
 
-          {/* Hiển thị danh sách lịch trình */}
           {!loading && !error && displayedSchedules.length > 0 && (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 md:gap-8">
               {displayedSchedules.map((schedule) => {
                 const statusDisplay = getScheduleStatusDisplay(schedule.status);
+                // Nút "Thêm vào giỏ" sẽ không hiển thị cho 'completed' do đã lọc ở displayedSchedules
+                // Nhưng logic `canAddToCart` vẫn giữ nguyên để rõ ràng
                 const canAddToCart = schedule.type === 'concert' &&
                   schedule.status !== 'cancelled' &&
                   schedule.status !== 'postponed' &&
-                  schedule.status !== 'completed' && // Thêm điều kiện completed
+                  // schedule.status !== 'completed' // Điều kiện này trở nên dư thừa do lọc ở trên
                   schedule.price != null &&
                   schedule.price > 0;
 
@@ -301,7 +304,7 @@ export default function ScheduleListPage() {
                           Thêm vào giỏ
                         </button>
                       ) : (
-                        <div /> // Div trống để giữ layout nếu không có nút
+                        <div />
                       )}
 
                       <div className="flex items-center space-x-3">
@@ -325,7 +328,6 @@ export default function ScheduleListPage() {
         </div>
       </div>
 
-      {/* Modal Yêu cầu Đăng nhập */}
       {showLoginPrompt && (
         <div className="fixed inset-0 z-[9999] flex justify-center items-center p-4">
           <div
