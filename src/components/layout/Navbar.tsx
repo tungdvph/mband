@@ -1,10 +1,11 @@
 // src/components/layout/Navbar.tsx
+
 'use client';
 import Link from 'next/link';
 import { useState } from 'react';
-import UserMenu from '../auth/UserMenu'; // Đảm bảo đường dẫn này chính xác
-import { usePublicAuth } from '@/contexts/PublicAuthContext'; // Đảm bảo đường dẫn này chính xác
-import { useCart } from '@/contexts/CartContext'; // THÊM: Import useCart
+import UserMenu from '../auth/UserMenu';
+import { usePublicAuth } from '@/contexts/PublicAuthContext';
+import { useCart } from '@/contexts/CartContext';
 import { FaShoppingCart } from 'react-icons/fa';
 import { useRouter, usePathname } from 'next/navigation';
 
@@ -12,11 +13,10 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const { isAuthenticated } = usePublicAuth();
-  const { cartItems } = useCart(); // THÊM: Lấy cartItems từ context
+  const { cartItems } = useCart();
   const router = useRouter();
   const pathname = usePathname();
 
-  // Tính số lượng loại sự kiện khác nhau trong giỏ hàng
   const uniqueCartItemCount = cartItems.length;
 
   const activeColor = "text-indigo-500";
@@ -44,7 +44,6 @@ const Navbar = () => {
   };
 
   return (
-    // THÊM CLASS 'sticky-navbar' VÀO THẺ NAV
     <nav className="bg-black text-white sticky-navbar">
       <div className="flex items-center justify-between h-20 w-full px-4 sm:px-6 lg:px-8">
 
@@ -169,13 +168,16 @@ const Navbar = () => {
                 <Link href="/register" onClick={() => setIsOpen(false)} className={`block px-3 py-3 rounded-md text-lg font-medium transition-colors duration-150 ${pathname === "/register" ? activeColorMobile : `${inactiveColorMobileBase} ${hoverColorMobile}`}`}>Đăng ký</Link>
               </div>
             ) : (
-              <div className="px-3 py-2" onClick={() => setIsOpen(false)}> <UserMenu /> </div>
+              // === ĐÂY LÀ DÒNG DUY NHẤT THAY ĐỔI ===
+              <div className="px-3 py-2">
+                <UserMenu closeMobileMenu={() => setIsOpen(false)} />
+              </div>
             )}
           </div>
         </div>
       )}
 
-      {/* Login Prompt Popup */}
+      {/* Login Prompt Popup (giữ nguyên không đổi) */}
       {showLoginPrompt && (
         <div className="fixed inset-0 z-[9999] flex justify-center items-center p-4">
           <div
@@ -195,13 +197,13 @@ const Navbar = () => {
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
             <style jsx>{`
-              @keyframes fade-in-scale {
+                @keyframes fade-in-scale {
                 from { opacity: 0; transform: scale(0.95); }
                 to { opacity: 1; transform: scale(1); }
-              }
-              .animate-fade-in-scale {
+                }
+                .animate-fade-in-scale {
                 animation-name: fade-in-scale;
-              }
+                }
             `}</style>
             <svg className="mx-auto mb-4 w-12 h-12 text-yellow-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0-10.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.75c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.57-.598-3.75h-.152c-3.196 0-6.1-1.25-8.25-3.286Zm0 13.036h.008v.008H12v-.008Z" />
