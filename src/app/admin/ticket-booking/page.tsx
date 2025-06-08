@@ -265,7 +265,7 @@ export default function TicketBookingManagement() {
                                             className="text-indigo-600 hover:text-indigo-800 mr-3 transition-colors"
                                             title="Cập nhật trạng thái"
                                         >
-                                            Sửa Status
+                                            Sửa
                                         </button>
                                         <button
                                             onClick={() => handleDeleteBooking(booking._id.toString())}

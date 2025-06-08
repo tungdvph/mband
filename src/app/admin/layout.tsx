@@ -44,7 +44,7 @@ export default function AdminLayout({
 // --- THÊM: Định nghĩa các mục điều hướng với icon ---
 const navigationItems = [
   { href: '/admin', label: 'Bảng điều khiển', icon: FaTachometerAlt },
-  { href: '/admin/user', label: 'Quản lý tài khoản', icon: FaUsersCog },
+  { href: '/admin/user', label: 'Quản lý Tài khoản', icon: FaUsersCog },
   { href: '/admin/member', label: 'Quản lý Thành viên', icon: FaUsers },
   { href: '/admin/schedule', label: 'Quản lý Lịch trình', icon: FaCalendarAlt },
   { href: '/admin/music', label: 'Quản lý Âm nhạc', icon: FaMusic },
