@@ -188,7 +188,7 @@ export default function AdminDashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         <Link href="/admin/user" legacyBehavior>
           <a className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white p-6 rounded-xl shadow-xl block hover:shadow-2xl hover:from-blue-600 hover:to-indigo-700 transition duration-300 transform hover:-translate-y-1">
-            <h3 className="text-2xl font-bold mb-2">Tổng số Users</h3>
+            <h3 className="text-2xl font-bold mb-2">Tổng số tài khoản</h3>
             <p className="text-5xl font-extrabold">{stats.users}</p>
             <p className="mt-3 text-sm opacity-90 hover:opacity-100 underline">Quản lý Users &rarr;</p>
           </a>
