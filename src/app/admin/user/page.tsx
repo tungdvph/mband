@@ -158,7 +158,7 @@ export default function UserManagement() {
     <div className="p-6"> {/* Thêm padding bao ngoài cho toàn trang */}
       {/* Header: Tiêu đề, Ô tìm kiếm, Nút thêm */}
       <div className="flex justify-between items-center mb-6 gap-4 flex-wrap">
-        <h1 className="text-2xl font-bold">Quản lý Người dùng</h1>
+        <h1 className="text-2xl font-bold">Quản lý tài khoản</h1>
         {/* Nhóm Tìm kiếm và Nút thêm */}
         <div className="flex items-center space-x-4">
           {/* Search Input - Style giống News */}
@@ -185,7 +185,7 @@ export default function UserManagement() {
             // Các class Tailwind giống button trang News
             className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 whitespace-nowrap text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
-            Thêm người dùng
+            Thêm tài khoản
           </button>
         </div>
       </div>
